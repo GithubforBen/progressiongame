@@ -1,0 +1,16 @@
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+*.iws
+.vscode/
+
+# Logs
+*.log
+.claude/

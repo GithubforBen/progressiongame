@@ -1,0 +1,61 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: financegame-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-financegame}
+      POSTGRES_USER: ${DB_USER:-financegame}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - financegame-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-financegame}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: financegame-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-financegame}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-financegame}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+      JWT_SECRET: ${JWT_SECRET:-supersecretjwtkey}
+    ports:
+      - "8080:8080"
+    networks:
+      - financegame-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: financegame-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-http://localhost:8080}
+    ports:
+      - "3000:3000"
+    networks:
+      - financegame-net
+
+volumes:
+  pgdata:
+
+networks:
+  financegame-net:
+    driver: bridge
