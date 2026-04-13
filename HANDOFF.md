@@ -20,10 +20,10 @@ Browser-basierte passive Finanz-Lebenssimulation.
 
 ```
 Branch: main
-Letzter Commit: feat: Steps 7–9 – Expenses, Investments, Travel & Collectibles
+Letzter Commit: feat: Step 10 – Gambling (Slots, Blackjack, Poker)
 ```
 
-Alle 9 Schritte committed, **kein uncommitted state**.
+Alle 10 Schritte committed, **kein uncommitted state**.
 
 ---
 
@@ -182,7 +182,7 @@ Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService
 - `Sidebar.vue`: Reisen-Link hinzugefügt ✅
 - `layouts/default.vue`: Bug gefixt (Events wurden nach clearTurnResult() gelesen → null); Tages-Events zeigen als warning-Toast ✅
 
-### Schritt 10 – Glücksspiel (NÄCHSTER SCHRITT)
+### ✅ Schritt 10 – Glücksspiel (IMPLEMENTIERT)
 
 ### ✅ Schritt 8 – Investitionen (IMPLEMENTIERT)
 **Backend:**
@@ -200,9 +200,18 @@ Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService
 - Collectibles: nur in bereistem Land kaufbar
 - Tages-Events: zeitlich begrenzte seltene Items → Toast-Notification
 
-### Schritt 10 – Glücksspiel
-- Poker (vereinfachtes Texas Hold'em vs AI), Blackjack, Slots
-- House-Edge eingebaut
+### ✅ Schritt 10 – Glücksspiel (IMPLEMENTIERT)
+**Backend:**
+- V4-Migration: `gambling_sessions` Tabelle ✅
+- `GamblingSession` Entity + `GamblingRepository` ✅
+- `GamblingService`: Slots (~85% RTP), Blackjack (stateful, Dealer zieht bis 17, BJ=2,5×), Poker (5-Karten vs KI, 5% Rake) ✅
+- `POST /api/gambling/slots`, `/blackjack/start`, `/blackjack/{id}/hit`, `/blackjack/{id}/stand`, `/poker` ✅
+- Blackjack-Spielzustand wird als JSON in `game_state` gespeichert (Jackson) ✅
+
+**Frontend:**
+- `pages/gluecksspiel.vue`: Tab-Navigation (Slots / Blackjack / Poker), Karten-Display, Einsatz-Input, Schnellauswahl-Buttons ✅
+- `components/CardDisplay.vue`: Echte Spielkarten-Optik (rot/schwarz, Wert + Symbol) ✅
+- `Sidebar.vue`: Glücksspiel-Link hinzugefügt ✅
 
 ### Schritt 11 – Zufallsereignisse
 - `RandomEventService` aufrufen in `TurnService` (Platzhalter bereits vorhanden als `// TODO Step 11`)
