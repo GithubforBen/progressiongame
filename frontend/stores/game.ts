@@ -22,19 +22,35 @@ export interface MonthlyExpense {
   mandatory: boolean
 }
 
+export interface LineItem {
+  label: string
+  amount: number
+}
+
+export interface TurnResult {
+  character: Character
+  newTurn: number
+  grossIncome: number
+  taxPaid: number
+  totalExpenses: number
+  netChange: number
+  incomeBreakdown: LineItem[]
+  expenseBreakdown: LineItem[]
+  events: string[]
+}
+
 export const useGameStore = defineStore('game', {
   state: () => ({
     character: null as Character | null,
     expenses: [] as MonthlyExpense[],
+    lastTurnResult: null as TurnResult | null,
     loading: false,
     initialized: false,
   }),
 
   getters: {
     totalMonthlyExpenses: (state) =>
-      state.expenses
-        .filter((e) => e.active)
-        .reduce((sum, e) => sum + e.amount, 0),
+      state.expenses.filter((e) => e.active).reduce((sum, e) => sum + e.amount, 0),
 
     currentMonthLabel: (state) => {
       const months = [
@@ -43,8 +59,7 @@ export const useGameStore = defineStore('game', {
       ]
       const turn = state.character?.currentTurn ?? 1
       const year = 2025 + Math.floor((turn - 1) / 12)
-      const month = months[(turn - 1) % 12]
-      return `${month} ${year}`
+      return `${months[(turn - 1) % 12]} ${year}`
     },
   },
 
@@ -74,17 +89,17 @@ export const useGameStore = defineStore('game', {
     async endTurn() {
       const config = useRuntimeConfig()
       const authStore = useAuthStore()
-      const toastStore = useToastStore()
 
-      const result = await $fetch<{ character: Character }>(`${config.public.apiBase}/api/turn/end`, {
+      const result = await $fetch<TurnResult>(`${config.public.apiBase}/api/turn/end`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${authStore.token}` },
       })
+
       this.character = result.character
-      toastStore.success(
-        `Monat ${this.currentMonthLabel} abgeschlossen.`,
-        'Neuer Monat',
-      )
+      this.lastTurnResult = result
+
+      // Refresh expenses in case they changed
+      await this.fetchExpenses()
     },
 
     async toggleExpense(id: number) {
@@ -98,9 +113,14 @@ export const useGameStore = defineStore('game', {
       if (idx !== -1) this.expenses[idx] = updated
     },
 
+    clearTurnResult() {
+      this.lastTurnResult = null
+    },
+
     reset() {
       this.character = null
       this.expenses = []
+      this.lastTurnResult = null
       this.initialized = false
     },
   },

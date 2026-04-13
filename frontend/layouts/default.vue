@@ -11,7 +11,7 @@
         </div>
 
         <div class="flex items-center gap-4">
-          <div class="hidden sm:flex items-center gap-2 text-sm">
+          <div class="hidden sm:flex items-center gap-2">
             <span class="text-gray-500 text-xs">Kontostand</span>
             <span class="text-green-400 font-semibold font-mono text-sm">{{ formattedCash }}</span>
           </div>
@@ -25,13 +25,21 @@
         </div>
       </header>
 
-      <!-- Page content -->
       <main class="flex-1 overflow-y-auto p-6">
         <slot />
       </main>
     </div>
 
     <ToastContainer />
+
+    <!-- Monthly balance sheet modal -->
+    <MonthlyBalanceSheet
+      v-if="gameStore.lastTurnResult"
+      :show="showBalanceSheet"
+      :result="gameStore.lastTurnResult"
+      :month-label="completedMonthLabel"
+      @close="closeBalanceSheet"
+    />
   </div>
 </template>
 
@@ -41,7 +49,10 @@ import { useToastStore } from '~/stores/toast'
 
 const gameStore = useGameStore()
 const toastStore = useToastStore()
+
 const processingTurn = ref(false)
+const showBalanceSheet = ref(false)
+const completedMonthLabel = ref('')
 
 const formattedCash = computed(() => {
   const cash = gameStore.character?.cash ?? 0
@@ -50,14 +61,28 @@ const formattedCash = computed(() => {
 
 async function endTurn() {
   processingTurn.value = true
+  // Capture the month label before the turn advances
+  completedMonthLabel.value = gameStore.currentMonthLabel
   try {
     await gameStore.endTurn()
+    showBalanceSheet.value = true
   }
   catch (e: any) {
     toastStore.error(e?.data?.message ?? 'Fehler beim Monatsabschluss.', 'Fehler')
   }
   finally {
     processingTurn.value = false
+  }
+}
+
+function closeBalanceSheet() {
+  showBalanceSheet.value = false
+  gameStore.clearTurnResult()
+  // Surface events from the turn as toasts
+  if (gameStore.lastTurnResult?.events.length) {
+    for (const event of gameStore.lastTurnResult.events) {
+      toastStore.info(event)
+    }
   }
 }
 </script>
