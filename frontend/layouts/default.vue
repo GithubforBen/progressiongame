@@ -6,21 +6,21 @@
       <!-- Top bar -->
       <header class="h-14 bg-surface-800 border-b border-surface-700 flex items-center justify-between px-6 flex-shrink-0">
         <div class="flex items-center gap-2">
-          <span class="text-gray-400 text-sm">Monat</span>
-          <span class="text-white font-semibold text-sm font-mono">{{ currentMonthLabel }}</span>
+          <span class="text-gray-500 text-xs uppercase tracking-wider">Monat</span>
+          <span class="text-white font-semibold text-sm font-mono">{{ gameStore.currentMonthLabel }}</span>
         </div>
 
         <div class="flex items-center gap-4">
-          <div class="flex items-center gap-2 text-sm">
-            <span class="text-gray-400">Kontostand:</span>
-            <span class="text-green-400 font-semibold font-mono">{{ formattedCash }}</span>
+          <div class="hidden sm:flex items-center gap-2 text-sm">
+            <span class="text-gray-500 text-xs">Kontostand</span>
+            <span class="text-green-400 font-semibold font-mono text-sm">{{ formattedCash }}</span>
           </div>
           <button
-            class="btn-primary"
+            class="btn-primary text-sm"
             :disabled="processingTurn"
             @click="endTurn"
           >
-            {{ processingTurn ? 'Wird verarbeitet...' : 'Monat abschliessen' }}
+            {{ processingTurn ? 'Verarbeite…' : 'Monat abschliessen' }}
           </button>
         </div>
       </header>
@@ -31,28 +31,17 @@
       </main>
     </div>
 
-    <!-- Toast notifications -->
     <ToastContainer />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useGameStore } from '~/stores/game'
+import { useToastStore } from '~/stores/toast'
 
 const gameStore = useGameStore()
-
+const toastStore = useToastStore()
 const processingTurn = ref(false)
-
-const currentMonthLabel = computed(() => {
-  const months = [
-    'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-    'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
-  ]
-  const turn = gameStore.character?.currentTurn ?? 1
-  const year = 2025 + Math.floor((turn - 1) / 12)
-  const month = months[(turn - 1) % 12]
-  return `${month} ${year}`
-})
 
 const formattedCash = computed(() => {
   const cash = gameStore.character?.cash ?? 0
@@ -63,7 +52,11 @@ async function endTurn() {
   processingTurn.value = true
   try {
     await gameStore.endTurn()
-  } finally {
+  }
+  catch (e: any) {
+    toastStore.error(e?.data?.message ?? 'Fehler beim Monatsabschluss.', 'Fehler')
+  }
+  finally {
     processingTurn.value = false
   }
 }

@@ -4,10 +4,10 @@ import com.financegame.dto.CharacterDto;
 import com.financegame.entity.GameCharacter;
 import com.financegame.repository.CharacterRepository;
 import com.financegame.security.PlayerPrincipal;
-import org.springframework.http.HttpStatus;
+import com.financegame.service.CharacterService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
@@ -15,24 +15,31 @@ import java.util.Map;
 @RequestMapping("/api/turn")
 public class TurnController {
 
+    private final CharacterService characterService;
     private final CharacterRepository characterRepository;
 
-    public TurnController(CharacterRepository characterRepository) {
+    public TurnController(CharacterService characterService,
+                          CharacterRepository characterRepository) {
+        this.characterService = characterService;
         this.characterRepository = characterRepository;
     }
 
     /**
-     * Stub endpoint — full turn engine implemented in Step 4.
-     * Increments current_turn and returns updated character.
+     * Advance one month. Full turn engine implemented in Step 4.
+     * Currently: apply needs decay, increment turn counter.
      */
     @PostMapping("/end")
+    @Transactional
     public Map<String, CharacterDto> endTurn(@AuthenticationPrincipal PlayerPrincipal principal) {
-        GameCharacter character = characterRepository.findByPlayerId(principal.id())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "Charakter nicht gefunden"));
+        // Apply needs decay for this month
+        GameCharacter character = characterService.applyNeedsDecay(principal.id());
 
+        // Advance turn counter
         character.setCurrentTurn(character.getCurrentTurn() + 1);
-        characterRepository.save(character);
+        character = characterRepository.save(character);
+
+        // Sync net worth
+        characterService.recalculateNetWorth(principal.id());
 
         return Map.of("character", CharacterDto.from(character));
     }

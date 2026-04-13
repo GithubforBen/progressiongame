@@ -27,11 +27,7 @@ export const useAuthStore = defineStore('auth', {
         method: 'POST',
         body: { username, password },
       })
-      this.token = data.token
-      this.user = data.user
-      if (import.meta.client) {
-        localStorage.setItem('token', data.token)
-      }
+      this._persist(data.token, data.user)
     },
 
     async register(username: string, password: string) {
@@ -40,11 +36,7 @@ export const useAuthStore = defineStore('auth', {
         method: 'POST',
         body: { username, password },
       })
-      this.token = data.token
-      this.user = data.user
-      if (import.meta.client) {
-        localStorage.setItem('token', data.token)
-      }
+      this._persist(data.token, data.user)
     },
 
     logout() {
@@ -52,16 +44,31 @@ export const useAuthStore = defineStore('auth', {
       this.token = null
       if (import.meta.client) {
         localStorage.removeItem('token')
+        localStorage.removeItem('user')
       }
+      // Reset game store by re-navigating (store state clears naturally)
       navigateTo('/login')
     },
 
     restoreSession() {
       if (import.meta.client) {
         const token = localStorage.getItem('token')
+        const userRaw = localStorage.getItem('user')
         if (token) {
           this.token = token
+          if (userRaw) {
+            try { this.user = JSON.parse(userRaw) } catch {}
+          }
         }
+      }
+    },
+
+    _persist(token: string, user: User) {
+      this.token = token
+      this.user = user
+      if (import.meta.client) {
+        localStorage.setItem('token', token)
+        localStorage.setItem('user', JSON.stringify(user))
       }
     },
   },
