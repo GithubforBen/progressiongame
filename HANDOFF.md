@@ -20,10 +20,10 @@ Browser-basierte passive Finanz-Lebenssimulation.
 
 ```
 Branch: main
-Letzter Commit: b4352ce  feat: Step 6 – Education tree + Weiterbildungen
+Letzter Commit: feat: Steps 7–9 – Expenses, Investments, Travel & Collectibles
 ```
 
-Alle 6 Schritte committed, **kein uncommitted state**.
+Alle 9 Schritte committed, **kein uncommitted state**.
 
 ---
 
@@ -138,21 +138,17 @@ Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService
 
 1. **`meetsEducationRequirement()` ist dupliziert** in `JobService` und `TurnService`. Sollte in einen gemeinsamen `EducationService.meetsRequirement(playerId, type, field)` extrahiert werden.
 
-2. **`MonthlyExpenseController.toggleExpense()` ist nicht `@Transactional`** — der `save()`-Call im Repository läuft ohne Transaktion. Funktioniert aktuell durch Hibernate-Autoflush, aber sollte einen `@Transactional` Service bekommen (z.B. `ExpenseService`).
+2. ~~**`MonthlyExpenseController.toggleExpense()` ist nicht `@Transactional`**~~ — **Behoben in Schritt 7**: `ExpenseService` mit `@Transactional` eingeführt, Controller nutzt jetzt den Service.
 
 3. **`TurnController.endTurn()` hat `@Transactional` auf dem Controller** (nicht auf dem Service) — das ist unüblich. TurnService.endTurn() hat selbst `@Transactional`, was ausreicht. Die Annotation auf dem Controller ist redundant und kann entfernt werden.
 
 4. **Stress-Berechnung**: Im TurnService wird Stress auf `sum(stressPerMonth)` der aktiven Jobs gesetzt. Das bedeutet: egal wie lange du einen stressigen Job hast, Stress bleibt konstant. Das ist die gewollte Mechanik (kein kumulativer Stress), aber gut zu wissen.
 
-5. **Net Worth** ist aktuell nur `= cash`. In Schritt 8 (Investitionen) muss `recalculateNetWorth()` in `CharacterService` um Investment-Werte ergänzt werden.
+5. ~~**Net Worth** ist nur `= cash`~~ — **Behoben in Schritt 8**: `recalculateNetWorth()` summiert Cash + alle Investment-Werte.
 
 6. **`frontend/pages/leben.vue`**, `investitionen.vue`, `rangliste.vue` sind noch Stubs.
 
-7. **Maven nicht im PATH** — lokal kompilieren mit:
-   ```
-   /home/bestimmtnichtben/.m2/wrapper/dists/apache-maven-3.9.9-bin/4nf9hui3q3djbarqar9g711ggc/apache-maven-3.9.9/bin/mvn compile
-   ```
-   Im Docker-Build passiert das automatisch über das Dockerfile.
+7. **Maven** — `mvn` ist im PATH (`/usr/bin/mvn`). Lokal kompilieren mit `mvn compile -f backend/pom.xml`. Im Docker-Build passiert das automatisch.
 
 8. **Frontend wurde nicht via `npm run dev` getestet** (kein Browser-Test möglich in diesem Setup). Der Code ist syntaktisch korrekt und folgt Nuxt-3-Konventionen, sollte aber beim ersten echten Start auf TS-Fehler oder fehlende Dependencies geprüft werden.
 
@@ -160,29 +156,44 @@ Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService
 
 ## Nächste Schritte (Schritte 7–15)
 
-### ✅ Schritt 7 – Monatliche Ausgaben + Steuern + KV-Risiko (NÄCHSTER SCHRITT)
+### ✅ Schritt 7 – Monatliche Ausgaben + Steuern + KV-Risiko (IMPLEMENTIERT)
 **Backend:**
-- `ExpenseService` mit `@Transactional` für alle Expense-Mutationen (behebt Schuld #2)
-- Neue Ausgaben-Typen: GYM, STREAMING, etc. über `POST /api/expenses` hinzufügbar
-- Krankenversicherungs-Risiko-Mechanic: beim Monatsabschluss prüft TurnService ob KV aktiv ist; wenn ein medizinisches Zufallsereignis auftritt → teuer ohne KV, günstig mit
-- Steuern sind bereits implementiert (progressive Brackets in TurnService) — evtl. verfeinern
-- Optional: `GET /api/tax/preview` → zeigt voraussichtliche Steuer bei aktuellem Gehalt
+- `ExpenseService` mit `@Transactional` für alle Expense-Mutationen (behebt Schuld #2) ✅
+- `POST /api/expenses` → neue Ausgaben hinzufügbar (GYM, STREAMING, KRANKENVERSICHERUNG, MOBILFUNK, INTERNET, ZEITSCHRIFTEN, SONSTIGES) ✅
+- `DELETE /api/expenses/{id}` → nicht-mandatory Ausgaben löschen ✅
+- `GET /api/tax/preview` → Steuervorschau basierend auf aktiven Jobs ✅
+- KV-Risiko in `TurnService`: 10% Chance auf Arztrechnung (200–2000 €) ohne aktive KRANKENVERSICHERUNG-Ausgabe ✅
+- `MonthlyExpenseController` nutzt jetzt `ExpenseService` statt direkten Repository-Zugriff ✅
 
 **Frontend:**
-- `pages/leben.vue` ausbauen: Ausgaben verwalten (neue hinzufügen, bestehende deaktivieren), KV-Status mit Risikohinweis
-- Steuertabelle anzeigen (welche Bracket der Spieler gerade trifft)
+- `pages/leben.vue` vollständig implementiert: KV-Warnung/Status, Steuervorschau mit Bracket-Highlight, Ausgaben-Liste mit Toggle/Delete, Neue-Ausgabe-Formular ✅
 
-### Schritt 8 – Investitionen
+### ✅ Schritt 9 – Sammlerstücke + Reisen + Tages-Events (IMPLEMENTIERT)
 **Backend:**
-- Entities: `Investment`, `Stock` bereits in DB (V1-Migration). `Stock`-Entity Java-Klasse muss noch erstellt werden.
-- `StockService`: Preissimulation pro Monat (Normal: ±5-15%, Meme: ±30-80%)
-- `InvestmentService`: Aktien kaufen/verkaufen, Immobilien, NFTs, Kunst
-- `GET /api/stocks`, `POST /api/investments/stocks/buy`, `POST /api/investments/stocks/sell`
-- `recalculateNetWorth()` in `CharacterService` erweitern (Schuld #5)
+- V3-Migration: `countries` Tabelle (6 Länder), `player_travel` Tabelle, `player_id` auf `active_events` ✅
+- `Country`, `PlayerTravel`, `Collectible`, `PlayerCollectible`, `ActiveEvent` Entities ✅
+- `TravelService`: Länder anzeigen, Reise buchen (`POST /api/travel/depart`), heimkehren ✅
+- `CollectibleService`: Sammlerstücke kaufen (nur im richtigen Land oder bei aktivem Sale-Event) ✅
+- `TurnService`: prüft Reiseankunft + generiert 20% Zufalls-Tages-Events (COLLECTIBLE_SALE) ✅
+- Tages-Events: 30% Rabatt auf zufällige Sammlerstücke, player-spezifisch, expire nach 2 Turns ✅
 
 **Frontend:**
-- `pages/investitionen.vue`: Aktienliste mit Preishistorie-Chart (Chart.js via vue-chartjs, bereits in package.json)
-- Portfolio-Übersicht
+- `pages/reisen.vue`: Reisstatus, Länderkarten mit Buchungsbutton, Sammlerstücke-Liste mit Rarität/Rabatt, Meine Sammlung ✅
+- `Sidebar.vue`: Reisen-Link hinzugefügt ✅
+- `layouts/default.vue`: Bug gefixt (Events wurden nach clearTurnResult() gelesen → null); Tages-Events zeigen als warning-Toast ✅
+
+### Schritt 10 – Glücksspiel (NÄCHSTER SCHRITT)
+
+### ✅ Schritt 8 – Investitionen (IMPLEMENTIERT)
+**Backend:**
+- `Stock`, `StockPriceHistory`, `Investment` Entities ✅
+- V2-Migration: `stock_price_history` Tabelle (sauber statt JSONB) + `stock_id` auf `investments` ✅
+- `StockService.simulatePrices()`: NORMAL ±15%, MEME ±80% pro Monat ✅
+- `GET /api/stocks`, `POST /api/investments/stocks/buy`, `POST /api/investments/{id}/sell` ✅
+- `CharacterService.recalculateNetWorth()`: Cash + Investment-Werte (behebt Schuld #5) ✅
+
+**Frontend:**
+- `pages/investitionen.vue`: Portfolio-Summary, Börse mit Filter, Chart.js Preischart, Kauf/Verkauf ✅
 
 ### Schritt 9 – Sammlerstücke + Reisen + Tages-Events
 - Travel-System: Länder bereisen, Kosten, Reisezeit in Monaten
@@ -245,7 +256,10 @@ Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService
 │       │   └── dto/           ← alle Request/Response Records
 │       └── resources/
 │           ├── application.yml
-│           └── db/migration/V1__initial_schema.sql
+│           └── db/migration/
+│               ├── V1__initial_schema.sql
+│               ├── V2__investments_and_price_history.sql
+│               └── V3__travel_collectibles_events.sql
 └── frontend/
     ├── nuxt.config.ts
     ├── tailwind.config.js

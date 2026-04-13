@@ -7,10 +7,12 @@ import com.financegame.entity.EducationProgress;
 import com.financegame.entity.GameCharacter;
 import com.financegame.entity.MonthlyExpense;
 import com.financegame.entity.Player;
+import com.financegame.entity.PlayerTravel;
 import com.financegame.repository.CharacterRepository;
 import com.financegame.repository.EducationProgressRepository;
 import com.financegame.repository.MonthlyExpenseRepository;
 import com.financegame.repository.PlayerRepository;
+import com.financegame.repository.PlayerTravelRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class AuthService {
     private final CharacterRepository characterRepository;
     private final EducationProgressRepository educationProgressRepository;
     private final MonthlyExpenseRepository monthlyExpenseRepository;
+    private final PlayerTravelRepository playerTravelRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
@@ -34,6 +37,7 @@ public class AuthService {
         CharacterRepository characterRepository,
         EducationProgressRepository educationProgressRepository,
         MonthlyExpenseRepository monthlyExpenseRepository,
+        PlayerTravelRepository playerTravelRepository,
         PasswordEncoder passwordEncoder,
         JwtService jwtService
     ) {
@@ -41,6 +45,7 @@ public class AuthService {
         this.characterRepository = characterRepository;
         this.educationProgressRepository = educationProgressRepository;
         this.monthlyExpenseRepository = monthlyExpenseRepository;
+        this.playerTravelRepository = playerTravelRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
@@ -60,6 +65,7 @@ public class AuthService {
         initCharacter(player.getId());
         initEducation(player.getId());
         initDefaultExpenses(player.getId());
+        initTravel(player.getId());
 
         String token = jwtService.generateToken(player.getUsername(), player.getId());
         return new AuthResponse(token, new AuthResponse.UserDto(player.getId(), player.getUsername()));
@@ -97,6 +103,10 @@ public class AuthService {
         createExpense(playerId, "MIETE",              "Miete",              new BigDecimal("500.00"),  true,  true);
         createExpense(playerId, "ESSEN",              "Lebensmittel",       new BigDecimal("200.00"),  true,  true);
         createExpense(playerId, "KRANKENVERSICHERUNG","Krankenversicherung", new BigDecimal("250.00"),  true,  false);
+    }
+
+    private void initTravel(Long playerId) {
+        playerTravelRepository.save(new PlayerTravel(playerId));
     }
 
     private void createExpense(Long playerId, String category, String label,

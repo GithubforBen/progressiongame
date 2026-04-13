@@ -48,6 +48,7 @@ const navItems = [
   { path: '/karriere', label: 'Karriere', icon: '◈' },
   { path: '/ausbildung', label: 'Ausbildung', icon: '◎' },
   { path: '/leben', label: 'Leben', icon: '⌂' },
+  { path: '/reisen', label: 'Reisen', icon: '✈' },
   { path: '/rangliste', label: 'Rangliste', icon: '◆' },
   { path: '/einstellungen', label: 'Einstellungen', icon: '⚙' },
 ]

@@ -35,4 +35,11 @@ public class MonthlyExpenseRepository {
             .setParameter("playerId", playerId)
             .getResultList();
     }
+
+    public void delete(Long expenseId) {
+        MonthlyExpense expense = em.find(MonthlyExpense.class, expenseId);
+        if (expense != null) {
+            em.remove(expense);
+        }
+    }
 }

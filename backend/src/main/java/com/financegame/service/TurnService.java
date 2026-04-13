@@ -4,6 +4,9 @@ import com.financegame.dto.CharacterDto;
 import com.financegame.dto.TurnResultDto;
 import com.financegame.entity.*;
 import com.financegame.repository.*;
+import com.financegame.repository.ActiveEventRepository;
+import com.financegame.repository.CollectibleRepository;
+import com.financegame.repository.PlayerTravelRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,10 @@ public class TurnService {
     private final EducationProgressRepository educationProgressRepository;
     private final MonthlySnapshotRepository monthlySnapshotRepository;
     private final EventLogRepository eventLogRepository;
+    private final StockService stockService;
+    private final PlayerTravelRepository playerTravelRepository;
+    private final ActiveEventRepository activeEventRepository;
+    private final CollectibleRepository collectibleRepository;
 
     private final Random random = new Random();
 
@@ -36,7 +43,11 @@ public class TurnService {
         MonthlyExpenseRepository monthlyExpenseRepository,
         EducationProgressRepository educationProgressRepository,
         MonthlySnapshotRepository monthlySnapshotRepository,
-        EventLogRepository eventLogRepository
+        EventLogRepository eventLogRepository,
+        StockService stockService,
+        PlayerTravelRepository playerTravelRepository,
+        ActiveEventRepository activeEventRepository,
+        CollectibleRepository collectibleRepository
     ) {
         this.characterService = characterService;
         this.characterRepository = characterRepository;
@@ -46,6 +57,10 @@ public class TurnService {
         this.educationProgressRepository = educationProgressRepository;
         this.monthlySnapshotRepository = monthlySnapshotRepository;
         this.eventLogRepository = eventLogRepository;
+        this.stockService = stockService;
+        this.playerTravelRepository = playerTravelRepository;
+        this.activeEventRepository = activeEventRepository;
+        this.collectibleRepository = collectibleRepository;
     }
 
     @Transactional
@@ -73,6 +88,13 @@ public class TurnService {
         BigDecimal totalExpenses = deductExpenses(playerId, expenseBreakdown);
         totalExpenses = totalExpenses.add(taxPaid);
 
+        // --- 4b. Health insurance risk ---
+        BigDecimal medicalCost = applyHealthInsuranceRisk(playerId, events);
+        if (medicalCost.compareTo(BigDecimal.ZERO) > 0) {
+            expenseBreakdown.add(new TurnResultDto.LineItem("Arztrechnung (unversichert)", medicalCost));
+            totalExpenses = totalExpenses.add(medicalCost);
+        }
+
         // --- 5. Apply net cash change ---
         BigDecimal netChange = grossIncome.subtract(totalExpenses);
         character.setCash(character.getCash().add(netChange).max(BigDecimal.ZERO));
@@ -86,10 +108,23 @@ public class TurnService {
         // --- 8. Increment months worked & education ---
         advanceEducation(playerId, currentTurn, events);
 
-        // --- 9. Advance turn ---
+        // --- 8c. Check travel arrival ---
+        checkTravelArrival(playerId, currentTurn, events);
+
+        // --- 8d. Expire old events, generate new ones ---
+        activeEventRepository.deleteExpiredForPlayer(playerId, currentTurn);
+        generateRandomEvent(playerId, currentTurn, events);
+
+        // --- 9. Advance turn counter & persist character ---
         character.setCurrentTurn(currentTurn + 1);
-        character.setNetWorth(character.getCash()); // investments added in Step 8
         characterRepository.save(character);
+
+        // --- 9b. Simulate stock prices (updates investments in DB) ---
+        stockService.simulatePrices(currentTurn);
+
+        // --- 9c. Recalculate net worth (cash + investments) and reload ---
+        characterService.recalculateNetWorth(playerId);
+        character = characterService.findOrThrow(playerId);
 
         // --- 10. Save monthly snapshot ---
         monthlySnapshotRepository.save(new MonthlySnapshot(
@@ -296,6 +331,65 @@ public class TurnService {
         String[] updated = Arrays.copyOf(current, current.length + 1);
         updated[current.length] = stage;
         ep.setCompletedStages(updated);
+    }
+
+    private void checkTravelArrival(Long playerId, int currentTurn, List<String> events) {
+        playerTravelRepository.findByPlayerId(playerId).ifPresent(travel -> {
+            if (travel.getArriveAtTurn() != null && travel.getArriveAtTurn() <= currentTurn + 1) {
+                String dest = travel.getDestinationCountry();
+                // Add to visited
+                String[] visited = travel.getVisitedCountries();
+                boolean alreadyVisited = Arrays.asList(visited).contains(dest);
+                if (!alreadyVisited) {
+                    String[] updated = Arrays.copyOf(visited, visited.length + 1);
+                    updated[visited.length] = dest;
+                    travel.setVisitedCountries(updated);
+                }
+                travel.setCurrentCountry(dest);
+                travel.setDestinationCountry(null);
+                travel.setArriveAtTurn(null);
+                playerTravelRepository.save(travel);
+                events.add("Angekommen in " + dest + "! Erkunde lokale Sammlerstücke.");
+            }
+        });
+    }
+
+    private void generateRandomEvent(Long playerId, int currentTurn, List<String> events) {
+        if (random.nextDouble() > 0.20) return;
+        List<Collectible> all = collectibleRepository.findAll();
+        if (all.isEmpty()) return;
+        Collectible c = all.get(random.nextInt(all.size()));
+        // Check not already active
+        boolean alreadyActive = activeEventRepository.findActiveForPlayer(playerId, currentTurn)
+            .stream().anyMatch(e -> c.getId().equals(e.getCollectibleId()));
+        if (alreadyActive) return;
+
+        ActiveEvent event = new ActiveEvent();
+        event.setPlayerId(playerId);
+        event.setType("COLLECTIBLE_SALE");
+        event.setCountry(c.getCountryRequired());
+        event.setCollectibleId(c.getId());
+        event.setExpiresAtTurn(currentTurn + 2);
+        activeEventRepository.save(event);
+        events.add("Tages-Event: \"" + c.getName() + "\" für 30% Rabatt — " + c.getCountryRequired()
+            + " (endet Monat " + (currentTurn + 2) + ")!");
+    }
+
+    /**
+     * 10% chance of a random medical bill if no active KRANKENVERSICHERUNG expense.
+     * Bill is between 200 and 2000 €.
+     */
+    private BigDecimal applyHealthInsuranceRisk(Long playerId, List<String> events) {
+        boolean hasKv = monthlyExpenseRepository.findActiveByPlayerId(playerId)
+            .stream()
+            .anyMatch(e -> "KRANKENVERSICHERUNG".equals(e.getCategory()));
+
+        if (!hasKv && random.nextDouble() < 0.10) {
+            int cost = 200 + random.nextInt(1801); // 200–2000
+            events.add("Arztrechnung! Ohne Krankenversicherung zahlst du " + cost + " € aus eigener Tasche.");
+            return BigDecimal.valueOf(cost);
+        }
+        return BigDecimal.ZERO;
     }
 
     private static int clamp(int v) { return Math.max(0, Math.min(100, v)); }

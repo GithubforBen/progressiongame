@@ -2,8 +2,9 @@ package com.financegame.service;
 
 import com.financegame.dto.CharacterDto;
 import com.financegame.entity.GameCharacter;
-import com.financegame.entity.MonthlyExpense;
+import com.financegame.entity.Investment;
 import com.financegame.repository.CharacterRepository;
+import com.financegame.repository.InvestmentRepository;
 import com.financegame.repository.MonthlyExpenseRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -11,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 public class CharacterService {
@@ -25,11 +25,14 @@ public class CharacterService {
 
     private final CharacterRepository characterRepository;
     private final MonthlyExpenseRepository monthlyExpenseRepository;
+    private final InvestmentRepository investmentRepository;
 
     public CharacterService(CharacterRepository characterRepository,
-                            MonthlyExpenseRepository monthlyExpenseRepository) {
+                            MonthlyExpenseRepository monthlyExpenseRepository,
+                            InvestmentRepository investmentRepository) {
         this.characterRepository = characterRepository;
         this.monthlyExpenseRepository = monthlyExpenseRepository;
+        this.investmentRepository = investmentRepository;
     }
 
     @Transactional(readOnly = true)
@@ -61,13 +64,15 @@ public class CharacterService {
 
     /**
      * Recalculate and persist net worth = cash + sum of investment current values.
-     * Full investment lookup added in Step 8; for now net worth = cash.
      */
     @Transactional
     public void recalculateNetWorth(Long playerId) {
         GameCharacter character = findOrThrow(playerId);
-        // TODO Step 8: add investment values
-        character.setNetWorth(character.getCash());
+        BigDecimal investmentValue = investmentRepository.findByPlayerId(playerId)
+            .stream()
+            .map(Investment::getCurrentValue)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        character.setNetWorth(character.getCash().add(investmentValue));
         characterRepository.save(character);
     }
 

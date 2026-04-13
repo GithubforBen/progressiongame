@@ -77,10 +77,14 @@ async function endTurn() {
 
 function closeBalanceSheet() {
   showBalanceSheet.value = false
+  // Surface events before clearing
+  const events = gameStore.lastTurnResult?.events ?? []
   gameStore.clearTurnResult()
-  // Surface events from the turn as toasts
-  if (gameStore.lastTurnResult?.events.length) {
-    for (const event of gameStore.lastTurnResult.events) {
+  for (const event of events) {
+    // Tages-Events get a special warning style
+    if (event.includes('Tages-Event') || event.includes('Angekommen')) {
+      toastStore.warning(event)
+    } else {
       toastStore.info(event)
     }
   }
