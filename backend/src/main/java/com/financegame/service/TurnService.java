@@ -33,6 +33,7 @@ public class TurnService {
     private final ActiveEventRepository activeEventRepository;
     private final CollectibleRepository collectibleRepository;
     private final RandomEventService randomEventService;
+    private final RelationshipService relationshipService;
 
     private final Random random = new Random();
 
@@ -49,7 +50,8 @@ public class TurnService {
         PlayerTravelRepository playerTravelRepository,
         ActiveEventRepository activeEventRepository,
         CollectibleRepository collectibleRepository,
-        RandomEventService randomEventService
+        RandomEventService randomEventService,
+        RelationshipService relationshipService
     ) {
         this.characterService = characterService;
         this.characterRepository = characterRepository;
@@ -64,6 +66,7 @@ public class TurnService {
         this.activeEventRepository = activeEventRepository;
         this.collectibleRepository = collectibleRepository;
         this.randomEventService = randomEventService;
+        this.relationshipService = relationshipService;
     }
 
     @Transactional
@@ -107,6 +110,10 @@ public class TurnService {
 
         // --- 6. Needs decay (hunger/energy/happiness) ---
         applyNeedsDecay(character, playerId);
+
+        // --- 6b. Relationship happiness bonus (Step 14) ---
+        int happinessBonus = relationshipService.advanceRelationships(playerId, events);
+        character.setHappiness(clamp(character.getHappiness() + happinessBonus));
 
         // --- 7. Stress from active jobs ---
         updateStress(character, playerId);

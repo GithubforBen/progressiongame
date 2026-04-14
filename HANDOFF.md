@@ -249,8 +249,18 @@ Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService
   - Tabelle: Rang (🥇/🥈/🥉 für Top 3), Spielername + "(du)"-Badge, Nettovermögen, Monat
   - Eigene Zeile wird farblich hervorgehoben
 
-### Schritt 14 – Beziehungssystem
-- NPCs, Beziehungsaufbau über Monate, Glück-Bonus
+### ✅ Schritt 14 – Beziehungssystem (IMPLEMENTIERT)
+**Backend:**
+- V5-Migration: `npcs` Tabelle + `player_relationships` Tabelle, 5 Seed-NPCs (Klaus, Dr. Müller, Sarah, Marco, Lena) ✅
+- `Npc`, `PlayerRelationship` Entities + `NpcRepository`, `PlayerRelationshipRepository` ✅
+- `RelationshipService`: `getAll`, `meet`, `interact` (+10 Level, einmal pro Turn), `advanceRelationships` (+1 passiv/Monat, Happiness-Bonus) ✅
+- `GET /api/npcs`, `POST /api/npcs/{id}/meet`, `POST /api/npcs/{id}/interact` ✅
+- `TurnService`: ruft `relationshipService.advanceRelationships()` nach Needs-Decay auf, wendet Happiness-Bonus an ✅
+- Happiness-Bonus-Formel: round(level × happinessBonusPerLevel / 100) pro Beziehung ✅
+
+**Frontend:**
+- `pages/beziehungen.vue`: Summary-Cards (Bekannte, Ø Level, Bonus), NPC-Grid mit Persönlichkeits-Farben, Level-Balken, "Kennenlernen"/"Zeit verbringen"-Buttons ✅
+- `Sidebar.vue`: Beziehungen-Link (♥) hinzugefügt ✅
 
 ### Schritt 15 – Sprachwahl DE/EN (Optional)
 - i18n-Toggle in Einstellungen

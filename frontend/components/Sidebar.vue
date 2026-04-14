@@ -50,6 +50,7 @@ const navItems = [
   { path: '/leben', label: 'Leben', icon: '⌂' },
   { path: '/reisen', label: 'Reisen', icon: '✈' },
   { path: '/gluecksspiel', label: 'Glücksspiel', icon: '🎰' },
+  { path: '/beziehungen', label: 'Beziehungen', icon: '♥' },
   { path: '/rangliste', label: 'Rangliste', icon: '◆' },
   { path: '/einstellungen', label: 'Einstellungen', icon: '⚙' },
 ]
