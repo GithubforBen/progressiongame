@@ -311,7 +311,7 @@ public class GamblingService {
         return deck;
     }
 
-    private int calcBjTotal(List<String> hand) {
+    int calcBjTotal(List<String> hand) {
         int total = 0;
         int aces = 0;
         for (String card : hand) {
@@ -342,7 +342,7 @@ public class GamblingService {
         };
     }
 
-    private int evaluatePokerHand(List<String> cards) {
+    int evaluatePokerHand(List<String> cards) {
         int[] ranks = cards.stream().mapToInt(c -> cardRank(c.charAt(0))).sorted().toArray();
         Map<Character, Long> suitFreq = cards.stream()
             .collect(Collectors.groupingBy(c -> c.charAt(1), Collectors.counting()));

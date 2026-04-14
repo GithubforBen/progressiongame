@@ -43,24 +43,22 @@ public class TaxController {
         if (income.compareTo(BigDecimal.valueOf(1000)) <= 0) return BigDecimal.ZERO;
 
         BigDecimal tax = BigDecimal.ZERO;
-        BigDecimal[] brackets = {
-            BigDecimal.valueOf(1000), BigDecimal.valueOf(2000), BigDecimal.valueOf(3000)
-        };
-        double[] rates = {0.20, 0.32, 0.42};
-
         BigDecimal remaining = income.subtract(BigDecimal.valueOf(1000));
-        BigDecimal prev = BigDecimal.ZERO;
-        for (int i = 0; i < brackets.length; i++) {
-            BigDecimal top = brackets[i];
-            if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
-            BigDecimal taxable = remaining.min(top.subtract(prev));
-            tax = tax.add(taxable.multiply(BigDecimal.valueOf(rates[i])));
-            remaining = remaining.subtract(taxable);
-            prev = top;
+
+        BigDecimal in20 = remaining.min(BigDecimal.valueOf(2000));
+        tax = tax.add(in20.multiply(BigDecimal.valueOf(0.20)));
+        remaining = remaining.subtract(in20);
+
+        if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal in32 = remaining.min(BigDecimal.valueOf(3000));
+            tax = tax.add(in32.multiply(BigDecimal.valueOf(0.32)));
+            remaining = remaining.subtract(in32);
         }
+
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
             tax = tax.add(remaining.multiply(BigDecimal.valueOf(0.42)));
         }
+
         return tax.setScale(2, RoundingMode.HALF_UP);
     }
 
