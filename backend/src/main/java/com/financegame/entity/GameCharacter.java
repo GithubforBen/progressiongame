@@ -35,6 +35,9 @@ public class GameCharacter {
     @Column(name = "current_turn", nullable = false)
     private int currentTurn = 1;
 
+    @Column(name = "schufa_score", nullable = false)
+    private int schufaScore = 500;
+
     // --- Getters & Setters ---
 
     public Long getId() { return id; }
@@ -63,4 +66,7 @@ public class GameCharacter {
 
     public int getCurrentTurn() { return currentTurn; }
     public void setCurrentTurn(int currentTurn) { this.currentTurn = currentTurn; }
+
+    public int getSchufaScore() { return schufaScore; }
+    public void setSchufaScore(int schufaScore) { this.schufaScore = schufaScore; }
 }

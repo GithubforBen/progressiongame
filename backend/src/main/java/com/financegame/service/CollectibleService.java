@@ -2,6 +2,7 @@ package com.financegame.service;
 
 import com.financegame.dto.ActiveEventDto;
 import com.financegame.dto.CollectibleDto;
+import com.financegame.dto.CollectionProgressDto;
 import com.financegame.dto.PlayerCollectibleDto;
 import com.financegame.entity.*;
 import com.financegame.repository.*;
@@ -10,7 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -81,6 +85,30 @@ public class CollectibleService {
                     : null;
                 return ActiveEventDto.from(e, name);
             }).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CollectionProgressDto> getCollectionProgress(Long playerId) {
+        List<Collectible> all = collectibleRepository.findAll();
+        Set<Long> ownedIds = playerCollectibleRepository.findByPlayerId(playerId)
+            .stream().map(PlayerCollectible::getCollectibleId).collect(Collectors.toSet());
+
+        // Group by collectionType
+        Map<String, List<Collectible>> byType = all.stream()
+            .collect(Collectors.groupingBy(Collectible::getCollectionType));
+
+        List<CollectionProgressDto> result = new ArrayList<>();
+        for (Map.Entry<String, List<Collectible>> entry : byType.entrySet()) {
+            String type = entry.getKey();
+            int total = entry.getValue().size();
+            int owned = (int) entry.getValue().stream()
+                .filter(c -> ownedIds.contains(c.getId()))
+                .count();
+            double percentage = total > 0 ? Math.round(owned * 100.0 / total * 10) / 10.0 : 0.0;
+            result.add(new CollectionProgressDto(type, total, owned, percentage));
+        }
+        result.sort(Comparator.comparing(CollectionProgressDto::collectionType));
+        return result;
     }
 
     @Transactional

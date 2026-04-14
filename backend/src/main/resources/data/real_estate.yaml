@@ -1,0 +1,48 @@
+properties:
+  - name: "1-Zimmer-Wohnung Berlin"
+    location: "Berlin"
+    category: "WOHNUNG"
+    purchasePrice: 150000.00
+    monthlyRent: 700.00
+    rentSavings: 450.00
+    description: "Kleine Wohnung in Berlin-Mitte, ideal als Kapitalanlage"
+
+  - name: "3-Zimmer-Wohnung Muenchen"
+    location: "Muenchen"
+    category: "WOHNUNG"
+    purchasePrice: 420000.00
+    monthlyRent: 1800.00
+    rentSavings: 1200.00
+    description: "Grosse Wohnung in Schwabing mit Balkon"
+
+  - name: "Einfamilienhaus Hamburg"
+    location: "Hamburg"
+    category: "HAUS"
+    purchasePrice: 550000.00
+    monthlyRent: 2200.00
+    rentSavings: 1500.00
+    description: "Freistehendes Einfamilienhaus mit Garten in Blankenese"
+
+  - name: "Studio-Apartment Frankfurt"
+    location: "Frankfurt"
+    category: "WOHNUNG"
+    purchasePrice: 95000.00
+    monthlyRent: 500.00
+    rentSavings: 300.00
+    description: "Kompaktes Studio im Bankenviertel"
+
+  - name: "Zweifamilienhaus Leipzig"
+    location: "Leipzig"
+    category: "HAUS"
+    purchasePrice: 280000.00
+    monthlyRent: 1400.00
+    rentSavings: 950.00
+    description: "Gruenderzeithvilla mit zwei Wohneinheiten"
+
+  - name: "Bueroflaeche Stuttgart"
+    location: "Stuttgart"
+    category: "GEWERBE"
+    purchasePrice: 320000.00
+    monthlyRent: 2500.00
+    rentSavings: 0.00
+    description: "Moderne Bueroflaeche in der Innenstadt"

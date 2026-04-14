@@ -11,7 +11,8 @@ public record CharacterDto(
     int hunger,
     int energy,
     int happiness,
-    int currentTurn
+    int currentTurn,
+    int schufaScore
 ) {
     public static CharacterDto from(GameCharacter c) {
         return new CharacterDto(
@@ -22,7 +23,8 @@ public record CharacterDto(
             c.getHunger(),
             c.getEnergy(),
             c.getHappiness(),
-            c.getCurrentTurn()
+            c.getCurrentTurn(),
+            c.getSchufaScore()
         );
     }
 }

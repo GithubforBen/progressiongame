@@ -35,6 +35,9 @@ public class Job {
     @Column(name = "available", nullable = false)
     private boolean available = true;
 
+    @Column(name = "education_requirements_json", columnDefinition = "jsonb")
+    private String educationRequirementsJson;
+
     // --- Getters & Setters ---
 
     public Long getId() { return id; }
@@ -63,4 +66,7 @@ public class Job {
 
     public boolean isAvailable() { return available; }
     public void setAvailable(boolean available) { this.available = available; }
+
+    public String getEducationRequirementsJson() { return educationRequirementsJson; }
+    public void setEducationRequirementsJson(String json) { this.educationRequirementsJson = json; }
 }

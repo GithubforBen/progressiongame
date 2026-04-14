@@ -3,9 +3,11 @@ package com.financegame.service;
 import com.financegame.dto.CharacterDto;
 import com.financegame.entity.GameCharacter;
 import com.financegame.entity.Investment;
+import com.financegame.entity.PlayerRealEstate;
 import com.financegame.repository.CharacterRepository;
 import com.financegame.repository.InvestmentRepository;
 import com.financegame.repository.MonthlyExpenseRepository;
+import com.financegame.repository.PlayerRealEstateRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,13 +28,16 @@ public class CharacterService {
     private final CharacterRepository characterRepository;
     private final MonthlyExpenseRepository monthlyExpenseRepository;
     private final InvestmentRepository investmentRepository;
+    private final PlayerRealEstateRepository playerRealEstateRepository;
 
     public CharacterService(CharacterRepository characterRepository,
                             MonthlyExpenseRepository monthlyExpenseRepository,
-                            InvestmentRepository investmentRepository) {
+                            InvestmentRepository investmentRepository,
+                            PlayerRealEstateRepository playerRealEstateRepository) {
         this.characterRepository = characterRepository;
         this.monthlyExpenseRepository = monthlyExpenseRepository;
         this.investmentRepository = investmentRepository;
+        this.playerRealEstateRepository = playerRealEstateRepository;
     }
 
     @Transactional(readOnly = true)
@@ -72,7 +77,11 @@ public class CharacterService {
             .stream()
             .map(Investment::getCurrentValue)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
-        character.setNetWorth(character.getCash().add(investmentValue));
+        BigDecimal realEstateValue = playerRealEstateRepository.findByPlayerId(playerId)
+            .stream()
+            .map(PlayerRealEstate::getPurchasePrice)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        character.setNetWorth(character.getCash().add(investmentValue).add(realEstateValue));
         characterRepository.save(character);
     }
 
@@ -97,6 +106,13 @@ public class CharacterService {
     public void addCash(Long playerId, BigDecimal amount) {
         GameCharacter character = findOrThrow(playerId);
         character.setCash(character.getCash().add(amount));
+        characterRepository.save(character);
+    }
+
+    @Transactional
+    public void updateSchufaScore(Long playerId, int newScore) {
+        GameCharacter character = findOrThrow(playerId);
+        character.setSchufaScore(Math.max(0, Math.min(1000, newScore)));
         characterRepository.save(character);
     }
 

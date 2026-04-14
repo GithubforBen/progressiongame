@@ -1,0 +1,69 @@
+mainStages:
+  - key: "REALSCHULABSCHLUSS"
+    parentKey: "GRUNDSCHULE"
+    durationMonths: 2
+    requiresField: false
+
+  - key: "ABITUR"
+    parentKey: "REALSCHULABSCHLUSS"
+    durationMonths: 3
+    requiresField: false
+
+  - key: "AUSBILDUNG"
+    parentKey: "REALSCHULABSCHLUSS"
+    durationMonths: 4
+    requiresField: true
+    fields:
+      - value: "FACHINFORMATIKER"
+        label: "Fachinformatiker"
+      - value: "KAUFMANN"
+        label: "Kaufmann/-frau"
+      - value: "ELEKTRIKER"
+        label: "Elektriker/-in"
+      - value: "ERZIEHER"
+        label: "Erzieher/-in"
+
+  - key: "BACHELOR"
+    parentKey: "ABITUR"
+    durationMonths: 6
+    requiresField: true
+    fields:
+      - value: "INFORMATIK"
+        label: "Informatik"
+      - value: "BWL"
+        label: "Betriebswirtschaft"
+      - value: "MEDIZIN"
+        label: "Medizin"
+      - value: "JURA"
+        label: "Rechtswissenschaften"
+
+  - key: "MASTER"
+    parentKey: "BACHELOR"
+    durationMonths: 4
+    requiresField: true
+    fields:
+      - value: "INFORMATIK"
+        label: "Informatik"
+      - value: "BWL"
+        label: "Betriebswirtschaft"
+      - value: "MEDIZIN"
+        label: "Medizin"
+      - value: "JURA"
+        label: "Rechtswissenschaften"
+
+sideCerts:
+  - key: "SOCIAL_MEDIA"
+    label: "Social Media Marketing"
+    durationMonths: 1
+
+  - key: "EXCEL"
+    label: "Excel-Kurs"
+    durationMonths: 1
+
+  - key: "FUEHRERSCHEIN"
+    label: "Fuehrerschein"
+    durationMonths: 1
+
+  - key: "CRYPTO"
+    label: "Crypto Trading Zertifikat"
+    durationMonths: 1

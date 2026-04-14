@@ -2,6 +2,7 @@ package com.financegame.controller;
 
 import com.financegame.dto.ActiveEventDto;
 import com.financegame.dto.CollectibleDto;
+import com.financegame.dto.CollectionProgressDto;
 import com.financegame.dto.PlayerCollectibleDto;
 import com.financegame.security.PlayerPrincipal;
 import com.financegame.service.CollectibleService;
@@ -34,6 +35,11 @@ public class CollectibleController {
     @GetMapping("/events")
     public List<ActiveEventDto> getActiveEvents(@AuthenticationPrincipal PlayerPrincipal principal) {
         return collectibleService.getActiveEvents(principal.id());
+    }
+
+    @GetMapping("/progress")
+    public List<CollectionProgressDto> getProgress(@AuthenticationPrincipal PlayerPrincipal principal) {
+        return collectibleService.getCollectionProgress(principal.id());
     }
 
     @PostMapping("/{id}/buy")

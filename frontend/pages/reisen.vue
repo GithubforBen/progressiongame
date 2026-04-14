@@ -173,6 +173,26 @@
       </div>
     </div>
 
+    <!-- Collection Progress -->
+    <div v-if="collectionProgress.length > 0" class="card">
+      <h3 class="text-base font-semibold text-white mb-4">Sammlungs-Fortschritt</h3>
+      <div class="space-y-3">
+        <div v-for="prog in collectionProgress" :key="prog.collectionType" class="space-y-1">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-300 font-medium">{{ prog.collectionType }}</span>
+            <span class="text-gray-400">{{ prog.owned }}/{{ prog.total }} ({{ prog.percentage }}%)</span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-500"
+              :class="prog.percentage >= 100 ? 'bg-green-400' : 'bg-accent'"
+              :style="{ width: prog.percentage + '%' }"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- My Collection -->
     <div v-if="myCollection.length > 0" class="card">
       <h3 class="text-base font-semibold text-white mb-4">Meine Sammlung ({{ myCollection.length }})</h3>
@@ -233,12 +253,16 @@ interface ActiveEvent {
   id: number; type: string; country: string; expiresAtTurn: number
   collectibleId: number | null; message: string
 }
+interface CollectionProgress {
+  collectionType: string; total: number; owned: number; percentage: number
+}
 
 const status = ref<TravelStatus | null>(null)
 const countries = ref<Country[]>([])
 const collectibles = ref<Collectible[]>([])
 const myCollection = ref<OwnedCollectible[]>([])
 const activeEvents = ref<ActiveEvent[]>([])
+const collectionProgress = ref<CollectionProgress[]>([])
 
 const statusLoading = ref(false)
 const countriesLoading = ref(false)
@@ -264,18 +288,20 @@ async function loadAll() {
   countriesLoading.value = true
   collectiblesLoading.value = true
   try {
-    const [s, c, col, my, ev] = await Promise.all([
+    const [s, c, col, my, ev, prog] = await Promise.all([
       api.get<TravelStatus>('/api/travel/status'),
       api.get<Country[]>('/api/travel/countries'),
       api.get<Collectible[]>('/api/collectibles'),
       api.get<OwnedCollectible[]>('/api/collectibles/my'),
       api.get<ActiveEvent[]>('/api/collectibles/events'),
+      api.get<CollectionProgress[]>('/api/collectibles/progress'),
     ])
     status.value = s
     countries.value = c
     collectibles.value = col
     myCollection.value = my
     activeEvents.value = ev
+    collectionProgress.value = prog
   } catch {
     toast.error('Daten konnten nicht geladen werden')
   } finally {

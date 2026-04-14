@@ -40,5 +40,16 @@ export function useFormatting() {
     return 'text-red-400 bg-red-400/10'
   }
 
-  return { formatCurrency, formatEducationRequirement, stressLabel, stressColor }
+  function formatSchufaScore(score: number): { label: string; color: string; bgColor: string } {
+    if (score >= 800) return { label: 'Ausgezeichnet', color: 'text-green-400', bgColor: 'bg-green-400' }
+    if (score >= 600) return { label: 'Gut', color: 'text-blue-400', bgColor: 'bg-blue-400' }
+    if (score >= 400) return { label: 'Befriedigend', color: 'text-yellow-400', bgColor: 'bg-yellow-400' }
+    return { label: 'Mangelhaft', color: 'text-red-400', bgColor: 'bg-red-400' }
+  }
+
+  function formatLoanRate(rate: number): string {
+    return (rate * 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' % p.a.'
+  }
+
+  return { formatCurrency, formatEducationRequirement, stressLabel, stressColor, formatSchufaScore, formatLoanRate }
 }

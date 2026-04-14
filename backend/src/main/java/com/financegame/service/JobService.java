@@ -10,8 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -55,8 +58,7 @@ public class JobService {
             .stream().mapToInt(PlayerJob::getMonthsWorked).sum();
 
         return jobs.stream().map(job -> {
-            boolean meetsEdu = meetsEducationRequirement(completed,
-                job.getRequiredEducationType(), job.getRequiredEducationField());
+            boolean meetsEdu = meetsEducationRequirementWithJson(completed, job);
             boolean meetsExp = totalExperience >= job.getRequiredMonthsExperience();
             return JobDto.from(job, meetsEdu && meetsExp,
                 appliedJobIds.contains(job.getId()),
@@ -114,10 +116,34 @@ public class JobService {
 
     // -------------------------------------------------------------------------
 
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+
     private boolean meetsEducationRequirement(List<String> completed,
                                                String requiredType, String requiredField) {
         if (requiredType == null) return true;
         String key = requiredField != null ? requiredType + "_" + requiredField : requiredType;
         return completed.contains(key);
+    }
+
+    boolean meetsEducationRequirementWithJson(List<String> completed, Job job) {
+        String json = job.getEducationRequirementsJson();
+        if (json != null && !json.isBlank()) {
+            try {
+                List<Map<String, String>> reqs = JSON_MAPPER.readValue(json,
+                    new TypeReference<List<Map<String, String>>>() {});
+                // OR-logic: any single satisfied requirement passes
+                return reqs.stream().anyMatch(req -> {
+                    String type = req.get("type");
+                    String field = req.get("field");
+                    if (type == null) return true;
+                    String key = field != null ? type + "_" + field : type;
+                    return completed.contains(key);
+                });
+            } catch (Exception ignored) {
+                // Fall through to legacy check
+            }
+        }
+        return meetsEducationRequirement(completed,
+            job.getRequiredEducationType(), job.getRequiredEducationField());
     }
 }

@@ -49,6 +49,8 @@ const navItems = [
   { path: '/ausbildung', label: 'Ausbildung', icon: '◎' },
   { path: '/leben', label: 'Leben', icon: '⌂' },
   { path: '/reisen', label: 'Reisen', icon: '✈' },
+  { path: '/immobilien', label: 'Immobilien', icon: '🏠' },
+  { path: '/kredite', label: 'Kredite', icon: '🏦' },
   { path: '/gluecksspiel', label: 'Glücksspiel', icon: '🎰' },
   { path: '/beziehungen', label: 'Beziehungen', icon: '♥' },
   { path: '/rangliste', label: 'Rangliste', icon: '◆' },

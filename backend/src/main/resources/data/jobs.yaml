@@ -1,0 +1,99 @@
+jobs:
+  - name: "Zeitungsaustraeger"
+    description: "Morgens Zeitungen austragen"
+    salary: 450.00
+    stressPerMonth: 10
+    requiredMonthsExperience: 0
+
+  - name: "Supermarkt-Kassierer"
+    description: "An der Kasse im Supermarkt arbeiten"
+    salary: 1200.00
+    stressPerMonth: 15
+    requiredMonthsExperience: 0
+
+  - name: "Lagerarbeiter"
+    description: "Waren ein- und auslagern"
+    salary: 1400.00
+    stressPerMonth: 20
+    requiredMonthsExperience: 0
+
+  - name: "Buerokaufmann/-frau"
+    description: "Administrative Taetigkeiten im Buero"
+    salary: 2200.00
+    stressPerMonth: 15
+    requiredMonthsExperience: 0
+    requiredEducationType: "REALSCHULABSCHLUSS"
+
+  - name: "Social Media Manager"
+    description: "Social-Media-Kanaele betreuen"
+    salary: 2800.00
+    stressPerMonth: 20
+    requiredMonthsExperience: 0
+    requiredEducationType: "WEITERBILDUNG"
+    requiredEducationField: "SOCIAL_MEDIA"
+
+  - name: "IT-Support"
+    description: "Technischen Support leisten"
+    salary: 3200.00
+    stressPerMonth: 20
+    requiredMonthsExperience: 0
+    requiredEducationType: "AUSBILDUNG"
+    requiredEducationField: "FACHINFORMATIKER"
+
+  - name: "Software Engineer"
+    description: "Software entwickeln"
+    salary: 5500.00
+    stressPerMonth: 25
+    requiredMonthsExperience: 0
+    educationRequirements:
+      - type: "BACHELOR"
+        field: "INFORMATIK"
+      - type: "AUSBILDUNG"
+        field: "FACHINFORMATIKER"
+        minExperience: 36
+
+  - name: "Arzt/Aerztin"
+    description: "Patienten behandeln"
+    salary: 7000.00
+    stressPerMonth: 35
+    requiredMonthsExperience: 0
+    requiredEducationType: "STUDIUM"
+    requiredEducationField: "MEDIZIN"
+
+  - name: "Manager"
+    description: "Abteilung leiten"
+    salary: 6000.00
+    stressPerMonth: 40
+    requiredMonthsExperience: 24
+    educationRequirements:
+      - type: "BACHELOR"
+        field: "BWL"
+      - type: "MASTER"
+        field: "BWL"
+
+  - name: "Elektriker"
+    description: "Elektrische Anlagen installieren und warten"
+    salary: 3000.00
+    stressPerMonth: 22
+    requiredMonthsExperience: 0
+    requiredEducationType: "AUSBILDUNG"
+    requiredEducationField: "ELEKTRIKER"
+
+  - name: "Erzieher/-in"
+    description: "Kinder betreuen und foerdern"
+    salary: 2600.00
+    stressPerMonth: 18
+    requiredMonthsExperience: 0
+    requiredEducationType: "AUSBILDUNG"
+    requiredEducationField: "ERZIEHER"
+
+  - name: "Unternehmensberater"
+    description: "Unternehmen strategisch beraten"
+    salary: 7500.00
+    stressPerMonth: 35
+    requiredMonthsExperience: 12
+    educationRequirements:
+      - type: "MASTER"
+        field: "BWL"
+      - type: "MASTER"
+        field: "INFORMATIK"

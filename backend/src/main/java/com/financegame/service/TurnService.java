@@ -6,6 +6,8 @@ import com.financegame.entity.*;
 import com.financegame.repository.*;
 import com.financegame.repository.ActiveEventRepository;
 import com.financegame.repository.CollectibleRepository;
+import com.financegame.repository.PlayerLoanRepository;
+import com.financegame.repository.PlayerRealEstateRepository;
 import com.financegame.repository.PlayerTravelRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,8 @@ public class TurnService {
     private final CollectibleRepository collectibleRepository;
     private final RandomEventService randomEventService;
     private final RelationshipService relationshipService;
+    private final PlayerRealEstateRepository playerRealEstateRepository;
+    private final PlayerLoanRepository playerLoanRepository;
 
     private final Random random = new Random();
 
@@ -51,7 +55,9 @@ public class TurnService {
         ActiveEventRepository activeEventRepository,
         CollectibleRepository collectibleRepository,
         RandomEventService randomEventService,
-        RelationshipService relationshipService
+        RelationshipService relationshipService,
+        PlayerRealEstateRepository playerRealEstateRepository,
+        PlayerLoanRepository playerLoanRepository
     ) {
         this.characterService = characterService;
         this.characterRepository = characterRepository;
@@ -67,6 +73,8 @@ public class TurnService {
         this.collectibleRepository = collectibleRepository;
         this.randomEventService = randomEventService;
         this.relationshipService = relationshipService;
+        this.playerRealEstateRepository = playerRealEstateRepository;
+        this.playerLoanRepository = playerLoanRepository;
     }
 
     @Transactional
@@ -84,6 +92,10 @@ public class TurnService {
         // --- 2. Calculate salary income ---
         BigDecimal grossIncome = calculateSalaries(playerId, currentTurn, incomeBreakdown, events);
 
+        // --- 2b. Rental income from RENTED_OUT properties ---
+        BigDecimal rentalIncome = calculateRentalIncome(playerId, incomeBreakdown);
+        grossIncome = grossIncome.add(rentalIncome);
+
         // --- 3. Progressive tax on income ---
         BigDecimal taxPaid = calculateTax(grossIncome);
         if (taxPaid.compareTo(BigDecimal.ZERO) > 0) {
@@ -94,7 +106,11 @@ public class TurnService {
         BigDecimal totalExpenses = deductExpenses(playerId, expenseBreakdown);
         totalExpenses = totalExpenses.add(taxPaid);
 
-        // --- 4b. Health insurance risk ---
+        // --- 4b. Loan repayments ---
+        BigDecimal loanCost = processLoanRepayments(playerId, character, expenseBreakdown, events);
+        totalExpenses = totalExpenses.add(loanCost);
+
+        // --- 4c. Health insurance risk ---
         BigDecimal medicalCost = applyHealthInsuranceRisk(playerId, events);
         if (medicalCost.compareTo(BigDecimal.ZERO) > 0) {
             expenseBreakdown.add(new TurnResultDto.LineItem("Arztrechnung (unversichert)", medicalCost));
@@ -283,8 +299,17 @@ public class TurnService {
     }
 
     private BigDecimal deductExpenses(Long playerId, List<TurnResultDto.LineItem> breakdown) {
+        boolean hasSelfOccupied = playerRealEstateRepository.findByPlayerId(playerId)
+            .stream().anyMatch(pre -> "SELF_OCCUPIED".equals(pre.getMode()));
+
         BigDecimal total = BigDecimal.ZERO;
         for (MonthlyExpense expense : monthlyExpenseRepository.findActiveByPlayerId(playerId)) {
+            // Skip rent if player owns a self-occupied property
+            if (hasSelfOccupied && "MIETE".equals(expense.getCategory())) {
+                breakdown.add(new TurnResultDto.LineItem(expense.getLabel() + " (gespart durch Eigenheim)",
+                    BigDecimal.ZERO));
+                continue;
+            }
             total = total.add(expense.getAmount());
             breakdown.add(new TurnResultDto.LineItem(expense.getLabel(), expense.getAmount()));
         }
@@ -402,6 +427,50 @@ public class TurnService {
             return BigDecimal.valueOf(cost);
         }
         return BigDecimal.ZERO;
+    }
+
+    private BigDecimal calculateRentalIncome(Long playerId,
+                                              List<TurnResultDto.LineItem> breakdown) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (PlayerRealEstate pre : playerRealEstateRepository.findByPlayerId(playerId)) {
+            if ("RENTED_OUT".equals(pre.getMode())) {
+                BigDecimal rent = pre.getCatalog().getMonthlyRent();
+                total = total.add(rent);
+                breakdown.add(new TurnResultDto.LineItem("Mieteinnahme: " + pre.getCatalog().getName(), rent));
+            }
+        }
+        return total;
+    }
+
+    private BigDecimal processLoanRepayments(Long playerId, GameCharacter character,
+                                             List<TurnResultDto.LineItem> breakdown,
+                                             List<String> events) {
+        BigDecimal total = BigDecimal.ZERO;
+        List<PlayerLoan> activeLoans = playerLoanRepository.findActiveByPlayerId(playerId);
+        for (PlayerLoan loan : activeLoans) {
+            if (character.getCash().add(total.negate()).compareTo(loan.getMonthlyPayment()) >= 0) {
+                total = total.add(loan.getMonthlyPayment());
+                breakdown.add(new TurnResultDto.LineItem("Kreditrate: " + loan.getLabel(),
+                    loan.getMonthlyPayment()));
+                loan.setAmountRemaining(loan.getAmountRemaining()
+                    .subtract(loan.getMonthlyPayment()).max(BigDecimal.ZERO));
+                loan.setTurnsRemaining(loan.getTurnsRemaining() - 1);
+                if (loan.getTurnsRemaining() <= 0) {
+                    loan.setStatus("PAID_OFF");
+                    character.setSchufaScore(LoanService.clampSchufa(character.getSchufaScore() + 5));
+                    events.add("Kredit '" + loan.getLabel() + "' vollstaendig zurueckgezahlt! SCHUFA +5");
+                } else {
+                    character.setSchufaScore(LoanService.clampSchufa(character.getSchufaScore() + 2));
+                }
+                playerLoanRepository.save(loan);
+            } else {
+                loan.setStatus("DEFAULTED");
+                character.setSchufaScore(LoanService.clampSchufa(character.getSchufaScore() - 50));
+                events.add("Kreditrate nicht bezahlt! SCHUFA -50");
+                playerLoanRepository.save(loan);
+            }
+        }
+        return total;
     }
 
     private static int clamp(int v) { return Math.max(0, Math.min(100, v)); }

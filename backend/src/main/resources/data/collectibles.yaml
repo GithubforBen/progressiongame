@@ -1,0 +1,84 @@
+collectibles:
+  - name: "Nissan Skyline R34"
+    collectionType: "AUTOS"
+    countryRequired: "Japan"
+    rarity: "LEGENDARY"
+    baseValue: 85000.00
+    description: "Legendaerer JDM-Sportwagen"
+
+  - name: "Ferrari 250 GTO"
+    collectionType: "AUTOS"
+    countryRequired: "Italien"
+    rarity: "LEGENDARY"
+    baseValue: 450000.00
+    description: "Das wertvollste Auto der Welt"
+
+  - name: "Vintage Harley-Davidson"
+    collectionType: "AUTOS"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 35000.00
+    description: "Amerikanische Motorrad-Ikone"
+
+  - name: "Rolex Daytona"
+    collectionType: "UHREN"
+    countryRequired: "Schweiz"
+    rarity: "LEGENDARY"
+    baseValue: 25000.00
+    description: "Die begehrte Sportuhr"
+
+  - name: "Patek Philippe Nautilus"
+    collectionType: "UHREN"
+    countryRequired: "Schweiz"
+    rarity: "LEGENDARY"
+    baseValue: 80000.00
+    description: "Kultstatuswerk der Uhrmacherei"
+
+  - name: "Banksy Original"
+    collectionType: "KUNST"
+    countryRequired: "UK"
+    rarity: "EPIC"
+    baseValue: 120000.00
+    description: "Originales Strassenkunstwerk"
+
+  - name: "Porzellane Vase Ming-Dyn."
+    collectionType: "KUNST"
+    countryRequired: "China"
+    rarity: "RARE"
+    baseValue: 15000.00
+    description: "Antike chinesische Vase"
+
+  - name: "Toyota Supra MK4"
+    collectionType: "AUTOS"
+    countryRequired: "Japan"
+    rarity: "EPIC"
+    baseValue: 55000.00
+    description: "Ikonischer japanischer Sportwagen"
+
+  - name: "Omega Speedmaster"
+    collectionType: "UHREN"
+    countryRequired: "Schweiz"
+    rarity: "RARE"
+    baseValue: 8000.00
+    description: "Die Mondlanduhr"
+
+  - name: "Warhol Siebdruck"
+    collectionType: "KUNST"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 95000.00
+    description: "Seriendruck des Pop-Art-Meisters"
+
+  - name: "Terrakotta-Krieger Replik"
+    collectionType: "KUNST"
+    countryRequired: "China"
+    rarity: "COMMON"
+    baseValue: 2500.00
+    description: "Hochwertige Nachbildung aus Xi'an"
+
+  - name: "Bentley Continental GT"
+    collectionType: "AUTOS"
+    countryRequired: "UK"
+    rarity: "RARE"
+    baseValue: 180000.00
+    description: "Britischer Luxus-Grand-Tourer"

@@ -6,57 +6,116 @@ import com.financegame.dto.EnrollMainRequest;
 import com.financegame.dto.EnrollSideRequest;
 import com.financegame.entity.EducationProgress;
 import com.financegame.repository.EducationProgressRepository;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.yaml.snakeyaml.Yaml;
 
+import java.io.InputStream;
 import java.util.*;
 
 @Service
 public class EducationService {
 
-    // -------------------------------------------------------------------------
-    // Static stage catalogue
-    // -------------------------------------------------------------------------
+    private static final Logger log = LoggerFactory.getLogger(EducationService.class);
 
     record StageDefinition(String parentKey, int durationMonths,
                            boolean requiresField, List<FieldOption> fieldOptions) {}
 
-    private static final Map<String, StageDefinition> MAIN_STAGES = new LinkedHashMap<>();
-    private static final Map<String, SideCertDto> SIDE_CERTS = new LinkedHashMap<>();
+    // Populated from YAML on startup; fallback to static data if loading fails
+    private final Map<String, StageDefinition> mainStages = new LinkedHashMap<>();
+    private final Map<String, SideCertDto> sideCerts = new LinkedHashMap<>();
 
-    static {
+    private final EducationProgressRepository educationProgressRepository;
+
+    public EducationService(EducationProgressRepository educationProgressRepository) {
+        this.educationProgressRepository = educationProgressRepository;
+    }
+
+    @PostConstruct
+    @SuppressWarnings("unchecked")
+    public void loadEducationData() {
+        try {
+            InputStream is = getClass().getResourceAsStream("/data/education.yaml");
+            if (is == null) {
+                log.warn("education.yaml nicht gefunden – nutze Standarddaten");
+                loadDefaults();
+                return;
+            }
+            Yaml yaml = new Yaml();
+            Map<String, Object> data = yaml.load(is);
+
+            List<Map<String, Object>> stages = (List<Map<String, Object>>) data.get("mainStages");
+            if (stages != null) {
+                for (Map<String, Object> s : stages) {
+                    String key = (String) s.get("key");
+                    String parentKey = (String) s.get("parentKey");
+                    int duration = toInt(s.get("durationMonths"));
+                    boolean requiresField = Boolean.TRUE.equals(s.get("requiresField"));
+                    List<FieldOption> fields = new ArrayList<>();
+                    List<Map<String, Object>> fieldList = (List<Map<String, Object>>) s.get("fields");
+                    if (fieldList != null) {
+                        for (Map<String, Object> f : fieldList) {
+                            fields.add(new FieldOption((String) f.get("value"), (String) f.get("label")));
+                        }
+                    }
+                    mainStages.put(key, new StageDefinition(parentKey, duration, requiresField, fields));
+                }
+            }
+
+            List<Map<String, Object>> certs = (List<Map<String, Object>>) data.get("sideCerts");
+            if (certs != null) {
+                for (Map<String, Object> c : certs) {
+                    String key = (String) c.get("key");
+                    String label = (String) c.get("label");
+                    int duration = toInt(c.get("durationMonths"));
+                    sideCerts.put(key, new SideCertDto(key, label, duration));
+                }
+            }
+            log.info("EducationService: {} Stufen, {} Zertifikate aus YAML geladen",
+                mainStages.size(), sideCerts.size());
+        } catch (Exception e) {
+            log.error("Fehler beim Laden von education.yaml: {}", e.getMessage());
+            loadDefaults();
+        }
+    }
+
+    private void loadDefaults() {
+        mainStages.clear();
+        sideCerts.clear();
         var noFields = List.<FieldOption>of();
-
-        MAIN_STAGES.put("REALSCHULABSCHLUSS", new StageDefinition("GRUNDSCHULE",     2, false, noFields));
-        MAIN_STAGES.put("ABITUR",             new StageDefinition("REALSCHULABSCHLUSS", 3, false, noFields));
-        MAIN_STAGES.put("AUSBILDUNG", new StageDefinition("REALSCHULABSCHLUSS", 4, true, List.of(
+        mainStages.put("REALSCHULABSCHLUSS", new StageDefinition("GRUNDSCHULE",     2, false, noFields));
+        mainStages.put("ABITUR",             new StageDefinition("REALSCHULABSCHLUSS", 3, false, noFields));
+        mainStages.put("AUSBILDUNG", new StageDefinition("REALSCHULABSCHLUSS", 4, true, List.of(
             new FieldOption("FACHINFORMATIKER", "Fachinformatiker"),
             new FieldOption("KAUFMANN",         "Kaufmann/-frau"),
             new FieldOption("ELEKTRIKER",       "Elektriker/-in"),
             new FieldOption("ERZIEHER",         "Erzieher/-in")
         )));
-        MAIN_STAGES.put("BACHELOR", new StageDefinition("ABITUR", 6, true, List.of(
+        mainStages.put("BACHELOR", new StageDefinition("ABITUR", 6, true, List.of(
             new FieldOption("INFORMATIK", "Informatik"),
             new FieldOption("BWL",        "Betriebswirtschaft"),
             new FieldOption("MEDIZIN",    "Medizin"),
             new FieldOption("JURA",       "Rechtswissenschaften")
         )));
-        MAIN_STAGES.put("MASTER", new StageDefinition("BACHELOR", 4, true, List.of(
+        mainStages.put("MASTER", new StageDefinition("BACHELOR", 4, true, List.of(
             new FieldOption("INFORMATIK", "Informatik"),
             new FieldOption("BWL",        "Betriebswirtschaft"),
             new FieldOption("MEDIZIN",    "Medizin"),
             new FieldOption("JURA",       "Rechtswissenschaften")
         )));
-
-        SIDE_CERTS.put("SOCIAL_MEDIA",   new SideCertDto("SOCIAL_MEDIA",   "Social Media Marketing",   1));
-        SIDE_CERTS.put("EXCEL",          new SideCertDto("EXCEL",          "Excel-Kurs",               1));
-        SIDE_CERTS.put("FUEHRERSCHEIN",  new SideCertDto("FUEHRERSCHEIN",  "Führerschein",             1));
-        SIDE_CERTS.put("CRYPTO",         new SideCertDto("CRYPTO",         "Crypto Trading Zertifikat",1));
+        sideCerts.put("SOCIAL_MEDIA",   new SideCertDto("SOCIAL_MEDIA",   "Social Media Marketing",    1));
+        sideCerts.put("EXCEL",          new SideCertDto("EXCEL",          "Excel-Kurs",                1));
+        sideCerts.put("FUEHRERSCHEIN",  new SideCertDto("FUEHRERSCHEIN",  "Fuehrerschein",             1));
+        sideCerts.put("CRYPTO",         new SideCertDto("CRYPTO",         "Crypto Trading Zertifikat", 1));
+        log.info("EducationService: Standarddaten geladen");
     }
 
-    // Display labels for stage keys (used for events log etc.)
+    // Display labels for stage keys
     public static String stageLabel(String stageKey) {
         if (stageKey == null) return "";
         return switch (stageKey) {
@@ -74,39 +133,29 @@ public class EducationService {
 
     private static String fieldLabel(String field) {
         return switch (field) {
-            case "INFORMATIK"     -> "Informatik";
-            case "BWL"            -> "Betriebswirtschaft";
-            case "MEDIZIN"        -> "Medizin";
-            case "JURA"           -> "Rechtswissenschaften";
+            case "INFORMATIK"       -> "Informatik";
+            case "BWL"              -> "Betriebswirtschaft";
+            case "MEDIZIN"          -> "Medizin";
+            case "JURA"             -> "Rechtswissenschaften";
             case "FACHINFORMATIKER" -> "Fachinformatiker";
-            case "KAUFMANN"       -> "Kaufmann/-frau";
-            case "ELEKTRIKER"     -> "Elektriker/-in";
-            case "ERZIEHER"       -> "Erzieher/-in";
-            case "SOCIAL_MEDIA"   -> "Social Media Marketing";
-            case "EXCEL"          -> "Excel-Kurs";
-            case "FUEHRERSCHEIN"  -> "Führerschein";
-            case "CRYPTO"         -> "Crypto Trading";
+            case "KAUFMANN"         -> "Kaufmann/-frau";
+            case "ELEKTRIKER"       -> "Elektriker/-in";
+            case "ERZIEHER"         -> "Erzieher/-in";
+            case "SOCIAL_MEDIA"     -> "Social Media Marketing";
+            case "EXCEL"            -> "Excel-Kurs";
+            case "FUEHRERSCHEIN"    -> "Fuehrerschein";
+            case "CRYPTO"           -> "Crypto Trading";
             default -> field;
         };
-    }
-
-    // -------------------------------------------------------------------------
-
-    private final EducationProgressRepository educationProgressRepository;
-
-    public EducationService(EducationProgressRepository educationProgressRepository) {
-        this.educationProgressRepository = educationProgressRepository;
     }
 
     @Transactional(readOnly = true)
     public EducationProgressDto getProgress(Long playerId) {
         EducationProgress ep = findOrThrow(playerId);
         List<String> completed = Arrays.asList(ep.getCompletedStages());
-
-        List<AvailableStageDto> available = buildAvailableMainStages(ep, completed);
-        List<SideCertDto> availableSide  = buildAvailableSideCerts(ep, completed);
-
-        return EducationProgressDto.from(ep, available, availableSide);
+        return EducationProgressDto.from(ep,
+            buildAvailableMainStages(ep, completed),
+            buildAvailableSideCerts(ep, completed));
     }
 
     @Transactional
@@ -119,7 +168,7 @@ public class EducationService {
                 "Bereits in einer Ausbildung eingeschrieben");
         }
 
-        StageDefinition def = MAIN_STAGES.get(req.stage());
+        StageDefinition def = mainStages.get(req.stage());
         if (def == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unbekannte Stufe");
         }
@@ -129,7 +178,6 @@ public class EducationService {
                 "Fachrichtung erforderlich fuer diese Stufe");
         }
 
-        // Validate field is legal for this stage
         if (def.requiresField()) {
             boolean validField = def.fieldOptions().stream()
                 .anyMatch(fo -> fo.value().equals(req.field()));
@@ -138,10 +186,8 @@ public class EducationService {
             }
         }
 
-        // Validate parent completed
-        String parentKey = resolveKey(def.parentKey(), null); // parent never has a field itself
+        String parentKey = resolveKey(def.parentKey(), null);
         if ("BACHELOR".equals(def.parentKey())) {
-            // For MASTER: need BACHELOR_{field} with same field
             String bachelorKey = "BACHELOR_" + req.field();
             if (!completed.contains(bachelorKey)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -152,7 +198,6 @@ public class EducationService {
                 "Voraussetzung nicht erfuellt: " + stageLabel(parentKey));
         }
 
-        // Check not already completed
         String targetKey = resolveKey(req.stage(), req.field());
         if (completed.contains(targetKey)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Stufe bereits abgeschlossen");
@@ -180,7 +225,7 @@ public class EducationService {
                 "Bereits in einer Weiterbildung eingeschrieben");
         }
 
-        SideCertDto cert = SIDE_CERTS.get(req.cert());
+        SideCertDto cert = sideCerts.get(req.cert());
         if (cert == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unbekannte Weiterbildung");
         }
@@ -196,20 +241,17 @@ public class EducationService {
     }
 
     // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
 
     private List<AvailableStageDto> buildAvailableMainStages(EducationProgress ep,
                                                               List<String> completed) {
-        if (ep.getMainStageMonthsRemaining() > 0) return List.of(); // busy
+        if (ep.getMainStageMonthsRemaining() > 0) return List.of();
 
         List<AvailableStageDto> result = new ArrayList<>();
-        for (Map.Entry<String, StageDefinition> entry : MAIN_STAGES.entrySet()) {
+        for (Map.Entry<String, StageDefinition> entry : mainStages.entrySet()) {
             String stageType = entry.getKey();
             StageDefinition def = entry.getValue();
 
             if ("MASTER".equals(stageType)) {
-                // Available if player has any BACHELOR_{field}
                 boolean hasBachelor = completed.stream().anyMatch(s -> s.startsWith("BACHELOR_"));
                 if (!hasBachelor) continue;
             } else {
@@ -217,13 +259,11 @@ public class EducationService {
                 if (!completed.contains(parentKey)) continue;
             }
 
-            // Skip if all field variants completed (or no-field stage already completed)
             if (!def.requiresField()) {
                 if (completed.contains(stageType)) continue;
                 result.add(new AvailableStageDto(stageType, stageLabel(stageType),
                     def.durationMonths(), false, List.of()));
             } else {
-                // Only show fields not yet completed
                 List<FieldOption> remainingFields = def.fieldOptions().stream()
                     .filter(fo -> !completed.contains(stageType + "_" + fo.value()))
                     .toList();
@@ -240,7 +280,7 @@ public class EducationService {
         if (!completed.contains("REALSCHULABSCHLUSS")) return List.of();
         if (ep.getSideCertMonthsRemaining() > 0) return List.of();
 
-        return SIDE_CERTS.entrySet().stream()
+        return sideCerts.entrySet().stream()
             .filter(e -> !completed.contains("WEITERBILDUNG_" + e.getKey()))
             .map(Map.Entry::getValue)
             .toList();
@@ -255,5 +295,11 @@ public class EducationService {
         return educationProgressRepository.findByPlayerId(playerId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                 "Bildungsfortschritt nicht gefunden"));
+    }
+
+    private static int toInt(Object val) {
+        if (val == null) return 0;
+        if (val instanceof Number n) return n.intValue();
+        return Integer.parseInt(val.toString());
     }
 }
