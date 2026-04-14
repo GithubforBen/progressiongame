@@ -226,10 +226,17 @@ Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService
 - KV-Risiko (applyHealthInsuranceRisk) bleibt separat in Step 4b (geht korrekt in expenseBreakdown) ✅
 - Alle Events erscheinen in der `events`-Liste des `TurnResultDto` → Toast-Anzeige im Frontend ✅
 
-### Schritt 12 – Monatsbilanz + Statistik-Dashboard
-- `MonthlySnapshot`-Tabelle ist bereits befüllt seit Schritt 4
-- `GET /api/stats/snapshots` → Verlaufsdaten für Charts
-- Dashboard `pages/index.vue`: Chart.js Nettovermögen-Linie, Einnahmen/Ausgaben Pie-Charts ersetzen die Platzhalter
+### ✅ Schritt 12 – Monatsbilanz + Statistik-Dashboard (IMPLEMENTIERT)
+**Backend:**
+- `SnapshotDto` record (turn, cash, netWorth, totalIncome, totalExpenses) ✅
+- `GET /api/stats/snapshots` → alle MonthlySnapshots des eingeloggten Spielers, aufsteigend nach Turn ✅
+
+**Frontend:**
+- `pages/index.vue`: Placeholder ersetzt durch zwei echte Chart.js-Diagramme ✅
+  - Linienchart "Vermögensverlauf": Nettovermögen (indigo) + Bargeld (grün gestrichelt)
+  - Balkenchart "Einnahmen vs. Ausgaben": grün/rot pro Monat
+- Charts werden mit `<ClientOnly>` gerendert (SSR-safe), zeigen Platzhalter wenn < 2 Datenpunkte ✅
+- `BarElement` zu ChartJS.register() hinzugefügt ✅
 
 ### Schritt 13 – Rangliste
 - `GET /api/leaderboard` → View `leaderboard` existiert bereits in DB
