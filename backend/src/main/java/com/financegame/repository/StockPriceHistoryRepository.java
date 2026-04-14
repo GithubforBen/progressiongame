@@ -21,6 +21,16 @@ public class StockPriceHistoryRepository {
             .getResultList();
     }
 
+    public boolean existsByStockIdAndTurn(Long stockId, int turn) {
+        Long count = em.createQuery(
+                "SELECT COUNT(h) FROM StockPriceHistory h WHERE h.stockId = :sid AND h.turn = :turn",
+                Long.class)
+            .setParameter("sid", stockId)
+            .setParameter("turn", turn)
+            .getSingleResult();
+        return count > 0;
+    }
+
     public StockPriceHistory save(StockPriceHistory h) {
         if (h.getId() == null) { em.persist(h); return h; }
         return em.merge(h);

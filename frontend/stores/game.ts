@@ -66,6 +66,10 @@ export const useGameStore = defineStore('game', {
   actions: {
     async init() {
       if (this.initialized) return
+      // Ensure session is restored before making API calls (guards SSR/hydration edge cases)
+      const authStore = useAuthStore()
+      authStore.restoreSession()
+      if (!authStore.token) return
       await Promise.all([this.fetchCharacter(), this.fetchExpenses()])
       this.initialized = true
     },

@@ -53,14 +53,20 @@ public class StockService {
     public void simulatePrices(int currentTurn) {
         List<Stock> stocks = stockRepository.findAll();
         for (Stock stock : stocks) {
-            BigDecimal newPrice = applyPriceMovement(stock);
-            stock.setCurrentPrice(newPrice);
-            stockRepository.save(stock);
+            BigDecimal newPrice;
 
-            // Record history
-            historyRepository.save(new StockPriceHistory(stock.getId(), newPrice, currentTurn));
+            if (historyRepository.existsByStockIdAndTurn(stock.getId(), currentTurn)) {
+                // Another player already simulated prices for this turn — skip price movement,
+                // use the current price already stored.
+                newPrice = stock.getCurrentPrice();
+            } else {
+                newPrice = applyPriceMovement(stock);
+                stock.setCurrentPrice(newPrice);
+                stockRepository.save(stock);
+                historyRepository.save(new StockPriceHistory(stock.getId(), newPrice, currentTurn));
+            }
 
-            // Update open investment positions for this stock
+            // Always update open investment positions with the current price
             for (Investment inv : investmentRepository.findByStockId(stock.getId())) {
                 inv.setCurrentValue(newPrice.multiply(inv.getQuantity()).setScale(2, RoundingMode.HALF_UP));
                 investmentRepository.save(inv);
