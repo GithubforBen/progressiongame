@@ -238,9 +238,16 @@ Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService
 - Charts werden mit `<ClientOnly>` gerendert (SSR-safe), zeigen Platzhalter wenn < 2 Datenpunkte ✅
 - `BarElement` zu ChartJS.register() hinzugefügt ✅
 
-### Schritt 13 – Rangliste
-- `GET /api/leaderboard` → View `leaderboard` existiert bereits in DB
-- `pages/rangliste.vue` ausbauen
+### ✅ Schritt 13 – Rangliste (IMPLEMENTIERT)
+**Backend:**
+- `LeaderboardEntryDto` record (rank, playerId, username, netWorth, currentTurn, isMe) ✅
+- `GET /api/leaderboard` → native SQL gegen die bestehende `leaderboard` DB-View, Rang-Nummerierung serverseitig, `isMe`-Flag für den eingeloggten Spieler ✅
+
+**Frontend:**
+- `pages/rangliste.vue`: vollständig implementiert ✅
+  - "Deine Platzierung"-Highlight-Card (accent-Border) oben
+  - Tabelle: Rang (🥇/🥈/🥉 für Top 3), Spielername + "(du)"-Badge, Nettovermögen, Monat
+  - Eigene Zeile wird farblich hervorgehoben
 
 ### Schritt 14 – Beziehungssystem
 - NPCs, Beziehungsaufbau über Monate, Glück-Bonus
