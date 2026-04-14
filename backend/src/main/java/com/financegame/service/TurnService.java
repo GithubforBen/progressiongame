@@ -32,6 +32,7 @@ public class TurnService {
     private final PlayerTravelRepository playerTravelRepository;
     private final ActiveEventRepository activeEventRepository;
     private final CollectibleRepository collectibleRepository;
+    private final RandomEventService randomEventService;
 
     private final Random random = new Random();
 
@@ -47,7 +48,8 @@ public class TurnService {
         StockService stockService,
         PlayerTravelRepository playerTravelRepository,
         ActiveEventRepository activeEventRepository,
-        CollectibleRepository collectibleRepository
+        CollectibleRepository collectibleRepository,
+        RandomEventService randomEventService
     ) {
         this.characterService = characterService;
         this.characterRepository = characterRepository;
@@ -61,6 +63,7 @@ public class TurnService {
         this.playerTravelRepository = playerTravelRepository;
         this.activeEventRepository = activeEventRepository;
         this.collectibleRepository = collectibleRepository;
+        this.randomEventService = randomEventService;
     }
 
     @Transactional
@@ -98,6 +101,9 @@ public class TurnService {
         // --- 5. Apply net cash change ---
         BigDecimal netChange = grossIncome.subtract(totalExpenses);
         character.setCash(character.getCash().add(netChange).max(BigDecimal.ZERO));
+
+        // --- 5b. Random events (Step 11) ---
+        randomEventService.applyRandomEvents(playerId, character, events);
 
         // --- 6. Needs decay (hunger/energy/happiness) ---
         applyNeedsDecay(character, playerId);

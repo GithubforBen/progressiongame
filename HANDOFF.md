@@ -213,10 +213,18 @@ Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService
 - `components/CardDisplay.vue`: Echte Spielkarten-Optik (rot/schwarz, Wert + Symbol) ✅
 - `Sidebar.vue`: Glücksspiel-Link hinzugefügt ✅
 
-### Schritt 11 – Zufallsereignisse
-- `RandomEventService` aufrufen in `TurnService` (Platzhalter bereits vorhanden als `// TODO Step 11`)
-- Ereignistabelle mit Wahrscheinlichkeiten
-- KV-Risiko-Mechanic hier implementieren (Unfall ohne KV → hohe Kosten)
+### ✅ Schritt 11 – Zufallsereignisse (IMPLEMENTIERT)
+**Backend:**
+- `RandomEventService` mit 6 unabhängigen Ereignissen (je eigene Wahrscheinlichkeit) ✅
+  - GEHALTSBONUS (7 %, nur wenn Job aktiv): +200–800 €, Happiness +5
+  - AUTOPANNE (8 %): -150–500 €, Stress +10
+  - GLUECKSFALL (5 %): +30–250 €, Happiness +10
+  - DIEBSTAHL (5 %): 10–30 % des Bargelds (max. 400 €), Happiness -15, Stress +5
+  - STRESSABBAU (6 %): Stress -25, Energie +15, Happiness +10
+  - UNERWARTETE_RECHNUNG (7 %): -100–300 €
+- `TurnService` ruft `randomEventService.applyRandomEvents()` nach Step 5 (Netto-Cashänderung) auf ✅
+- KV-Risiko (applyHealthInsuranceRisk) bleibt separat in Step 4b (geht korrekt in expenseBreakdown) ✅
+- Alle Events erscheinen in der `events`-Liste des `TurnResultDto` → Toast-Anzeige im Frontend ✅
 
 ### Schritt 12 – Monatsbilanz + Statistik-Dashboard
 - `MonthlySnapshot`-Tabelle ist bereits befüllt seit Schritt 4
