@@ -59,10 +59,13 @@ public class JobService {
 
         return jobs.stream().map(job -> {
             boolean meetsEdu = meetsEducationRequirementWithJson(completed, job);
+            boolean meetsSide = meetsSideCertRequirement(completed, job);
             boolean meetsExp = totalExperience >= job.getRequiredMonthsExperience();
-            return JobDto.from(job, meetsEdu && meetsExp,
+            String sideCertName = EducationService.sideCertLabel(job.getRequiredSideCert());
+            return JobDto.from(job, meetsEdu && meetsSide && meetsExp,
                 appliedJobIds.contains(job.getId()),
-                activeJobIds.contains(job.getId()));
+                activeJobIds.contains(job.getId()),
+                sideCertName);
         }).toList();
     }
 
@@ -115,6 +118,11 @@ public class JobService {
     }
 
     // -------------------------------------------------------------------------
+
+    private static boolean meetsSideCertRequirement(List<String> completed, Job job) {
+        String cert = job.getRequiredSideCert();
+        return cert == null || cert.isBlank() || completed.contains(cert);
+    }
 
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 

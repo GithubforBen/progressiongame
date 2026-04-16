@@ -2,68 +2,491 @@ mainStages:
   - key: "REALSCHULABSCHLUSS"
     parentKey: "GRUNDSCHULE"
     durationMonths: 2
+    cost: 0
     requiresField: false
 
   - key: "ABITUR"
     parentKey: "REALSCHULABSCHLUSS"
     durationMonths: 3
+    cost: 0
     requiresField: false
 
   - key: "AUSBILDUNG"
     parentKey: "REALSCHULABSCHLUSS"
     durationMonths: 4
+    cost: 500
     requiresField: true
     fields:
+      - value: "EINZELHANDEL"
+        label: "Einzelhandelskaufmann/-frau"
       - value: "FACHINFORMATIKER"
-        label: "Fachinformatiker"
-      - value: "KAUFMANN"
-        label: "Kaufmann/-frau"
+        label: "Fachinformatiker/-in"
+      - value: "KFZTECH"
+        label: "KFZ-Mechatroniker/-in"
+      - value: "PFLEGE"
+        label: "Pflegefachkraft"
+      - value: "KOCH"
+        label: "Koch/Köchin"
       - value: "ELEKTRIKER"
         label: "Elektriker/-in"
-      - value: "ERZIEHER"
-        label: "Erzieher/-in"
 
   - key: "BACHELOR"
     parentKey: "ABITUR"
     durationMonths: 6
+    cost: 3000
     requiresField: true
     fields:
       - value: "INFORMATIK"
-        label: "Informatik"
+        label: "Informatik (B.Sc.)"
       - value: "BWL"
-        label: "Betriebswirtschaft"
+        label: "Betriebswirtschaft (B.Sc.)"
       - value: "MEDIZIN"
-        label: "Medizin"
+        label: "Medizin (Staatsexamen)"
+        durationMonths: 8
       - value: "JURA"
-        label: "Rechtswissenschaften"
+        label: "Rechtswissenschaften (1. Staatsexamen)"
+        durationMonths: 7
+      - value: "INGENIEURWESEN"
+        label: "Ingenieurwesen (B.Eng.)"
+      - value: "PSYCHOLOGIE"
+        label: "Psychologie (B.Sc.)"
 
   - key: "MASTER"
     parentKey: "BACHELOR"
     durationMonths: 4
+    cost: 5000
     requiresField: true
     fields:
       - value: "INFORMATIK"
-        label: "Informatik"
+        label: "Informatik (M.Sc.)"
       - value: "BWL"
-        label: "Betriebswirtschaft"
+        label: "Betriebswirtschaft (MBA)"
       - value: "MEDIZIN"
-        label: "Medizin"
+        label: "Medizin (Approbation)"
       - value: "JURA"
-        label: "Rechtswissenschaften"
+        label: "Rechtswissenschaften (2. Staatsexamen)"
+      - value: "INGENIEURWESEN"
+        label: "Ingenieurwesen (M.Eng.)"
 
-sideCerts:
-  - key: "SOCIAL_MEDIA"
-    label: "Social Media Marketing"
-    durationMonths: 1
+# Multi-level side certifications.
+# Each family has up to 3 levels; level N requires completion of level N-1.
+# requiresAny: OR-logic prerequisites (must have at least one).
+sideCertFamilies:
+  - family: "BARKEEPER"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_BARKEEPER_1"
+        label: "Barkeeper-Kurs (Grundlagen)"
+        durationMonths: 1
+        cost: 250
+        requiresAny: []
+      - level: 2
+        certKey: "WEITERBILDUNG_BARKEEPER_2"
+        label: "Barkeeper-Kurs (Fortgeschritten)"
+        durationMonths: 1
+        cost: 500
+        requiresAny: ["WEITERBILDUNG_BARKEEPER_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_BARKEEPER_3"
+        label: "Bar-Manager Zertifikat"
+        durationMonths: 2
+        cost: 900
+        requiresAny: ["WEITERBILDUNG_BARKEEPER_2"]
 
-  - key: "EXCEL"
-    label: "Excel-Kurs"
-    durationMonths: 1
+  - family: "FITNESSTRAINER"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_FITNESSTRAINER_1"
+        label: "Fitnesstrainer B-Lizenz"
+        durationMonths: 1
+        cost: 400
+        requiresAny: []
+      - level: 2
+        certKey: "WEITERBILDUNG_FITNESSTRAINER_2"
+        label: "Fitnesstrainer A-Lizenz"
+        durationMonths: 2
+        cost: 700
+        requiresAny: ["WEITERBILDUNG_FITNESSTRAINER_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_FITNESSTRAINER_3"
+        label: "Personal Trainer Zertifikat"
+        durationMonths: 2
+        cost: 1200
+        requiresAny: ["WEITERBILDUNG_FITNESSTRAINER_2"]
 
-  - key: "FUEHRERSCHEIN"
-    label: "Fuehrerschein"
-    durationMonths: 1
+  - family: "SOCIAL_MEDIA"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_SOCIAL_MEDIA_1"
+        label: "Social-Media-Marketing (Grundkurs)"
+        durationMonths: 1
+        cost: 300
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_SOCIAL_MEDIA_2"
+        label: "Social-Media-Marketing (Aufbaukurs)"
+        durationMonths: 2
+        cost: 600
+        requiresAny: ["WEITERBILDUNG_SOCIAL_MEDIA_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_SOCIAL_MEDIA_3"
+        label: "Social-Media-Marketing (Expertenzertifikat)"
+        durationMonths: 2
+        cost: 1100
+        requiresAny: ["WEITERBILDUNG_SOCIAL_MEDIA_2"]
 
-  - key: "CRYPTO"
-    label: "Crypto Trading Zertifikat"
-    durationMonths: 1
+  - family: "EXCEL"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_EXCEL_1"
+        label: "Excel & Datenanalyse (Grundkurs)"
+        durationMonths: 1
+        cost: 150
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_EXCEL_2"
+        label: "Excel & Power BI (Aufbaukurs)"
+        durationMonths: 1
+        cost: 350
+        requiresAny: ["WEITERBILDUNG_EXCEL_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_EXCEL_3"
+        label: "Data Analyst Zertifikat (Microsoft)"
+        durationMonths: 2
+        cost: 800
+        requiresAny: ["WEITERBILDUNG_EXCEL_2"]
+
+  - family: "FUEHRERSCHEIN"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_FUEHRERSCHEIN_1"
+        label: "Führerschein Klasse B"
+        durationMonths: 1
+        cost: 1800
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_FUEHRERSCHEIN_2"
+        label: "Führerschein Klasse BE + Anhänger"
+        durationMonths: 1
+        cost: 600
+        requiresAny: ["WEITERBILDUNG_FUEHRERSCHEIN_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_FUEHRERSCHEIN_3"
+        label: "LKW-Führerschein Klasse C+E"
+        durationMonths: 2
+        cost: 3500
+        requiresAny: ["WEITERBILDUNG_FUEHRERSCHEIN_2"]
+
+  - family: "CRYPTO"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_CRYPTO_1"
+        label: "Krypto-Trading Zertifikat (Grundlagen)"
+        durationMonths: 1
+        cost: 400
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_CRYPTO_2"
+        label: "DeFi & Blockchain Zertifikat"
+        durationMonths: 2
+        cost: 800
+        requiresAny: ["WEITERBILDUNG_CRYPTO_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_CRYPTO_3"
+        label: "Certified Crypto Analyst (CCA)"
+        durationMonths: 2
+        cost: 1500
+        requiresAny: ["WEITERBILDUNG_CRYPTO_2"]
+
+  - family: "BUCHHALTUNG"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_BUCHHALTUNG_1"
+        label: "Buchhaltung & DATEV (Grundkurs)"
+        durationMonths: 1
+        cost: 350
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_BUCHHALTUNG_2"
+        label: "Bilanzbuchhaltung (IHK)"
+        durationMonths: 2
+        cost: 700
+        requiresAny: ["WEITERBILDUNG_BUCHHALTUNG_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_BUCHHALTUNG_3"
+        label: "Bilanzbuchhalter Zertifikat"
+        durationMonths: 3
+        cost: 1400
+        requiresAny: ["WEITERBILDUNG_BUCHHALTUNG_2"]
+
+  - family: "IMMOBILIEN"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_IMMOBILIEN_1"
+        label: "Immobilien-Grundlagen (IHK)"
+        durationMonths: 1
+        cost: 600
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_IMMOBILIEN_2"
+        label: "Immobilienmakler-Lizenz"
+        durationMonths: 2
+        cost: 1200
+        requiresAny: ["WEITERBILDUNG_IMMOBILIEN_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_IMMOBILIEN_3"
+        label: "Immobilien-Investor Masterclass"
+        durationMonths: 2
+        cost: 2500
+        requiresAny: ["WEITERBILDUNG_IMMOBILIEN_2"]
+      - level: 4
+        certKey: "WEITERBILDUNG_IMMOBILIEN_4"
+        label: "Immobilien-Portfolio Manager"
+        durationMonths: 3
+        cost: 4000
+        requiresAny: ["WEITERBILDUNG_IMMOBILIEN_3", "MASTER_BWL"]
+
+  - family: "PROJEKTMANAGEMENT"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_PROJEKTMANAGEMENT_1"
+        label: "Projektmanagement Grundlagen (PMI)"
+        durationMonths: 1
+        cost: 400
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_PROJEKTMANAGEMENT_2"
+        label: "Projektmanagement (PRINCE2 Foundation)"
+        durationMonths: 2
+        cost: 800
+        requiresAny: ["WEITERBILDUNG_PROJEKTMANAGEMENT_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_PROJEKTMANAGEMENT_3"
+        label: "PMP Zertifizierung"
+        durationMonths: 2
+        cost: 1800
+        requiresAny: ["WEITERBILDUNG_PROJEKTMANAGEMENT_2", "BACHELOR_BWL", "BACHELOR_INFORMATIK"]
+
+  - family: "STEUERN"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_STEUERN_1"
+        label: "Steuerlehre Grundkurs"
+        durationMonths: 1
+        cost: 300
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_STEUERN_2"
+        label: "Steuerberater-Vorbereitung"
+        durationMonths: 2
+        cost: 600
+        requiresAny: ["WEITERBILDUNG_STEUERN_1", "BACHELOR_BWL"]
+      - level: 3
+        certKey: "WEITERBILDUNG_STEUERN_3"
+        label: "Steuerberater-Examen"
+        durationMonths: 3
+        cost: 2000
+        requiresAny: ["WEITERBILDUNG_STEUERN_2"]
+
+  - family: "HACKER"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_HACKER_1"
+        label: "IT-Security Grundlagen"
+        durationMonths: 1
+        cost: 450
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_HACKER_2"
+        label: "Ethical Hacking Zertifikat (CEH)"
+        durationMonths: 2
+        cost: 900
+        requiresAny: ["WEITERBILDUNG_HACKER_1", "BACHELOR_INFORMATIK", "AUSBILDUNG_FACHINFORMATIKER"]
+      - level: 3
+        certKey: "WEITERBILDUNG_HACKER_3"
+        label: "OSCP Penetration Testing"
+        durationMonths: 3
+        cost: 2200
+        requiresAny: ["WEITERBILDUNG_HACKER_2"]
+
+  # ── Sammler-Weiterbildungen (schalten Sammlungskategorien frei) ─────────────
+
+  - family: "OLDTIMER"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_OLDTIMER_1"
+        label: "Oldtimer-Kurs Grundlagen"
+        durationMonths: 1
+        cost: 400
+        requiresAny: ["WEITERBILDUNG_FUEHRERSCHEIN_1"]
+      - level: 2
+        certKey: "WEITERBILDUNG_OLDTIMER_2"
+        label: "Classic-Car Experte"
+        durationMonths: 2
+        cost: 900
+        requiresAny: ["WEITERBILDUNG_OLDTIMER_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_OLDTIMER_3"
+        label: "Oldtimer-Auktionator Zertifikat"
+        durationMonths: 2
+        cost: 1800
+        requiresAny: ["WEITERBILDUNG_OLDTIMER_2"]
+
+  - family: "ARCHAEOLOGIE"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_ARCHAEOLOGIE_1"
+        label: "Archäologen-Hobbykurs"
+        durationMonths: 1
+        cost: 300
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_ARCHAEOLOGIE_2"
+        label: "Antiquitäten-Experte"
+        durationMonths: 2
+        cost: 700
+        requiresAny: ["WEITERBILDUNG_ARCHAEOLOGIE_1"]
+
+  - family: "WEINKENNER"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_WEINKENNER_1"
+        label: "Weinkenner Grundkurs"
+        durationMonths: 1
+        cost: 350
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_WEINKENNER_2"
+        label: "Wine & Spirit Education (WSET)"
+        durationMonths: 2
+        cost: 800
+        requiresAny: ["WEITERBILDUNG_WEINKENNER_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_WEINKENNER_3"
+        label: "Master Sommelier"
+        durationMonths: 3
+        cost: 2000
+        requiresAny: ["WEITERBILDUNG_WEINKENNER_2"]
+
+  - family: "KUNSTKENNER"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_KUNSTKENNER_1"
+        label: "Kunstgeschichte Einführung"
+        durationMonths: 1
+        cost: 400
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_KUNSTKENNER_2"
+        label: "Kunstmarkt-Experte"
+        durationMonths: 2
+        cost: 900
+        requiresAny: ["WEITERBILDUNG_KUNSTKENNER_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_KUNSTKENNER_3"
+        label: "Art Advisor Zertifikat"
+        durationMonths: 3
+        cost: 2000
+        requiresAny: ["WEITERBILDUNG_KUNSTKENNER_2"]
+
+  - family: "UHRMACHER"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_UHRMACHER_1"
+        label: "Uhrmacher-Grundkurs"
+        durationMonths: 1
+        cost: 500
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_UHRMACHER_2"
+        label: "Zertifizierter Uhrenexperte"
+        durationMonths: 2
+        cost: 1000
+        requiresAny: ["WEITERBILDUNG_UHRMACHER_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_UHRMACHER_3"
+        label: "Horologie Diplom"
+        durationMonths: 3
+        cost: 2500
+        requiresAny: ["WEITERBILDUNG_UHRMACHER_2"]
+
+  - family: "NUMISMATIK"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_NUMISMATIK_1"
+        label: "Münzkunde Grundkurs"
+        durationMonths: 1
+        cost: 250
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_NUMISMATIK_2"
+        label: "Professioneller Numismatiker"
+        durationMonths: 2
+        cost: 600
+        requiresAny: ["WEITERBILDUNG_NUMISMATIK_1"]
+
+  - family: "PHILATELIE"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_PHILATELIE_1"
+        label: "Briefmarken-Sammler Kurs"
+        durationMonths: 1
+        cost: 200
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_PHILATELIE_2"
+        label: "Philatelie-Experte"
+        durationMonths: 2
+        cost: 500
+        requiresAny: ["WEITERBILDUNG_PHILATELIE_1"]
+
+  - family: "MINERALIEN"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_MINERALIEN_1"
+        label: "Gemmologie Grundkurs"
+        durationMonths: 1
+        cost: 450
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_MINERALIEN_2"
+        label: "Zertifizierter Gemmologe (FGA)"
+        durationMonths: 2
+        cost: 1000
+        requiresAny: ["WEITERBILDUNG_MINERALIEN_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_MINERALIEN_3"
+        label: "Diamond Grading Expert"
+        durationMonths: 2
+        cost: 2200
+        requiresAny: ["WEITERBILDUNG_MINERALIEN_2"]
+
+  - family: "SPORTSAMMLER"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_SPORTSAMMLER_1"
+        label: "Sport-Memorabilia Grundkurs"
+        durationMonths: 1
+        cost: 200
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_SPORTSAMMLER_2"
+        label: "Sportartefakt-Authentifizierer"
+        durationMonths: 2
+        cost: 500
+        requiresAny: ["WEITERBILDUNG_SPORTSAMMLER_1"]
+
+  - family: "WHISKY"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_WHISKY_1"
+        label: "Whisky & Spirituosen Grundkurs"
+        durationMonths: 1
+        cost: 350
+        requiresAny: ["REALSCHULABSCHLUSS"]
+      - level: 2
+        certKey: "WEITERBILDUNG_WHISKY_2"
+        label: "Master Distiller Zertifikat"
+        durationMonths: 2
+        cost: 900
+        requiresAny: ["WEITERBILDUNG_WHISKY_1"]

@@ -26,10 +26,44 @@ public class GameDataLoaderService implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
+        int collections = loadCollections();
         int jobs = loadJobs();
         int collectibles = loadCollectibles();
         int properties = loadRealEstate();
-        log.info("DataLoader: {} Jobs, {} Collectibles, {} Immobilien geladen", jobs, collectibles, properties);
+        log.info("DataLoader: {} Collections, {} Jobs, {} Collectibles, {} Immobilien geladen",
+            collections, jobs, collectibles, properties);
+    }
+
+    @SuppressWarnings("unchecked")
+    private int loadCollections() {
+        InputStream is = getClass().getResourceAsStream("/data/collections.yaml");
+        if (is == null) { log.warn("collections.yaml nicht gefunden"); return 0; }
+
+        Yaml yaml = new Yaml();
+        Map<String, Object> data = yaml.load(is);
+        List<Map<String, Object>> collections = (List<Map<String, Object>>) data.get("collections");
+        if (collections == null) return 0;
+
+        for (Map<String, Object> col : collections) {
+            em.createNativeQuery("""
+                INSERT INTO collections (name, display_name, bonus_type, bonus_value, item_count, required_cert)
+                VALUES (:name, :displayName, :bonusType, :bonusValue, :itemCount, :requiredCert)
+                ON CONFLICT (name) DO UPDATE SET
+                    display_name  = EXCLUDED.display_name,
+                    bonus_type    = EXCLUDED.bonus_type,
+                    bonus_value   = EXCLUDED.bonus_value,
+                    item_count    = EXCLUDED.item_count,
+                    required_cert = EXCLUDED.required_cert
+                """)
+                .setParameter("name", col.get("name"))
+                .setParameter("displayName", col.get("displayName"))
+                .setParameter("bonusType", col.get("bonusType"))
+                .setParameter("bonusValue", toDouble(col.get("bonusValue")))
+                .setParameter("itemCount", toInt(col.get("itemCount")))
+                .setParameter("requiredCert", col.get("requiredCert"))
+                .executeUpdate();
+        }
+        return collections.size();
     }
 
     @SuppressWarnings("unchecked")
@@ -48,10 +82,19 @@ public class GameDataLoaderService implements ApplicationRunner {
             double salary = toDouble(job.get("salary"));
             int stressPerMonth = toInt(job.get("stressPerMonth"));
             int requiredMonthsExperience = toInt(job.get("requiredMonthsExperience"));
-            String requiredEducationType = (String) job.get("requiredEducationType");
-            String requiredEducationField = (String) job.get("requiredEducationField");
+            String category = (String) job.getOrDefault("category", "EINSTIEG");
+            int maxParallel = toInt(job.getOrDefault("maxParallel", 1));
+            String requiredSideCert = (String) job.get("requiredSideCert");
 
-            // Build JSON for OR-logic requirements if present
+            // requiredStageKey stores the full completed-stage key (e.g. "AUSBILDUNG_EINZELHANDEL")
+            // directly in required_education_type with no required_education_field.
+            String requiredStageKey = (String) job.get("requiredStageKey");
+            String requiredEducationType = requiredStageKey != null ? requiredStageKey
+                : (String) job.get("requiredEducationType");
+            String requiredEducationField = requiredStageKey != null ? null
+                : (String) job.get("requiredEducationField");
+
+            // Build JSON for OR-logic requirements if present (legacy, not used in new catalog)
             List<Map<String, Object>> eduReqs = (List<Map<String, Object>>) job.get("educationRequirements");
             String eduReqJson = null;
             if (eduReqs != null && !eduReqs.isEmpty()) {
@@ -66,7 +109,6 @@ public class GameDataLoaderService implements ApplicationRunner {
                 }
                 sb.append("]");
                 eduReqJson = sb.toString();
-                // Use the first requirement as the legacy single-requirement fields if not set
                 if (requiredEducationType == null && !eduReqs.isEmpty()) {
                     requiredEducationType = (String) eduReqs.get(0).get("type");
                     requiredEducationField = (String) eduReqs.get(0).get("field");
@@ -75,14 +117,22 @@ public class GameDataLoaderService implements ApplicationRunner {
 
             em.createNativeQuery("""
                 INSERT INTO jobs (name, description, required_education_type, required_education_field,
-                    required_months_experience, salary, stress_per_month, education_requirements_json)
-                VALUES (:name, :desc, :eduType, :eduField, :expMonths, :salary, :stress, :eduJson::jsonb)
+                    required_months_experience, salary, stress_per_month, education_requirements_json,
+                    category, max_parallel, required_side_cert, available)
+                VALUES (:name, :desc, :eduType, :eduField, :expMonths, :salary, :stress, CAST(:eduJson AS jsonb),
+                    :category, :maxParallel, :sideCert, true)
                 ON CONFLICT (name) DO UPDATE SET
-                    description = EXCLUDED.description,
-                    salary = EXCLUDED.salary,
-                    stress_per_month = EXCLUDED.stress_per_month,
+                    description             = EXCLUDED.description,
+                    salary                  = EXCLUDED.salary,
+                    stress_per_month        = EXCLUDED.stress_per_month,
+                    required_education_type = EXCLUDED.required_education_type,
+                    required_education_field= EXCLUDED.required_education_field,
                     required_months_experience = EXCLUDED.required_months_experience,
-                    education_requirements_json = EXCLUDED.education_requirements_json
+                    education_requirements_json = EXCLUDED.education_requirements_json,
+                    category                = EXCLUDED.category,
+                    max_parallel            = EXCLUDED.max_parallel,
+                    required_side_cert      = EXCLUDED.required_side_cert,
+                    available               = true
                 """)
                 .setParameter("name", name)
                 .setParameter("desc", description)
@@ -92,6 +142,9 @@ public class GameDataLoaderService implements ApplicationRunner {
                 .setParameter("salary", salary)
                 .setParameter("stress", stressPerMonth)
                 .setParameter("eduJson", eduReqJson)
+                .setParameter("category", category)
+                .setParameter("maxParallel", maxParallel)
+                .setParameter("sideCert", requiredSideCert)
                 .executeUpdate();
         }
         return jobs.size();
@@ -109,14 +162,17 @@ public class GameDataLoaderService implements ApplicationRunner {
 
         for (Map<String, Object> item : items) {
             em.createNativeQuery("""
-                INSERT INTO collectibles (name, collection_type, country_required, rarity, base_value, description)
-                VALUES (:name, :type, :country, :rarity, :value, :desc)
+                INSERT INTO collectibles (name, collection_type, country_required, rarity, base_value, description,
+                    collection_name, price)
+                VALUES (:name, :type, :country, :rarity, :value, :desc, :colName, :price)
                 ON CONFLICT (name) DO UPDATE SET
-                    collection_type = EXCLUDED.collection_type,
+                    collection_type  = EXCLUDED.collection_type,
                     country_required = EXCLUDED.country_required,
-                    rarity = EXCLUDED.rarity,
-                    base_value = EXCLUDED.base_value,
-                    description = EXCLUDED.description
+                    rarity           = EXCLUDED.rarity,
+                    base_value       = EXCLUDED.base_value,
+                    description      = EXCLUDED.description,
+                    collection_name  = EXCLUDED.collection_name,
+                    price            = EXCLUDED.price
                 """)
                 .setParameter("name", item.get("name"))
                 .setParameter("type", item.get("collectionType"))
@@ -124,6 +180,8 @@ public class GameDataLoaderService implements ApplicationRunner {
                 .setParameter("rarity", item.get("rarity"))
                 .setParameter("value", toDouble(item.get("baseValue")))
                 .setParameter("desc", item.get("description"))
+                .setParameter("colName", item.get("collectionName"))
+                .setParameter("price", toDouble(item.get("price")))
                 .executeUpdate();
         }
         return items.size();
@@ -142,15 +200,16 @@ public class GameDataLoaderService implements ApplicationRunner {
         for (Map<String, Object> prop : properties) {
             em.createNativeQuery("""
                 INSERT INTO real_estate_catalog (name, location, category, description,
-                    purchase_price, monthly_rent, rent_savings)
-                VALUES (:name, :location, :category, :desc, :price, :rent, :savings)
+                    purchase_price, monthly_rent, rent_savings, required_cert)
+                VALUES (:name, :location, :category, :desc, :price, :rent, :savings, :requiredCert)
                 ON CONFLICT (name) DO UPDATE SET
-                    location = EXCLUDED.location,
-                    category = EXCLUDED.category,
-                    description = EXCLUDED.description,
-                    purchase_price = EXCLUDED.purchase_price,
-                    monthly_rent = EXCLUDED.monthly_rent,
-                    rent_savings = EXCLUDED.rent_savings
+                    location      = EXCLUDED.location,
+                    category      = EXCLUDED.category,
+                    description   = EXCLUDED.description,
+                    purchase_price= EXCLUDED.purchase_price,
+                    monthly_rent  = EXCLUDED.monthly_rent,
+                    rent_savings  = EXCLUDED.rent_savings,
+                    required_cert = EXCLUDED.required_cert
                 """)
                 .setParameter("name", prop.get("name"))
                 .setParameter("location", prop.get("location"))
@@ -159,6 +218,7 @@ public class GameDataLoaderService implements ApplicationRunner {
                 .setParameter("price", toDouble(prop.get("purchasePrice")))
                 .setParameter("rent", toDouble(prop.get("monthlyRent")))
                 .setParameter("savings", toDouble(prop.get("rentSavings")))
+                .setParameter("requiredCert", prop.get("requiredCert"))
                 .executeUpdate();
         }
         return properties.size();

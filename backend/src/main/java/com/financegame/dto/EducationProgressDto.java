@@ -14,21 +14,33 @@ public record EducationProgressDto(
     List<AvailableStageDto> availableMainStages,
     List<SideCertDto> availableSideCerts
 ) {
-    /** A stage the player can enroll in right now */
+    /** A stage the player can enroll in right now. */
     public record AvailableStageDto(
         String stageKey,
         String label,
+        /** Default duration for this stage; fields may have individual overrides via fieldOptions. */
         int durationMonths,
         boolean requiresField,
-        List<FieldOption> fieldOptions
+        List<FieldOption> fieldOptions,
+        /** Enrollment cost in € (deducted on enroll). */
+        int cost
     ) {}
 
-    public record FieldOption(String value, String label) {}
+    /** A field option within a stage that requires a field selection. */
+    public record FieldOption(
+        String value,
+        String label,
+        /** Effective duration for this specific field (may differ from stage default). */
+        int durationMonths
+    ) {}
 
+    /** A side certification the player can start right now. */
     public record SideCertDto(
         String certKey,
         String label,
-        int durationMonths
+        int durationMonths,
+        /** Enrollment cost in € (deducted on enroll). */
+        int cost
     ) {}
 
     public static EducationProgressDto from(EducationProgress ep,

@@ -22,6 +22,6 @@ public class StockController {
 
     @GetMapping
     public List<StockDto> getAllStocks(@AuthenticationPrincipal PlayerPrincipal principal) {
-        return stockService.getAllStocks();
+        return stockService.getAllStocks(principal.id());
     }
 }

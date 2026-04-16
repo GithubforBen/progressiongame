@@ -65,7 +65,7 @@
     <div class="card">
       <div class="flex items-center gap-3 mb-4">
         <h3 class="text-base font-semibold text-white flex-1">Börse</h3>
-        <div class="flex gap-1">
+        <div class="flex gap-1 flex-wrap">
           <button
             v-for="f in typeFilters"
             :key="f.value"
@@ -85,38 +85,42 @@
         <div
           v-for="stock in filteredStocks"
           :key="stock.id"
-          class="rounded-lg border transition-colors cursor-pointer"
-          :class="selectedStock?.id === stock.id
-            ? 'border-accent/50 bg-accent/5'
-            : 'border-white/5 bg-white/3 hover:bg-white/5'"
-          @click="selectStock(stock)"
+          class="rounded-lg border transition-colors"
+          :class="stock.locked
+            ? 'border-white/5 bg-surface-800/50 opacity-60 cursor-not-allowed'
+            : selectedStock?.id === stock.id
+            ? 'border-accent/50 bg-accent/5 cursor-pointer'
+            : 'border-white/5 bg-white/3 hover:bg-white/5 cursor-pointer'"
+          @click="!stock.locked && selectStock(stock)"
+          @dblclick="stock.locked && goToUnlock(stock.requiredCert)"
+          :title="stock.locked ? 'Doppelklick – Ausbildung ansehen' : ''"
         >
           <div class="flex items-center gap-3 p-3">
             <!-- Ticker badge -->
             <div class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
-                 :class="stock.type === 'MEME' ? 'bg-purple-500/20' : 'bg-blue-500/20'">
-              <span class="text-xs font-bold"
-                    :class="stock.type === 'MEME' ? 'text-purple-300' : 'text-blue-300'">
+                 :class="stock.locked ? 'bg-surface-700' : stockTypeColor(stock.type).split(' ')[0]">
+              <span v-if="stock.locked" class="text-lg">🔒</span>
+              <span v-else class="text-xs font-bold" :class="stockTypeColor(stock.type).split(' ')[1]">
                 {{ stock.ticker }}
               </span>
             </div>
             <!-- Info -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
-                <p class="text-white font-medium text-sm">{{ stock.name }}</p>
-                <span class="text-xs px-1.5 py-0.5 rounded"
-                      :class="stock.type === 'MEME'
-                        ? 'bg-purple-500/20 text-purple-300'
-                        : 'bg-blue-500/20 text-blue-300'">
-                  {{ stock.type === 'MEME' ? 'Meme' : 'Normal' }}
+                <p class="font-medium text-sm" :class="stock.locked ? 'text-gray-500' : 'text-white'">{{ stock.name }}</p>
+                <span class="text-xs px-1.5 py-0.5 rounded" :class="stock.locked ? 'bg-surface-700 text-gray-600' : stockTypeColor(stock.type)">
+                  {{ stockTypeLabel(stock.type) }}
                 </span>
               </div>
-              <p class="text-gray-400 text-xs">Klicken für Preischart</p>
+              <p v-if="stock.locked" class="text-gray-600 text-xs">
+                Benötigt: {{ certLabel(stock.requiredCert) }} · Doppelklick für Ausbildung
+              </p>
+              <p v-else class="text-gray-500 text-xs">Klicken für Preischart</p>
             </div>
             <!-- Price -->
             <div class="text-right flex-shrink-0">
-              <p class="text-white font-semibold">{{ formatCurrency(stock.currentPrice) }}</p>
-              <p v-if="stock.priceChangePct !== null" class="text-xs font-medium"
+              <p class="font-semibold" :class="stock.locked ? 'text-gray-600' : 'text-white'">{{ formatCurrency(stock.currentPrice) }}</p>
+              <p v-if="!stock.locked && stock.priceChangePct !== null" class="text-xs font-medium"
                  :class="stock.priceChangePct >= 0 ? 'text-green-400' : 'text-red-400'">
                 {{ stock.priceChangePct >= 0 ? '▲' : '▼' }}
                 {{ Math.abs(stock.priceChangePct) }}%
@@ -124,8 +128,8 @@
             </div>
           </div>
 
-          <!-- Expanded: Chart + Buy form -->
-          <div v-if="selectedStock?.id === stock.id" class="border-t border-white/5 p-3 space-y-3">
+          <!-- Expanded: Chart + Buy form (only for unlocked) -->
+          <div v-if="!stock.locked && selectedStock?.id === stock.id" class="border-t border-white/5 p-3 space-y-3">
             <!-- Mini price chart -->
             <div v-if="stock.history.length >= 2" class="h-32">
               <ClientOnly>
@@ -187,12 +191,14 @@ definePageMeta({ layout: 'default' })
 const api = useApi()
 const toast = useToastStore()
 const gameStore = useGameStore()
-const { formatCurrency } = useFormatting()
+const { formatCurrency, certLabel } = useFormatting()
+const router = useRouter()
 
 interface PricePoint { price: number; turn: number }
 interface Stock {
   id: number; name: string; ticker: string; type: string
   currentPrice: number; priceChangePct: number | null; history: PricePoint[]
+  requiredCert: string | null; locked: boolean
 }
 interface Investment {
   id: number; type: string; name: string; stockId: number | null
@@ -213,14 +219,47 @@ const sellLoading = ref<number | null>(null)
 
 const typeFilter = ref('ALL')
 const typeFilters = [
-  { value: 'ALL', label: 'Alle' },
-  { value: 'NORMAL', label: 'Normal' },
-  { value: 'MEME', label: 'Meme' },
+  { value: 'ALL',           label: 'Alle' },
+  { value: 'NORMAL',        label: 'Normal' },
+  { value: 'MEME',          label: 'Meme' },
+  { value: 'ETF',           label: 'ETF' },
+  { value: 'DIVIDEND_STOCK',label: 'Dividende' },
+  { value: 'BOND',          label: 'Anleihe' },
+  { value: 'REIT',          label: 'REIT' },
+  { value: 'CRYPTO',        label: 'Krypto' },
+  { value: 'LEVERAGE',      label: 'Hebel' },
+  { value: 'SHORT',         label: 'Short' },
 ]
 
 const filteredStocks = computed(() =>
   typeFilter.value === 'ALL' ? stocks.value : stocks.value.filter(s => s.type === typeFilter.value)
 )
+
+function stockTypeLabel(type: string): string {
+  const map: Record<string, string> = {
+    NORMAL: 'Normal', MEME: 'Meme', ETF: 'ETF', DIVIDEND_STOCK: 'Dividende',
+    BOND: 'Anleihe', REIT: 'REIT', CRYPTO: 'Krypto',
+    LEVERAGE: 'Hebel', WARRANT: 'Optionsschein', SHORT: 'Short', FUTURES: 'Futures',
+  }
+  return map[type] ?? type
+}
+
+function stockTypeColor(type: string): string {
+  const map: Record<string, string> = {
+    NORMAL: 'bg-blue-500/20 text-blue-300',
+    MEME: 'bg-purple-500/20 text-purple-300',
+    ETF: 'bg-green-500/20 text-green-300',
+    DIVIDEND_STOCK: 'bg-emerald-500/20 text-emerald-300',
+    BOND: 'bg-sky-500/20 text-sky-300',
+    REIT: 'bg-teal-500/20 text-teal-300',
+    CRYPTO: 'bg-orange-500/20 text-orange-300',
+    LEVERAGE: 'bg-red-500/20 text-red-300',
+    WARRANT: 'bg-pink-500/20 text-pink-300',
+    SHORT: 'bg-rose-500/20 text-rose-300',
+    FUTURES: 'bg-yellow-500/20 text-yellow-300',
+  }
+  return map[type] ?? 'bg-gray-500/20 text-gray-300'
+}
 
 const totalInvested = computed(() =>
   portfolio.value.reduce((s, i) => s + i.amountInvested, 0)
@@ -260,6 +299,10 @@ function selectStock(stock: Stock) {
   buyError.value = ''
 }
 
+function goToUnlock(cert: string | null) {
+  if (cert) router.push(`/ausbildung?highlight=${cert}`)
+}
+
 async function loadStocks() {
   stocksLoading.value = true
   try {
@@ -297,7 +340,6 @@ async function buyStock(stock: Stock) {
     portfolio.value.push(inv)
     toast.success(`${buyQuantity.value}x ${stock.ticker} gekauft!`)
     buyQuantity.value = 1
-    // Refresh cash display
     await gameStore.fetchCharacter()
   } catch (e: any) {
     buyError.value = e?.data?.message ?? 'Kauf fehlgeschlagen'

@@ -14,11 +14,13 @@ public record StockDto(
     String type,
     BigDecimal currentPrice,
     BigDecimal priceChangePct,   // vs. last turn, null if no history
-    List<PricePointDto> history
+    List<PricePointDto> history,
+    String requiredCert,
+    boolean locked
 ) {
     public record PricePointDto(BigDecimal price, int turn) {}
 
-    public static StockDto from(Stock stock, List<StockPriceHistory> history) {
+    public static StockDto from(Stock stock, List<StockPriceHistory> history, List<String> completedStages) {
         List<PricePointDto> points = history.stream()
             .map(h -> new PricePointDto(h.getPrice(), h.getTurn()))
             .toList();
@@ -35,6 +37,9 @@ public record StockDto(
             }
         }
 
+        String req = stock.getRequiredCert();
+        boolean locked = req != null && !completedStages.contains(req);
+
         return new StockDto(
             stock.getId(),
             stock.getName(),
@@ -42,7 +47,9 @@ public record StockDto(
             stock.getType(),
             stock.getCurrentPrice(),
             changePct,
-            points
+            points,
+            req,
+            locked
         );
     }
 }

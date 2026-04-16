@@ -29,6 +29,12 @@ public class Collectible {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "collection_name", length = 100)
+    private String collectionName;
+
+    @Column(name = "price", nullable = false, precision = 15, scale = 2)
+    private BigDecimal price = BigDecimal.ZERO;
+
     public Long getId() { return id; }
     public String getName() { return name; }
     public String getCollectionType() { return collectionType; }
@@ -36,4 +42,6 @@ public class Collectible {
     public String getRarity() { return rarity; }
     public BigDecimal getBaseValue() { return baseValue; }
     public String getDescription() { return description; }
+    public String getCollectionName() { return collectionName; }
+    public BigDecimal getPrice() { return price; }
 }

@@ -6,6 +6,7 @@ import com.financegame.dto.RealEstateDto;
 import com.financegame.entity.GameCharacter;
 import com.financegame.entity.PlayerRealEstate;
 import com.financegame.entity.RealEstateCatalog;
+import com.financegame.repository.EducationProgressRepository;
 import com.financegame.repository.PlayerRealEstateRepository;
 import com.financegame.repository.RealEstateCatalogRepository;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,22 +25,26 @@ public class RealEstateService {
     private final RealEstateCatalogRepository catalogRepository;
     private final PlayerRealEstateRepository playerRealEstateRepository;
     private final CharacterService characterService;
+    private final EducationProgressRepository educationProgressRepository;
 
     public RealEstateService(RealEstateCatalogRepository catalogRepository,
                               PlayerRealEstateRepository playerRealEstateRepository,
-                              CharacterService characterService) {
+                              CharacterService characterService,
+                              EducationProgressRepository educationProgressRepository) {
         this.catalogRepository = catalogRepository;
         this.playerRealEstateRepository = playerRealEstateRepository;
         this.characterService = characterService;
+        this.educationProgressRepository = educationProgressRepository;
     }
 
     @Transactional(readOnly = true)
     public List<RealEstateDto> getCatalog(Long playerId) {
+        List<String> completedStages = getCompletedStages(playerId);
         Set<Long> ownedCatalogIds = playerRealEstateRepository.findByPlayerId(playerId)
             .stream().map(pre -> pre.getCatalog().getId()).collect(Collectors.toSet());
 
         return catalogRepository.findAll().stream()
-            .map(c -> RealEstateDto.from(c, ownedCatalogIds.contains(c.getId())))
+            .map(c -> RealEstateDto.from(c, ownedCatalogIds.contains(c.getId()), completedStages))
             .toList();
     }
 
@@ -57,6 +63,16 @@ public class RealEstateService {
             .stream().anyMatch(pre -> pre.getCatalog().getId().equals(catalogId));
         if (alreadyOwned) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Du besitzt diese Immobilie bereits");
+        }
+
+        // Cert-based access check
+        String requiredCert = catalog.getRequiredCert();
+        if (requiredCert != null) {
+            List<String> completedStages = getCompletedStages(playerId);
+            if (!completedStages.contains(requiredCert)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Weiterbildung erforderlich: " + requiredCert);
+            }
         }
 
         GameCharacter character = characterService.findOrThrow(playerId);
@@ -92,5 +108,11 @@ public class RealEstateService {
         pre.setMode(mode);
         playerRealEstateRepository.save(pre);
         return PlayerRealEstateDto.from(pre);
+    }
+
+    private List<String> getCompletedStages(Long playerId) {
+        return educationProgressRepository.findByPlayerId(playerId)
+            .map(ep -> Arrays.asList(ep.getCompletedStages()))
+            .orElse(List.of());
     }
 }

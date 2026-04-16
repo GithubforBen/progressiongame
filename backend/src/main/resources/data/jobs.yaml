@@ -1,99 +1,386 @@
 jobs:
-  - name: "Zeitungsaustraeger"
-    description: "Morgens Zeitungen austragen"
-    salary: 450.00
+
+  # ── EINSTIEG ────────────────────────────────────────────────────────────────
+
+  - name: "Zeitungsausträger"
+    category: "EINSTIEG"
+    description: "Jeden Morgen früh aufstehen und Zeitungen in der Nachbarschaft verteilen."
+    salary: 320.00
     stressPerMonth: 10
-    requiredMonthsExperience: 0
+    maxParallel: 2
 
   - name: "Supermarkt-Kassierer"
-    description: "An der Kasse im Supermarkt arbeiten"
-    salary: 1200.00
-    stressPerMonth: 15
-    requiredMonthsExperience: 0
-
-  - name: "Lagerarbeiter"
-    description: "Waren ein- und auslagern"
+    category: "EINSTIEG"
+    description: "Kunden an der Kasse freundlich bedienen und Waren scannen."
     salary: 1400.00
     stressPerMonth: 20
-    requiredMonthsExperience: 0
 
-  - name: "Buerokaufmann/-frau"
-    description: "Administrative Taetigkeiten im Buero"
-    salary: 2200.00
-    stressPerMonth: 15
-    requiredMonthsExperience: 0
-    requiredEducationType: "REALSCHULABSCHLUSS"
-
-  - name: "Social Media Manager"
-    description: "Social-Media-Kanaele betreuen"
-    salary: 2800.00
-    stressPerMonth: 20
-    requiredMonthsExperience: 0
-    requiredEducationType: "WEITERBILDUNG"
-    requiredEducationField: "SOCIAL_MEDIA"
-
-  - name: "IT-Support"
-    description: "Technischen Support leisten"
-    salary: 3200.00
-    stressPerMonth: 20
-    requiredMonthsExperience: 0
-    requiredEducationType: "AUSBILDUNG"
-    requiredEducationField: "FACHINFORMATIKER"
-
-  - name: "Software Engineer"
-    description: "Software entwickeln"
-    salary: 5500.00
-    stressPerMonth: 25
-    requiredMonthsExperience: 0
-    educationRequirements:
-      - type: "BACHELOR"
-        field: "INFORMATIK"
-      - type: "AUSBILDUNG"
-        field: "FACHINFORMATIKER"
-        minExperience: 36
-
-  - name: "Arzt/Aerztin"
-    description: "Patienten behandeln"
-    salary: 7000.00
+  - name: "Lagerhelfer"
+    category: "EINSTIEG"
+    description: "Waren annehmen, einlagern und für den Versand vorbereiten."
+    salary: 1600.00
     stressPerMonth: 35
-    requiredMonthsExperience: 0
-    requiredEducationType: "STUDIUM"
-    requiredEducationField: "MEDIZIN"
 
-  - name: "Manager"
-    description: "Abteilung leiten"
-    salary: 6000.00
+  - name: "Reinigungskraft"
+    category: "EINSTIEG"
+    description: "Büros, Treppenhäuser und öffentliche Bereiche sauber halten."
+    salary: 1200.00
+    stressPerMonth: 15
+
+  - name: "Pizzabote"
+    category: "EINSTIEG"
+    description: "Bestellungen schnell und freundlich an die Haustür liefern."
+    salary: 1100.00
+    stressPerMonth: 20
+    requiredSideCert: "WEITERBILDUNG_FUEHRERSCHEIN_1"
+
+  - name: "Kellner"
+    category: "EINSTIEG"
+    description: "Gäste im Restaurant bedienen und für ein angenehmes Erlebnis sorgen."
+    salary: 1300.00
+    stressPerMonth: 30
+
+  - name: "Barkeeper"
+    category: "EINSTIEG"
+    description: "Cocktails mixen und Gäste an der Bar unterhalten."
+    salary: 1500.00
+    stressPerMonth: 25
+    requiredSideCert: "WEITERBILDUNG_BARKEEPER_1"
+
+  - name: "Babysitter"
+    category: "EINSTIEG"
+    description: "Kinder betreuen und für ihre Sicherheit sorgen."
+    salary: 600.00
+    stressPerMonth: 10
+    maxParallel: 2
+
+  - name: "Nachhilfelehrer"
+    category: "EINSTIEG"
+    description: "Schülerinnen und Schüler in Unterrichtsfächern unterstützen."
+    salary: 700.00
+    stressPerMonth: 10
+    maxParallel: 2
+
+  - name: "Fitnessstudio-Mitarbeiter"
+    category: "EINSTIEG"
+    description: "Mitglieder betreuen, Geräte warten und den Betrieb am Laufen halten."
+    salary: 1400.00
+    stressPerMonth: 15
+
+  - name: "Personal Trainer"
+    category: "EINSTIEG"
+    description: "Individuelle Trainingspläne erstellen und Kunden beim Sport begleiten."
+    salary: 2200.00
+    stressPerMonth: 20
+    requiredSideCert: "WEITERBILDUNG_FITNESSTRAINER_1"
+
+  # ── HANDWERK ─────────────────────────────────────────────────────────────────
+
+  - name: "Verkäufer im Einzelhandel"
+    category: "HANDWERK"
+    description: "Kunden kompetent beraten und die Filiale ordentlich halten."
+    salary: 1900.00
+    stressPerMonth: 20
+    requiredStageKey: "AUSBILDUNG_EINZELHANDEL"
+
+  - name: "Filialleiter-Assistent"
+    category: "HANDWERK"
+    description: "Den Filialleiter bei Organisation und Personalplanung unterstützen."
+    salary: 2400.00
+    stressPerMonth: 35
+    requiredStageKey: "AUSBILDUNG_EINZELHANDEL"
+    requiredMonthsExperience: 6
+
+  - name: "KFZ-Mechatroniker"
+    category: "HANDWERK"
+    description: "Fahrzeuge diagnostizieren, reparieren und warten."
+    salary: 2600.00
     stressPerMonth: 40
-    requiredMonthsExperience: 24
-    educationRequirements:
-      - type: "BACHELOR"
-        field: "BWL"
-      - type: "MASTER"
-        field: "BWL"
+    requiredStageKey: "AUSBILDUNG_KFZTECH"
+
+  - name: "KFZ-Meister"
+    category: "HANDWERK"
+    description: "Werkstatt leiten, Nachwuchs ausbilden und Qualität sichern."
+    salary: 3800.00
+    stressPerMonth: 45
+    requiredStageKey: "AUSBILDUNG_KFZTECH"
+    requiredMonthsExperience: 12
+
+  - name: "Koch"
+    category: "HANDWERK"
+    description: "Täglich frische Gerichte zubereiten und die Qualität auf dem Teller garantieren."
+    salary: 2100.00
+    stressPerMonth: 55
+    requiredStageKey: "AUSBILDUNG_KOCH"
+
+  - name: "Küchenchef"
+    category: "HANDWERK"
+    description: "Das Küchenteam führen, Menüs konzipieren und Spitzenqualität liefern."
+    salary: 3500.00
+    stressPerMonth: 70
+    requiredStageKey: "AUSBILDUNG_KOCH"
+    requiredMonthsExperience: 12
 
   - name: "Elektriker"
-    description: "Elektrische Anlagen installieren und warten"
-    salary: 3000.00
-    stressPerMonth: 22
-    requiredMonthsExperience: 0
-    requiredEducationType: "AUSBILDUNG"
-    requiredEducationField: "ELEKTRIKER"
+    category: "HANDWERK"
+    description: "Elektrische Anlagen installieren, prüfen und instand halten."
+    salary: 2800.00
+    stressPerMonth: 40
+    requiredStageKey: "AUSBILDUNG_ELEKTRIKER"
 
-  - name: "Erzieher/-in"
-    description: "Kinder betreuen und foerdern"
+  - name: "Elektromeister"
+    category: "HANDWERK"
+    description: "Großprojekte eigenverantwortlich leiten und Auszubildende betreuen."
+    salary: 4200.00
+    stressPerMonth: 45
+    requiredStageKey: "AUSBILDUNG_ELEKTRIKER"
+    requiredMonthsExperience: 12
+
+  - name: "Pflegefachkraft"
+    category: "HANDWERK"
+    description: "Patienten versorgen, pflegen und ihnen im Alltag zur Seite stehen."
+    salary: 2500.00
+    stressPerMonth: 60
+    requiredStageKey: "AUSBILDUNG_PFLEGE"
+
+  - name: "Stationsleitung"
+    category: "HANDWERK"
+    description: "Das Pflegeteam koordinieren und die Versorgungsqualität sichern."
+    salary: 3600.00
+    stressPerMonth: 70
+    requiredStageKey: "AUSBILDUNG_PFLEGE"
+    requiredMonthsExperience: 12
+
+  - name: "IT-Support"
+    category: "HANDWERK"
+    description: "Anwender bei technischen Problemen helfen und Systeme am Laufen halten."
+    salary: 2400.00
+    stressPerMonth: 25
+    requiredStageKey: "AUSBILDUNG_FACHINFORMATIKER"
+
+  - name: "Systemadministrator"
+    category: "HANDWERK"
+    description: "Server, Netzwerke und IT-Infrastruktur betreiben und absichern."
+    salary: 3200.00
+    stressPerMonth: 35
+    requiredStageKey: "AUSBILDUNG_FACHINFORMATIKER"
+    requiredMonthsExperience: 6
+
+  # ── BÜRO ─────────────────────────────────────────────────────────────────────
+
+  - name: "Bürokaufmann"
+    category: "BUERO"
+    description: "Administrative Aufgaben erledigen und den reibungslosen Bürobetrieb sichern."
+    salary: 2100.00
+    stressPerMonth: 20
+    requiredStageKey: "REALSCHULABSCHLUSS"
+
+  - name: "Buchhalter"
+    category: "BUERO"
+    description: "Einnahmen und Ausgaben buchen sowie Monatsabschlüsse erstellen."
+    salary: 2800.00
+    stressPerMonth: 25
+    requiredSideCert: "WEITERBILDUNG_BUCHHALTUNG_1"
+
+  - name: "Social-Media-Manager"
+    category: "BUERO"
+    description: "Kanäle bespielen, Kampagnen planen und die Reichweite steigern."
     salary: 2600.00
-    stressPerMonth: 18
-    requiredMonthsExperience: 0
-    requiredEducationType: "AUSBILDUNG"
-    requiredEducationField: "ERZIEHER"
+    stressPerMonth: 25
+    requiredSideCert: "WEITERBILDUNG_SOCIAL_MEDIA_1"
+
+  - name: "Content Creator"
+    category: "BUERO"
+    description: "Kreative Texte, Bilder und Videos für Online-Plattformen produzieren."
+    salary: 1800.00
+    stressPerMonth: 15
+    requiredSideCert: "WEITERBILDUNG_SOCIAL_MEDIA_1"
+
+  - name: "Immobilienmakler"
+    category: "BUERO"
+    description: "Immobilien vermarkten, Besichtigungen durchführen und Verträge vermitteln."
+    salary: 3200.00
+    stressPerMonth: 30
+    requiredSideCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  - name: "Steuerfachangestellter"
+    category: "BUERO"
+    description: "Steuererklärungen vorbereiten und Mandanten in steuerlichen Fragen beraten."
+    salary: 2900.00
+    stressPerMonth: 30
+    requiredSideCert: "WEITERBILDUNG_STEUERN_1"
+
+  # ── TECH ─────────────────────────────────────────────────────────────────────
+
+  - name: "Junior Developer"
+    category: "TECH"
+    description: "Erste eigene Features implementieren und von erfahrenen Kollegen lernen."
+    salary: 3800.00
+    stressPerMonth: 30
+    requiredStageKey: "BACHELOR_INFORMATIK"
+
+  - name: "Software Engineer"
+    category: "TECH"
+    description: "Komplexe Systeme entwerfen, entwickeln und im Team ausliefern."
+    salary: 5200.00
+    stressPerMonth: 40
+    requiredStageKey: "BACHELOR_INFORMATIK"
+    requiredMonthsExperience: 6
+
+  - name: "Senior Developer"
+    category: "TECH"
+    description: "Architekturentscheidungen treffen und das Team technisch führen."
+    salary: 7500.00
+    stressPerMonth: 45
+    requiredStageKey: "BACHELOR_INFORMATIK"
+    requiredMonthsExperience: 18
+
+  - name: "Cybersecurity Analyst"
+    category: "TECH"
+    description: "Systeme auf Schwachstellen prüfen und Sicherheitsvorfälle abwehren."
+    salary: 5800.00
+    stressPerMonth: 35
+    requiredSideCert: "WEITERBILDUNG_HACKER_1"
+
+  - name: "Data Scientist"
+    category: "TECH"
+    description: "Daten analysieren, Modelle entwickeln und Erkenntnisse visualisieren."
+    salary: 6200.00
+    stressPerMonth: 40
+    requiredStageKey: "BACHELOR_INFORMATIK"
+
+  - name: "IT-Projektleiter"
+    category: "TECH"
+    description: "Softwareprojekte von der Anforderung bis zum Go-Live steuern."
+    salary: 6800.00
+    stressPerMonth: 55
+    requiredStageKey: "BACHELOR_INFORMATIK"
+    requiredSideCert: "WEITERBILDUNG_PROJEKTMANAGEMENT_1"
+
+  - name: "Maschinenbauingenieur"
+    category: "TECH"
+    description: "Maschinen und Anlagen konstruieren, berechnen und optimieren."
+    salary: 5500.00
+    stressPerMonth: 45
+    requiredStageKey: "BACHELOR_INGENIEURWESEN"
+
+  - name: "Leitender Ingenieur"
+    category: "TECH"
+    description: "Entwicklungsabteilungen führen und strategische Technologieentscheidungen treffen."
+    salary: 8000.00
+    stressPerMonth: 55
+    requiredStageKey: "MASTER_INGENIEURWESEN"
+    requiredMonthsExperience: 6
+
+  # ── MANAGEMENT ───────────────────────────────────────────────────────────────
+
+  - name: "Marketing-Assistent"
+    category: "MANAGEMENT"
+    description: "Marketingkampagnen unterstützen und Marktanalysen erstellen."
+    salary: 2800.00
+    stressPerMonth: 30
+    requiredStageKey: "BACHELOR_BWL"
 
   - name: "Unternehmensberater"
-    description: "Unternehmen strategisch beraten"
-    salary: 7500.00
-    stressPerMonth: 35
+    category: "MANAGEMENT"
+    description: "Unternehmen analysieren, Schwachstellen identifizieren und Lösungen präsentieren."
+    salary: 6500.00
+    stressPerMonth: 60
+    requiredStageKey: "BACHELOR_BWL"
+    requiredSideCert: "WEITERBILDUNG_PROJEKTMANAGEMENT_1"
+
+  - name: "Produktmanager"
+    category: "MANAGEMENT"
+    description: "Produkte von der Idee bis zur Marktreife steuern und priorisieren."
+    salary: 5800.00
+    stressPerMonth: 50
+    requiredStageKey: "BACHELOR_BWL"
+    requiredMonthsExperience: 6
+
+  - name: "Abteilungsleiter"
+    category: "MANAGEMENT"
+    description: "Ein Team führen, Ziele setzen und die Leistung kontinuierlich verbessern."
+    salary: 7200.00
+    stressPerMonth: 65
+    requiredStageKey: "BACHELOR_BWL"
     requiredMonthsExperience: 12
-    educationRequirements:
-      - type: "MASTER"
-        field: "BWL"
-      - type: "MASTER"
-        field: "INFORMATIK"
+
+  - name: "Geschäftsführer (extern)"
+    category: "MANAGEMENT"
+    description: "Als externer CEO ein mittelständisches Unternehmen strategisch leiten."
+    salary: 11000.00
+    stressPerMonth: 80
+    requiredStageKey: "MASTER_BWL"
+    requiredMonthsExperience: 24
+
+  # ── GESUNDHEIT ───────────────────────────────────────────────────────────────
+
+  - name: "Arzt (Assistenzarzt)"
+    category: "GESUNDHEIT"
+    description: "In der Facharztausbildung Patienten versorgen und klinische Erfahrung sammeln."
+    salary: 4800.00
+    stressPerMonth: 70
+    requiredStageKey: "BACHELOR_MEDIZIN"
+
+  - name: "Facharzt"
+    category: "GESUNDHEIT"
+    description: "Spezialisierte medizinische Versorgung im Fachgebiet eigenverantwortlich erbringen."
+    salary: 8500.00
+    stressPerMonth: 75
+    requiredStageKey: "MASTER_MEDIZIN"
+    requiredMonthsExperience: 12
+
+  - name: "Chefarzt"
+    category: "GESUNDHEIT"
+    description: "Eine Fachabteilung leiten, Forschung betreiben und das medizinische Team führen."
+    salary: 14000.00
+    stressPerMonth: 85
+    requiredStageKey: "MASTER_MEDIZIN"
+    requiredMonthsExperience: 24
+
+  - name: "Psychologe"
+    category: "GESUNDHEIT"
+    description: "Diagnostische Gespräche führen und psychische Erkrankungen einordnen."
+    salary: 4500.00
+    stressPerMonth: 50
+    requiredStageKey: "BACHELOR_PSYCHOLOGIE"
+
+  - name: "Psychotherapeut"
+    category: "GESUNDHEIT"
+    description: "Psychotherapeutische Behandlungen durchführen und Patienten langfristig begleiten."
+    salary: 6800.00
+    stressPerMonth: 55
+    requiredStageKey: "BACHELOR_PSYCHOLOGIE"
+    requiredMonthsExperience: 6
+
+  # ── RECHT ────────────────────────────────────────────────────────────────────
+
+  - name: "Rechtsreferendar"
+    category: "RECHT"
+    description: "Das Referendariat absolvieren und praktische juristische Erfahrung sammeln."
+    salary: 1400.00
+    stressPerMonth: 40
+    requiredStageKey: "BACHELOR_JURA"
+
+  - name: "Rechtsanwalt"
+    category: "RECHT"
+    description: "Mandanten rechtlich beraten und vor Gericht vertreten."
+    salary: 6200.00
+    stressPerMonth: 65
+    requiredStageKey: "MASTER_JURA"
+
+  - name: "Fachanwalt"
+    category: "RECHT"
+    description: "Spezialisiertes juristisches Know-how in einem Rechtsgebiet einsetzen."
+    salary: 9800.00
+    stressPerMonth: 70
+    requiredStageKey: "MASTER_JURA"
+    requiredMonthsExperience: 12
+
+  - name: "Richter"
+    category: "RECHT"
+    description: "Rechtsfälle unparteiisch beurteilen und im Namen des Volkes urteilen."
+    salary: 7500.00
+    stressPerMonth: 50
+    requiredStageKey: "MASTER_JURA"
+    requiredMonthsExperience: 18

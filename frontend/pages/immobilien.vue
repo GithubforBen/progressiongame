@@ -1,6 +1,8 @@
 <template>
   <div class="space-y-6">
-    <h2 class="text-xl font-bold text-white">Immobilien</h2>
+    <div class="flex items-center gap-4">
+      <h2 class="text-xl font-bold text-white flex-1">Immobilien</h2>
+      </div>
 
     <!-- My Properties -->
     <div v-if="myProperties.length > 0" class="card">
@@ -67,14 +69,17 @@
           class="rounded-lg border p-4 transition-colors"
           :class="item.owned
             ? 'border-green-500/30 bg-green-500/5 opacity-70'
+            : item.locked
+            ? 'border-white/5 bg-white/2 opacity-60'
             : 'border-white/10 bg-white/3 hover:border-white/20'"
         >
           <div class="flex items-start gap-3">
-            <div class="text-3xl flex-shrink-0">{{ categoryIcon(item.category) }}</div>
+            <div class="text-3xl flex-shrink-0">{{ item.locked ? '🔒' : categoryIcon(item.category) }}</div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap mb-1">
                 <p class="text-white font-semibold text-sm">{{ item.name }}</p>
                 <span v-if="item.owned" class="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">Besessen</span>
+                <span v-if="item.locked" class="text-xs px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">Gesperrt</span>
                 <span class="text-xs px-1.5 py-0.5 rounded bg-white/10 text-gray-400">{{ item.category }}</span>
               </div>
               <p class="text-gray-400 text-xs">{{ item.location }}</p>
@@ -87,13 +92,17 @@
             </div>
           </div>
           <button
-            v-if="!item.owned"
+            v-if="!item.owned && !item.locked"
             @click="buy(item)"
             :disabled="buyingId === item.id"
             class="btn-primary w-full mt-3 text-sm py-1.5"
           >
             {{ buyingId === item.id ? 'Kaufe...' : 'Kaufen' }}
           </button>
+          <p v-if="item.locked" class="text-xs text-gray-600 text-center mt-3 cursor-pointer hover:text-gray-400"
+             @dblclick="goToUnlock(item.requiredCert)">
+            Benötigt: {{ certLabel(item.requiredCert) }} · Doppelklick für Ausbildung
+          </p>
         </div>
       </div>
     </div>
@@ -108,11 +117,13 @@ definePageMeta({ layout: 'default' })
 const api = useApi()
 const toast = useToastStore()
 const gameStore = useGameStore()
-const { formatCurrency } = useFormatting()
+const { formatCurrency, certLabel } = useFormatting()
+const router = useRouter()
 
 interface CatalogItem {
   id: number; name: string; location: string; category: string; description: string
-  purchasePrice: number; monthlyRent: number; rentSavings: number; owned: boolean
+  purchasePrice: number; monthlyRent: number; rentSavings: number
+  requiredCert: string | null; owned: boolean; locked: boolean
 }
 interface PlayerProperty {
   id: number; catalogId: number; name: string; location: string; category: string
@@ -140,6 +151,10 @@ async function loadAll() {
   } finally {
     loading.value = false
   }
+}
+
+function goToUnlock(cert: string | null) {
+  if (cert) router.push(`/ausbildung?highlight=${cert}`)
 }
 
 async function buy(item: CatalogItem) {

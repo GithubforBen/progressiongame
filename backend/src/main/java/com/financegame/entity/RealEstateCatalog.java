@@ -32,6 +32,9 @@ public class RealEstateCatalog {
     @Column(name = "rent_savings", nullable = false, precision = 10, scale = 2)
     private BigDecimal rentSavings;
 
+    @Column(name = "required_cert", length = 100)
+    private String requiredCert;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -55,4 +58,7 @@ public class RealEstateCatalog {
 
     public BigDecimal getRentSavings() { return rentSavings; }
     public void setRentSavings(BigDecimal rentSavings) { this.rentSavings = rentSavings; }
+
+    public String getRequiredCert() { return requiredCert; }
+    public void setRequiredCert(String requiredCert) { this.requiredCert = requiredCert; }
 }

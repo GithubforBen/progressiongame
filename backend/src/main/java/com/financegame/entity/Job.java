@@ -38,6 +38,15 @@ public class Job {
     @Column(name = "education_requirements_json", columnDefinition = "jsonb")
     private String educationRequirementsJson;
 
+    @Column(name = "category", nullable = false, length = 50)
+    private String category = "EINSTIEG";
+
+    @Column(name = "max_parallel", nullable = false)
+    private int maxParallel = 1;
+
+    @Column(name = "required_side_cert", length = 100)
+    private String requiredSideCert;
+
     // --- Getters & Setters ---
 
     public Long getId() { return id; }
@@ -69,4 +78,13 @@ public class Job {
 
     public String getEducationRequirementsJson() { return educationRequirementsJson; }
     public void setEducationRequirementsJson(String json) { this.educationRequirementsJson = json; }
+
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
+
+    public int getMaxParallel() { return maxParallel; }
+    public void setMaxParallel(int maxParallel) { this.maxParallel = maxParallel; }
+
+    public String getRequiredSideCert() { return requiredSideCert; }
+    public void setRequiredSideCert(String requiredSideCert) { this.requiredSideCert = requiredSideCert; }
 }

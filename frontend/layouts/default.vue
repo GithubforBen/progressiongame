@@ -32,6 +32,11 @@
 
     <ToastContainer />
 
+    <!-- Version badge -->
+    <div class="fixed bottom-2 right-3 text-gray-700 text-xs font-mono select-none pointer-events-none">
+      v3
+    </div>
+
     <!-- Monthly balance sheet modal -->
     <MonthlyBalanceSheet
       v-if="gameStore.lastTurnResult"

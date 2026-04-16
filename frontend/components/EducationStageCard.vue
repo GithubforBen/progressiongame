@@ -40,37 +40,44 @@
           <!-- Available -->
           <div v-else-if="availableStage && !busy">
             <!-- No field needed: direct enroll -->
-            <button
-              v-if="!availableStage.requiresField"
-              class="btn-primary text-xs px-3 py-1.5"
-              :disabled="enrolling"
-              @click="doEnroll(null)"
-            >
-              {{ enrolling ? '…' : 'Einschreiben' }}
-            </button>
+            <div v-if="!availableStage.requiresField" class="flex flex-col items-end gap-1">
+              <span v-if="availableStage.cost > 0" class="text-xs text-yellow-400 font-mono">
+                {{ formatCost(availableStage.cost) }}
+              </span>
+              <button
+                class="btn-primary text-xs px-3 py-1.5"
+                :disabled="enrolling"
+                @click="doEnroll(null)"
+              >
+                {{ enrolling ? '…' : 'Einschreiben' }}
+              </button>
+            </div>
 
             <!-- Field picker -->
-            <div v-else class="space-y-2">
-              <select
-                v-model="selectedField"
-                class="input text-xs py-1 w-full"
-              >
+            <div v-else class="space-y-2 min-w-[180px]">
+              <select v-model="selectedField" class="input text-xs py-1 w-full">
                 <option value="">Fachrichtung wählen…</option>
                 <option
                   v-for="fo in availableStage.fieldOptions"
                   :key="fo.value"
                   :value="fo.value"
                 >
-                  {{ fo.label }}
+                  {{ fo.label }}{{ fo.durationMonths !== availableStage.durationMonths ? ` (${fo.durationMonths} Mo.)` : '' }}
                 </option>
               </select>
-              <button
-                class="btn-primary text-xs px-3 py-1.5 w-full"
-                :disabled="!selectedField || enrolling"
-                @click="doEnroll(selectedField)"
-              >
-                {{ enrolling ? '…' : 'Einschreiben' }}
-              </button>
+              <div class="flex items-center justify-between gap-2">
+                <span v-if="availableStage.cost > 0" class="text-xs text-yellow-400 font-mono">
+                  {{ formatCost(availableStage.cost) }}
+                </span>
+                <span v-else class="flex-1" />
+                <button
+                  class="btn-primary text-xs px-3 py-1.5"
+                  :disabled="!selectedField || enrolling"
+                  @click="doEnroll(selectedField)"
+                >
+                  {{ enrolling ? '…' : 'Einschreiben' }}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -83,10 +90,14 @@
 </template>
 
 <script setup lang="ts">
-interface FieldOption { value: string; label: string }
+interface FieldOption { value: string; label: string; durationMonths: number }
 interface AvailableStage {
   stageKey: string; label: string; durationMonths: number
-  requiresField: boolean; fieldOptions: FieldOption[]
+  requiresField: boolean; fieldOptions: FieldOption[]; cost: number
+}
+
+function formatCost(cost: number) {
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(cost)
 }
 interface TreeStage {
   key: string; label: string; months: number | null

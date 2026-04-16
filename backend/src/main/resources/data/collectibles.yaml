@@ -1,84 +1,1887 @@
 collectibles:
-  - name: "Nissan Skyline R34"
-    collectionType: "AUTOS"
-    countryRequired: "Japan"
-    rarity: "LEGENDARY"
-    baseValue: 85000.00
-    description: "Legendaerer JDM-Sportwagen"
 
+  # ── AUTOS_KLASSIKER (Klassische Sportwagen) ────────────────────────────────
   - name: "Ferrari 250 GTO"
     collectionType: "AUTOS"
+    collectionName: "AUTOS_KLASSIKER"
     countryRequired: "Italien"
     rarity: "LEGENDARY"
     baseValue: 450000.00
+    price: 580000.00
     description: "Das wertvollste Auto der Welt"
 
-  - name: "Vintage Harley-Davidson"
+  - name: "Porsche 356 Speedster"
     collectionType: "AUTOS"
-    countryRequired: "USA"
-    rarity: "EPIC"
-    baseValue: 35000.00
-    description: "Amerikanische Motorrad-Ikone"
-
-  - name: "Rolex Daytona"
-    collectionType: "UHREN"
-    countryRequired: "Schweiz"
+    collectionName: "AUTOS_KLASSIKER"
+    countryRequired: "Deutschland"
     rarity: "LEGENDARY"
-    baseValue: 25000.00
-    description: "Die begehrte Sportuhr"
+    baseValue: 320000.00
+    price: 400000.00
+    description: "Der erste echte Porsche-Sportwagen"
 
-  - name: "Patek Philippe Nautilus"
-    collectionType: "UHREN"
-    countryRequired: "Schweiz"
+  - name: "Mercedes 300 SL Fluegeltuerer"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_KLASSIKER"
+    countryRequired: "Deutschland"
     rarity: "LEGENDARY"
-    baseValue: 80000.00
-    description: "Kultstatuswerk der Uhrmacherei"
+    baseValue: 1200000.00
+    price: 1500000.00
+    description: "Ikone der 50er Jahre mit Flügeltüren"
 
-  - name: "Banksy Original"
-    collectionType: "KUNST"
+  - name: "Jaguar E-Type Serie 1"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_KLASSIKER"
     countryRequired: "UK"
     rarity: "EPIC"
-    baseValue: 120000.00
-    description: "Originales Strassenkunstwerk"
+    baseValue: 180000.00
+    price: 225000.00
+    description: "Das schönste Auto der Welt (Enzo Ferrari)"
 
-  - name: "Porzellane Vase Ming-Dyn."
-    collectionType: "KUNST"
-    countryRequired: "China"
-    rarity: "RARE"
-    baseValue: 15000.00
-    description: "Antike chinesische Vase"
+  - name: "Alfa Romeo Giulia Sprint GTA"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_KLASSIKER"
+    countryRequired: "Italien"
+    rarity: "EPIC"
+    baseValue: 210000.00
+    price: 260000.00
+    description: "Leichter Rennsport-Klassiker aus den 60ern"
+
+  # ── AUTOS_JAPANISCH (Japanische Ikonen) ───────────────────────────────────
+  - name: "Nissan Skyline R34 GT-R"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_JAPANISCH"
+    countryRequired: "Japan"
+    rarity: "LEGENDARY"
+    baseValue: 130000.00
+    price: 160000.00
+    description: "Legendaerer JDM-Sportwagen, Godzilla"
 
   - name: "Toyota Supra MK4"
     collectionType: "AUTOS"
+    collectionName: "AUTOS_JAPANISCH"
     countryRequired: "Japan"
     rarity: "EPIC"
-    baseValue: 55000.00
+    baseValue: 75000.00
+    price: 95000.00
     description: "Ikonischer japanischer Sportwagen"
 
-  - name: "Omega Speedmaster"
-    collectionType: "UHREN"
-    countryRequired: "Schweiz"
-    rarity: "RARE"
-    baseValue: 8000.00
-    description: "Die Mondlanduhr"
-
-  - name: "Warhol Siebdruck"
-    collectionType: "KUNST"
-    countryRequired: "USA"
+  - name: "Honda NSX Typ R"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_JAPANISCH"
+    countryRequired: "Japan"
     rarity: "EPIC"
-    baseValue: 95000.00
-    description: "Seriendruck des Pop-Art-Meisters"
+    baseValue: 85000.00
+    price: 105000.00
+    description: "Japans Antwort auf den Ferrari"
 
-  - name: "Terrakotta-Krieger Replik"
-    collectionType: "KUNST"
-    countryRequired: "China"
-    rarity: "COMMON"
-    baseValue: 2500.00
-    description: "Hochwertige Nachbildung aus Xi'an"
+  - name: "Mazda RX-7 FD3S"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_JAPANISCH"
+    countryRequired: "Japan"
+    rarity: "RARE"
+    baseValue: 45000.00
+    price: 58000.00
+    description: "Kultiger Rotationsmotor-Sportwagen"
+
+  - name: "Mitsubishi Lancer Evo VI Tommi Makinen"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_JAPANISCH"
+    countryRequired: "Japan"
+    rarity: "RARE"
+    baseValue: 38000.00
+    price: 48000.00
+    description: "Rallye-Legende mit WRC-Erbschaft"
+
+  # ── AUTOS_LUXUS (Moderne Luxusflotte) ─────────────────────────────────────
+  - name: "Bugatti Chiron"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_LUXUS"
+    countryRequired: "Frankreich"
+    rarity: "LEGENDARY"
+    baseValue: 3200000.00
+    price: 4000000.00
+    description: "Schnellster Seriensportwagen der Welt"
+
+  - name: "Lamborghini Revuelto"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_LUXUS"
+    countryRequired: "Italien"
+    rarity: "LEGENDARY"
+    baseValue: 550000.00
+    price: 700000.00
+    description: "Hybrid-Hypercar aus Sant'Agata"
 
   - name: "Bentley Continental GT"
     collectionType: "AUTOS"
+    collectionName: "AUTOS_LUXUS"
     countryRequired: "UK"
     rarity: "RARE"
     baseValue: 180000.00
+    price: 225000.00
     description: "Britischer Luxus-Grand-Tourer"
+
+  - name: "Rolls-Royce Phantom"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_LUXUS"
+    countryRequired: "UK"
+    rarity: "EPIC"
+    baseValue: 420000.00
+    price: 520000.00
+    description: "Die Beste Auto der Welt"
+
+  - name: "Ferrari SF90 Stradale"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_LUXUS"
+    countryRequired: "Italien"
+    rarity: "EPIC"
+    baseValue: 420000.00
+    price: 520000.00
+    description: "Maranellos stärkstes Serienfahrzeug"
+
+  # ── AUTOS_OLDTIMER (Historische Raritäten) ────────────────────────────────
+  - name: "Vintage Harley-Davidson Knucklehead"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_OLDTIMER"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 55000.00
+    price: 70000.00
+    description: "Amerikanische Motorrad-Ikone 1936"
+
+  - name: "Ford Model T 1920"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_OLDTIMER"
+    countryRequired: "USA"
+    rarity: "RARE"
+    baseValue: 28000.00
+    price: 35000.00
+    description: "Das erste Auto fürs Volk"
+
+  - name: "Bugatti Type 35B"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_OLDTIMER"
+    countryRequired: "Frankreich"
+    rarity: "LEGENDARY"
+    baseValue: 5500000.00
+    price: 7000000.00
+    description: "Erfolgreichster Rennwagen der Geschichte"
+
+  - name: "Mercedes SSK 1930"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_OLDTIMER"
+    countryRequired: "Deutschland"
+    rarity: "LEGENDARY"
+    baseValue: 4200000.00
+    price: 5300000.00
+    description: "Kompressor-Roadster aus der Goldenen Ära"
+
+  - name: "Citroën DS 21 Pallas"
+    collectionType: "AUTOS"
+    collectionName: "AUTOS_OLDTIMER"
+    countryRequired: "Frankreich"
+    rarity: "RARE"
+    baseValue: 32000.00
+    price: 40000.00
+    description: "Die Göttin – Ikone des französischen Designs"
+
+  # ── UHREN_SCHWEIZ (Schweizer Präzision) ───────────────────────────────────
+  - name: "Rolex Daytona Paul Newman"
+    collectionType: "UHREN"
+    collectionName: "UHREN_SCHWEIZ"
+    countryRequired: "Schweiz"
+    rarity: "LEGENDARY"
+    baseValue: 250000.00
+    price: 320000.00
+    description: "Begehrteste Rolex der Welt"
+
+  - name: "Patek Philippe Nautilus 5711"
+    collectionType: "UHREN"
+    collectionName: "UHREN_SCHWEIZ"
+    countryRequired: "Schweiz"
+    rarity: "LEGENDARY"
+    baseValue: 120000.00
+    price: 150000.00
+    description: "Kultstatuswerk der Uhrmacherei"
+
+  - name: "Audemars Piguet Royal Oak"
+    collectionType: "UHREN"
+    collectionName: "UHREN_SCHWEIZ"
+    countryRequired: "Schweiz"
+    rarity: "EPIC"
+    baseValue: 65000.00
+    price: 82000.00
+    description: "Die erste Luxusstahluhr der Welt"
+
+  - name: "A. Lange & Söhne Datograph"
+    collectionType: "UHREN"
+    collectionName: "UHREN_SCHWEIZ"
+    countryRequired: "Deutschland"
+    rarity: "EPIC"
+    baseValue: 90000.00
+    price: 115000.00
+    description: "Meisterstück sächsischer Uhrmacherei"
+
+  - name: "Vacheron Constantin Traditionelle"
+    collectionType: "UHREN"
+    collectionName: "UHREN_SCHWEIZ"
+    countryRequired: "Schweiz"
+    rarity: "EPIC"
+    baseValue: 55000.00
+    price: 70000.00
+    description: "Älteste Uhrenmanufaktur der Welt"
+
+  # ── UHREN_SPORT (Sportuhren-Kollektion) ───────────────────────────────────
+  - name: "Rolex Submariner Date"
+    collectionType: "UHREN"
+    collectionName: "UHREN_SPORT"
+    countryRequired: "Schweiz"
+    rarity: "RARE"
+    baseValue: 14000.00
+    price: 17500.00
+    description: "Die Taucheruhr schlechthin"
+
+  - name: "Omega Speedmaster Moonwatch"
+    collectionType: "UHREN"
+    collectionName: "UHREN_SPORT"
+    countryRequired: "Schweiz"
+    rarity: "RARE"
+    baseValue: 8500.00
+    price: 10500.00
+    description: "Die Mondlanduhr der NASA"
+
+  - name: "TAG Heuer Monaco Gulf"
+    collectionType: "UHREN"
+    collectionName: "UHREN_SPORT"
+    countryRequired: "Schweiz"
+    rarity: "RARE"
+    baseValue: 6500.00
+    price: 8200.00
+    description: "Steve McQueen's Lieblingschronograph"
+
+  - name: "IWC Pilot's Watch Mark XVIII"
+    collectionType: "UHREN"
+    collectionName: "UHREN_SPORT"
+    countryRequired: "Schweiz"
+    rarity: "COMMON"
+    baseValue: 4200.00
+    price: 5200.00
+    description: "Klassische Fliegeruhr aus Schaffhausen"
+
+  - name: "Breitling Navitimer B01"
+    collectionType: "UHREN"
+    collectionName: "UHREN_SPORT"
+    countryRequired: "Schweiz"
+    rarity: "RARE"
+    baseValue: 7500.00
+    price: 9400.00
+    description: "Die Fliegeruhr der Piloten"
+
+  # ── UHREN_VINTAGE (Vintage-Zeitmesser) ────────────────────────────────────
+  - name: "Rolex GMT Master 1675 Pepsi"
+    collectionType: "UHREN"
+    collectionName: "UHREN_VINTAGE"
+    countryRequired: "Schweiz"
+    rarity: "EPIC"
+    baseValue: 48000.00
+    price: 60000.00
+    description: "Vintage-Fliegeruhr in Pepsi-Farbgebung"
+
+  - name: "Heuer Autavia 1163V"
+    collectionType: "UHREN"
+    collectionName: "UHREN_VINTAGE"
+    countryRequired: "Schweiz"
+    rarity: "RARE"
+    baseValue: 18000.00
+    price: 22500.00
+    description: "Legendärer Vintage-Rennfahrerchronograph"
+
+  - name: "LeCoultre Memovox"
+    collectionType: "UHREN"
+    collectionName: "UHREN_VINTAGE"
+    countryRequired: "Schweiz"
+    rarity: "RARE"
+    baseValue: 9500.00
+    price: 12000.00
+    description: "Erster Wecker-Taucherchronograph"
+
+  - name: "Longines Conquest 1950s"
+    collectionType: "UHREN"
+    collectionName: "UHREN_VINTAGE"
+    countryRequired: "Schweiz"
+    rarity: "COMMON"
+    baseValue: 3800.00
+    price: 4800.00
+    description: "Elegante Nachkriegszeit-Armbanduhr"
+
+  - name: "Universal Geneve Tri-Compax"
+    collectionType: "UHREN"
+    collectionName: "UHREN_VINTAGE"
+    countryRequired: "Schweiz"
+    rarity: "EPIC"
+    baseValue: 32000.00
+    price: 40000.00
+    description: "Seltenster Vintage-Triple-Kalender"
+
+  # ── KUNST_MODERNE (Moderne Kunst) ─────────────────────────────────────────
+  - name: "Banksy 'Girl with Balloon' Original"
+    collectionType: "KUNST"
+    collectionName: "KUNST_MODERNE"
+    countryRequired: "UK"
+    rarity: "EPIC"
+    baseValue: 150000.00
+    price: 190000.00
+    description: "Originales Strassenkunstwerk"
+
+  - name: "Jean-Michel Basquiat Gemälde"
+    collectionType: "KUNST"
+    collectionName: "KUNST_MODERNE"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 800000.00
+    price: 1000000.00
+    description: "Neo-expressionistisches Meisterwerk"
+
+  - name: "Gerhard Richter Abstraktes Bild"
+    collectionType: "KUNST"
+    collectionName: "KUNST_MODERNE"
+    countryRequired: "Deutschland"
+    rarity: "LEGENDARY"
+    baseValue: 500000.00
+    price: 630000.00
+    description: "Verwischte Realität aus Düsseldorf"
+
+  - name: "Jeff Koons Balloon Dog"
+    collectionType: "KUNST"
+    collectionName: "KUNST_MODERNE"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 250000.00
+    price: 315000.00
+    description: "Ikonische Pop-Art-Skulptur"
+
+  - name: "Damien Hirst Spot Painting"
+    collectionType: "KUNST"
+    collectionName: "KUNST_MODERNE"
+    countryRequired: "UK"
+    rarity: "RARE"
+    baseValue: 85000.00
+    price: 108000.00
+    description: "Farbig gepunktetes Leinwandbild"
+
+  # ── KUNST_STREET (Street Art & Graffiti) ──────────────────────────────────
+  - name: "Shepard Fairey 'Obey Giant' Siebdruck"
+    collectionType: "KUNST"
+    collectionName: "KUNST_STREET"
+    countryRequired: "USA"
+    rarity: "RARE"
+    baseValue: 12000.00
+    price: 15000.00
+    description: "Kultiges Straßenkunst-Poster"
+
+  - name: "Os Gemeos Panel"
+    collectionType: "KUNST"
+    collectionName: "KUNST_STREET"
+    countryRequired: "Brasilien"
+    rarity: "EPIC"
+    baseValue: 45000.00
+    price: 56000.00
+    description: "Brasilianische Street-Art-Meisterwerke"
+
+  - name: "Invader Mosaic Original"
+    collectionType: "KUNST"
+    collectionName: "KUNST_STREET"
+    countryRequired: "Frankreich"
+    rarity: "RARE"
+    baseValue: 22000.00
+    price: 28000.00
+    description: "Pixelkünstler aus dem Pariser Untergrund"
+
+  - name: "KAWS Companion Figurine"
+    collectionType: "KUNST"
+    collectionName: "KUNST_STREET"
+    countryRequired: "USA"
+    rarity: "RARE"
+    baseValue: 18000.00
+    price: 22500.00
+    description: "Graffiti-inspirierte Designerfigur"
+
+  - name: "Futura 2000 Leinwand"
+    collectionType: "KUNST"
+    collectionName: "KUNST_STREET"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 55000.00
+    price: 69000.00
+    description: "Hip-Hop-Ära New Yorker Street Art"
+
+  # ── KUNST_KLASSISCH (Klassische Gemälde) ──────────────────────────────────
+  - name: "Warhol Campbell's Soup Siebdruck"
+    collectionType: "KUNST"
+    collectionName: "KUNST_KLASSISCH"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 180000.00
+    price: 225000.00
+    description: "Ikonisches Pop-Art-Serienbild"
+
+  - name: "Porzellane Vase Ming-Dynastie"
+    collectionType: "KUNST"
+    collectionName: "KUNST_KLASSISCH"
+    countryRequired: "China"
+    rarity: "RARE"
+    baseValue: 15000.00
+    price: 19000.00
+    description: "Antike chinesische Vase"
+
+  - name: "Rembrandt Radierung"
+    collectionType: "KUNST"
+    collectionName: "KUNST_KLASSISCH"
+    countryRequired: "Niederlande"
+    rarity: "LEGENDARY"
+    baseValue: 350000.00
+    price: 440000.00
+    description: "Meisterdruckgrafik des Barock"
+
+  - name: "Picasso Lithografie"
+    collectionType: "KUNST"
+    collectionName: "KUNST_KLASSISCH"
+    countryRequired: "Spanien"
+    rarity: "EPIC"
+    baseValue: 95000.00
+    price: 120000.00
+    description: "Kubistischer Originaldruckbogen"
+
+  - name: "Terrakotta-Krieger Replik Originalgröße"
+    collectionType: "KUNST"
+    collectionName: "KUNST_KLASSISCH"
+    countryRequired: "China"
+    rarity: "COMMON"
+    baseValue: 3500.00
+    price: 4400.00
+    description: "Hochwertige Nachbildung aus Xi'an"
+
+  # ── TECH_RETRO (Retro-Gaming Klassiker) ───────────────────────────────────
+  - name: "Nintendo NES Erstausgabe versiegelt"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_RETRO"
+    countryRequired: "Japan"
+    rarity: "EPIC"
+    baseValue: 15000.00
+    price: 19000.00
+    description: "Originalverpackte erste NES-Edition"
+
+  - name: "Game Boy Pocket Silber OVP"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_RETRO"
+    countryRequired: "Japan"
+    rarity: "RARE"
+    baseValue: 2500.00
+    price: 3200.00
+    description: "Ungeöffneter Classic Game Boy"
+
+  - name: "Atari 2600 Holzoptik"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_RETRO"
+    countryRequired: "USA"
+    rarity: "RARE"
+    baseValue: 4500.00
+    price: 5700.00
+    description: "Das Original der Heimkonsolen"
+
+  - name: "Commodore 64 mit Datasette"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_RETRO"
+    countryRequired: "USA"
+    rarity: "COMMON"
+    baseValue: 800.00
+    price: 1000.00
+    description: "Meistverkaufter Heimcomputer aller Zeiten"
+
+  - name: "Sega Mega Drive mit Sonic"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_RETRO"
+    countryRequired: "Japan"
+    rarity: "COMMON"
+    baseValue: 1200.00
+    price: 1500.00
+    description: "16-Bit-Kultklassiker mit Originalspiel"
+
+  # ── TECH_KRYPTO (Krypto-Hardware Wallet Kollektion) ───────────────────────
+  - name: "Ledger Nano Satoshi Edition"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_KRYPTO"
+    countryRequired: "Frankreich"
+    rarity: "RARE"
+    baseValue: 2500.00
+    price: 3200.00
+    description: "Nummeriertes Satoshi-Jubiläumsmodell"
+
+  - name: "Trezor Model T Goldauflage"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_KRYPTO"
+    countryRequired: "Tschechien"
+    rarity: "RARE"
+    baseValue: 1800.00
+    price: 2300.00
+    description: "Vergoldetes Premiummodell"
+
+  - name: "ColdCard MK4 Titangehäuse"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_KRYPTO"
+    countryRequired: "Kanada"
+    rarity: "EPIC"
+    baseValue: 8500.00
+    price: 10700.00
+    description: "Sicherheitsuhr-Qualitäts-Wallet"
+
+  - name: "Keepkey Classic Signiert"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_KRYPTO"
+    countryRequired: "USA"
+    rarity: "COMMON"
+    baseValue: 500.00
+    price: 650.00
+    description: "Handgefertigte Einzelsignierung"
+
+  - name: "Foundation Passport Elite"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_KRYPTO"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 12000.00
+    price: 15000.00
+    description: "Open-Source-Hardwarewallet der Elite"
+
+  # ── TECH_LUXUS (Premium-Gadgets) ──────────────────────────────────────────
+  - name: "Apple Watch Hermès Titan"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_LUXUS"
+    countryRequired: "USA"
+    rarity: "RARE"
+    baseValue: 4500.00
+    price: 5700.00
+    description: "Exklusivste Apple Watch Kollaboration"
+
+  - name: "Bang & Olufsen Beolab 90"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_LUXUS"
+    countryRequired: "Dänemark"
+    rarity: "EPIC"
+    baseValue: 80000.00
+    price: 100000.00
+    description: "Beste Lautsprecher der Welt"
+
+  - name: "Vertu Signature S Titanium"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_LUXUS"
+    countryRequired: "UK"
+    rarity: "EPIC"
+    baseValue: 15000.00
+    price: 19000.00
+    description: "Handgefertigtes Luxus-Mobiltelefon"
+
+  - name: "Leica M11 Monochrome"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_LUXUS"
+    countryRequired: "Deutschland"
+    rarity: "RARE"
+    baseValue: 8500.00
+    price: 10700.00
+    description: "Schwarzweiß-Sensor-Kultgerät"
+
+  - name: "Sony Walkman NW-WM1ZM2 Goldgehäuse"
+    collectionType: "ELEKTRONIK"
+    collectionName: "TECH_LUXUS"
+    countryRequired: "Japan"
+    rarity: "RARE"
+    baseValue: 3800.00
+    price: 4800.00
+    description: "Signature-Serie Flaggschiff Walkman"
+
+  # ── SCHMUCK_DIAMANT (Diamanten-Kollektion) ────────────────────────────────
+  - name: "Pink Star Diamant (3ct Replik)"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_DIAMANT"
+    countryRequired: "Südafrika"
+    rarity: "LEGENDARY"
+    baseValue: 280000.00
+    price: 350000.00
+    description: "Nachbildung des teuersten Diamanten"
+
+  - name: "Brilliant-Solitär 5ct D-IF"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_DIAMANT"
+    countryRequired: "Belgien"
+    rarity: "EPIC"
+    baseValue: 120000.00
+    price: 150000.00
+    description: "Makellos geschliffener Brillant"
+
+  - name: "Graff Diamonds Flower Brosche"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_DIAMANT"
+    countryRequired: "UK"
+    rarity: "LEGENDARY"
+    baseValue: 450000.00
+    price: 565000.00
+    description: "Meisterwerk der Diamant-Haute-Joaillerie"
+
+  - name: "Harry Winston Diamond Ring"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_DIAMANT"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 75000.00
+    price: 95000.00
+    description: "King of Diamonds Solitärring"
+
+  - name: "Cartier Panther Diamantarmband"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_DIAMANT"
+    countryRequired: "Frankreich"
+    rarity: "EPIC"
+    baseValue: 95000.00
+    price: 120000.00
+    description: "Haute-Joaillerie Parade-Armband"
+
+  # ── SCHMUCK_GOLD (Goldschmuck-Galerie) ────────────────────────────────────
+  - name: "Bulgari Serpenti Halskette"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_GOLD"
+    countryRequired: "Italien"
+    rarity: "EPIC"
+    baseValue: 45000.00
+    price: 57000.00
+    description: "Schlangen-Ikone aus Rom"
+
+  - name: "Van Cleef & Arpels Alhambra"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_GOLD"
+    countryRequired: "Frankreich"
+    rarity: "RARE"
+    baseValue: 8500.00
+    price: 10700.00
+    description: "Vierblättriges Kleeblatt in Gold"
+
+  - name: "Tiffany & Co. Elsa Peretti Skull"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_GOLD"
+    countryRequired: "USA"
+    rarity: "RARE"
+    baseValue: 12000.00
+    price: 15000.00
+    description: "Legendäres Design-Schmuckstück"
+
+  - name: "Chopard Happy Diamonds Ring"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_GOLD"
+    countryRequired: "Schweiz"
+    rarity: "RARE"
+    baseValue: 9500.00
+    price: 12000.00
+    description: "Tanzende Diamanten im Ring"
+
+  - name: "Fabergé Ei Miniatur"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_GOLD"
+    countryRequired: "Russland"
+    rarity: "LEGENDARY"
+    baseValue: 320000.00
+    price: 400000.00
+    description: "Goldenes Osterei zaristische Tradition"
+
+  # ── SCHMUCK_VINTAGE (Antiker Schmuck) ─────────────────────────────────────
+  - name: "Art-Déco Diamantbrosche 1925"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_VINTAGE"
+    countryRequired: "Frankreich"
+    rarity: "EPIC"
+    baseValue: 35000.00
+    price: 44000.00
+    description: "Geometrisches Meisterwerk der Goldenen Zwanziger"
+
+  - name: "Viktorianische Kameebrosche"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_VINTAGE"
+    countryRequired: "UK"
+    rarity: "RARE"
+    baseValue: 4500.00
+    price: 5700.00
+    description: "Handgeschnitzte Shell-Kamee im Goldrahmen"
+
+  - name: "Jugendstil-Emaille-Armband"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_VINTAGE"
+    countryRequired: "Frankreich"
+    rarity: "RARE"
+    baseValue: 12000.00
+    price: 15000.00
+    description: "Meister René Lalique zugeschrieben"
+
+  - name: "Ägyptische Revival Skarabäus-Kette"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_VINTAGE"
+    countryRequired: "Ägypten"
+    rarity: "RARE"
+    baseValue: 8000.00
+    price: 10000.00
+    description: "Archäologischer Stil 1880er"
+
+  - name: "Antike georgianische Pastenbrosche"
+    collectionType: "SCHMUCK"
+    collectionName: "SCHMUCK_VINTAGE"
+    countryRequired: "UK"
+    rarity: "COMMON"
+    baseValue: 2800.00
+    price: 3500.00
+    description: "Foil-Back-Glassteine in Silber"
+
+  # ── WEIN_BORDEAUX (Grands Crus Bordeaux) ──────────────────────────────────
+  - name: "Pétrus 1961 (Jeroboam)"
+    collectionType: "WEIN"
+    collectionName: "WEIN_BORDEAUX"
+    countryRequired: "Frankreich"
+    rarity: "LEGENDARY"
+    baseValue: 180000.00
+    price: 225000.00
+    description: "Göttlichster Pomerol aller Zeiten"
+
+  - name: "Château Margaux 1900"
+    collectionType: "WEIN"
+    collectionName: "WEIN_BORDEAUX"
+    countryRequired: "Frankreich"
+    rarity: "LEGENDARY"
+    baseValue: 65000.00
+    price: 82000.00
+    description: "Jahrhundertwein aus Margaux"
+
+  - name: "Mouton Rothschild 1945"
+    collectionType: "WEIN"
+    collectionName: "WEIN_BORDEAUX"
+    countryRequired: "Frankreich"
+    rarity: "LEGENDARY"
+    baseValue: 310000.00
+    price: 390000.00
+    description: "Der V-Wein des Sieges – unübertroffen"
+
+  - name: "Le Pin 2000 (OWC)"
+    collectionType: "WEIN"
+    collectionName: "WEIN_BORDEAUX"
+    countryRequired: "Frankreich"
+    rarity: "EPIC"
+    baseValue: 12000.00
+    price: 15000.00
+    description: "Garagenwein-Ikone aus Pomerol"
+
+  - name: "Château Latour 1982 (Magnum)"
+    collectionType: "WEIN"
+    collectionName: "WEIN_BORDEAUX"
+    countryRequired: "Frankreich"
+    rarity: "EPIC"
+    baseValue: 8000.00
+    price: 10000.00
+    description: "Premier Cru Classé Magnum"
+
+  # ── WEIN_WHISKY (Single Malt Sammlung) ────────────────────────────────────
+  - name: "Macallan 50 Jahre"
+    collectionType: "WEIN"
+    collectionName: "WEIN_WHISKY"
+    countryRequired: "UK"
+    rarity: "LEGENDARY"
+    baseValue: 35000.00
+    price: 44000.00
+    description: "Halbhundert Jahre in Sherry-Fässern"
+
+  - name: "Yamazaki 18 Jahre Sherry Cask"
+    collectionType: "WEIN"
+    collectionName: "WEIN_WHISKY"
+    countryRequired: "Japan"
+    rarity: "RARE"
+    baseValue: 1800.00
+    price: 2300.00
+    description: "Japanischer Single Malt der Superlative"
+
+  - name: "Springbank 40 Jahre"
+    collectionType: "WEIN"
+    collectionName: "WEIN_WHISKY"
+    countryRequired: "UK"
+    rarity: "EPIC"
+    baseValue: 9500.00
+    price: 12000.00
+    description: "Campbeltown-Raritaet, limitiert"
+
+  - name: "Buffalo Trace Antique Collection"
+    collectionType: "WEIN"
+    collectionName: "WEIN_WHISKY"
+    countryRequired: "USA"
+    rarity: "RARE"
+    baseValue: 1200.00
+    price: 1500.00
+    description: "Bourbon-Walhalla aus Kentucky"
+
+  - name: "Hibiki 21 Jahre"
+    collectionType: "WEIN"
+    collectionName: "WEIN_WHISKY"
+    countryRequired: "Japan"
+    rarity: "RARE"
+    baseValue: 2200.00
+    price: 2800.00
+    description: "Harmonische Blend-Meisterschaft"
+
+  # ── WEIN_CHAMPAGNER (Prestige-Champagner) ─────────────────────────────────
+  - name: "Dom Pérignon P3 1990"
+    collectionType: "WEIN"
+    collectionName: "WEIN_CHAMPAGNER"
+    countryRequired: "Frankreich"
+    rarity: "LEGENDARY"
+    baseValue: 4500.00
+    price: 5700.00
+    description: "Drittes Plenitude – höchste Reife"
+
+  - name: "Krug Clos du Mesnil 1995"
+    collectionType: "WEIN"
+    collectionName: "WEIN_CHAMPAGNER"
+    countryRequired: "Frankreich"
+    rarity: "EPIC"
+    baseValue: 1800.00
+    price: 2300.00
+    description: "Blanc de Blancs von einer Parzelle"
+
+  - name: "Salon Blanc de Blancs 1997"
+    collectionType: "WEIN"
+    collectionName: "WEIN_CHAMPAGNER"
+    countryRequired: "Frankreich"
+    rarity: "EPIC"
+    baseValue: 1500.00
+    price: 1900.00
+    description: "Seltenster Prestige-Champagner"
+
+  - name: "Cristal Louis Roederer 2002 (6er)"
+    collectionType: "WEIN"
+    collectionName: "WEIN_CHAMPAGNER"
+    countryRequired: "Frankreich"
+    rarity: "RARE"
+    baseValue: 2400.00
+    price: 3000.00
+    description: "Sechs Flaschen des Jahrtausendjahrgangs"
+
+  - name: "Billecart-Salmon Blanc de Blancs 2007"
+    collectionType: "WEIN"
+    collectionName: "WEIN_CHAMPAGNER"
+    countryRequired: "Frankreich"
+    rarity: "COMMON"
+    baseValue: 180.00
+    price: 225.00
+    description: "Eleganter Blanc de Blancs im Topjahr"
+
+  # ── SPORT_SCHUHE (Sneaker-Galerie) ────────────────────────────────────────
+  - name: "Nike Air Yeezy 2 'Red October'"
+    collectionType: "SPORT"
+    collectionName: "SPORT_SCHUHE"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 12000.00
+    price: 15000.00
+    description: "Kanye-Kollaboration – niemals nachgepresst"
+
+  - name: "Air Jordan 1 Chicago 1985 DS"
+    collectionType: "SPORT"
+    collectionName: "SPORT_SCHUHE"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 25000.00
+    price: 32000.00
+    description: "Originaljahrgang 1985 ungetragen"
+
+  - name: "New Balance 990v1 First Release"
+    collectionType: "SPORT"
+    collectionName: "SPORT_SCHUHE"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 5500.00
+    price: 7000.00
+    description: "Allererste Version des 990er"
+
+  - name: "Adidas Yeezy Boost 350 V2 'Beluga'"
+    collectionType: "SPORT"
+    collectionName: "SPORT_SCHUHE"
+    countryRequired: "Deutschland"
+    rarity: "RARE"
+    baseValue: 1800.00
+    price: 2300.00
+    description: "Erster Yeezy 350 V2 Colorway"
+
+  - name: "Converse Chuck Taylor All Star 1917"
+    collectionType: "SPORT"
+    collectionName: "SPORT_SCHUHE"
+    countryRequired: "USA"
+    rarity: "RARE"
+    baseValue: 4500.00
+    price: 5700.00
+    description: "Repro des allerersten Chuck Taylor"
+
+  # ── SPORT_TRIKOTS (Fußball-Trikot-Archiv) ────────────────────────────────
+  - name: "Pelé WM 1970 Brasilien Trikot (Signiert)"
+    collectionType: "SPORT"
+    collectionName: "SPORT_TRIKOTS"
+    countryRequired: "Brasilien"
+    rarity: "LEGENDARY"
+    baseValue: 45000.00
+    price: 57000.00
+    description: "Handschrift-Signatur des Königs"
+
+  - name: "Diego Maradona 'Hand Gottes' Trikot"
+    collectionType: "SPORT"
+    collectionName: "SPORT_TRIKOTS"
+    countryRequired: "Argentinien"
+    rarity: "LEGENDARY"
+    baseValue: 120000.00
+    price: 150000.00
+    description: "Trikot aus WM-Viertelfinale 1986"
+
+  - name: "Zinedine Zidane Real Madrid Champions League 2002"
+    collectionType: "SPORT"
+    collectionName: "SPORT_TRIKOTS"
+    countryRequired: "Frankreich"
+    rarity: "EPIC"
+    baseValue: 28000.00
+    price: 35000.00
+    description: "Trikot vom Finale in Glasgow"
+
+  - name: "Michael Schumacher Ferrari 2000 Rennoverall"
+    collectionType: "SPORT"
+    collectionName: "SPORT_TRIKOTS"
+    countryRequired: "Deutschland"
+    rarity: "EPIC"
+    baseValue: 35000.00
+    price: 44000.00
+    description: "Weltmeister-Overall seiner ersten Schumi-WM bei Ferrari"
+
+  - name: "Muhammad Ali Boxshorts Thrilla Manila"
+    collectionType: "SPORT"
+    collectionName: "SPORT_TRIKOTS"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 65000.00
+    price: 82000.00
+    description: "WM-Kampf Oktober 1975, zertifiziert"
+
+  # ── SPORT_MEMORABILIA (Sport-Memorabilia) ─────────────────────────────────
+  - name: "Babe Ruth Baseball Signiert"
+    collectionType: "SPORT"
+    collectionName: "SPORT_MEMORABILIA"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 180000.00
+    price: 225000.00
+    description: "Eigenhändige Signatur der Bambino"
+
+  - name: "Roger Federer Wimbledon-Schläger 2017"
+    collectionType: "SPORT"
+    collectionName: "SPORT_MEMORABILIA"
+    countryRequired: "Schweiz"
+    rarity: "EPIC"
+    baseValue: 22000.00
+    price: 28000.00
+    description: "Spielgebrauchter Schläger Finale"
+
+  - name: "Michael Jordan Spielball NBA Finals 1998"
+    collectionType: "SPORT"
+    collectionName: "SPORT_MEMORABILIA"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 350000.00
+    price: 440000.00
+    description: "The Last Shot – zertifizierter Spielball"
+
+  - name: "Ayrton Senna Helm 1991"
+    collectionType: "SPORT"
+    collectionName: "SPORT_MEMORABILIA"
+    countryRequired: "Brasilien"
+    rarity: "EPIC"
+    baseValue: 85000.00
+    price: 108000.00
+    description: "WM-Saison Rennhelm aus Sao Paulo"
+
+  - name: "Boris Becker Wimbledon-Pokal Miniatur"
+    collectionType: "SPORT"
+    collectionName: "SPORT_MEMORABILIA"
+    countryRequired: "Deutschland"
+    rarity: "RARE"
+    baseValue: 4500.00
+    price: 5700.00
+    description: "Offizielle Miniatur-Replik 1985"
+
+  # ── BUECHER_ERSTAUSGABE (Erstausgaben-Bibliothek) ─────────────────────────
+  - name: "Harry Potter 1 UK Erstausgabe"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_ERSTAUSGABE"
+    countryRequired: "UK"
+    rarity: "LEGENDARY"
+    baseValue: 80000.00
+    price: 100000.00
+    description: "500 Exemplare der ersten Bloomsbury-Auflage"
+
+  - name: "Der Herr der Ringe Erstausgabe 1954"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_ERSTAUSGABE"
+    countryRequired: "UK"
+    rarity: "LEGENDARY"
+    baseValue: 95000.00
+    price: 120000.00
+    description: "Allen & Unwin Originalband"
+
+  - name: "On the Road Kerouac Typerollen"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_ERSTAUSGABE"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 2200000.00
+    price: 2750000.00
+    description: "Das Originalmanuskript-Scroll"
+
+  - name: "Gutenberg-Bibel Einzelseite"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_ERSTAUSGABE"
+    countryRequired: "Deutschland"
+    rarity: "LEGENDARY"
+    baseValue: 120000.00
+    price: 150000.00
+    description: "Echte Seite der Ersten Druckbibel 1455"
+
+  - name: "Faust Goethe Erstausgabe 1808"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_ERSTAUSGABE"
+    countryRequired: "Deutschland"
+    rarity: "EPIC"
+    baseValue: 38000.00
+    price: 48000.00
+    description: "Cotta-Verlag Originals Tübingen"
+
+  # ── BUECHER_MANGA (Manga-Erstauflage) ─────────────────────────────────────
+  - name: "Dragon Ball Band 1 Erstauflage"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_MANGA"
+    countryRequired: "Japan"
+    rarity: "EPIC"
+    baseValue: 12000.00
+    price: 15000.00
+    description: "Shueisha 1985, geprägte Originalauflage"
+
+  - name: "Akira Band 1–6 Otomo Signiert"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_MANGA"
+    countryRequired: "Japan"
+    rarity: "LEGENDARY"
+    baseValue: 45000.00
+    price: 57000.00
+    description: "Komplette Erstauflage mit Autografen"
+
+  - name: "One Piece Band 1 1997 Versiegelt"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_MANGA"
+    countryRequired: "Japan"
+    rarity: "EPIC"
+    baseValue: 8500.00
+    price: 10700.00
+    description: "Ungeöffneter Jump Comics Band 1"
+
+  - name: "Nausicaä Band 1 Signiert von Miyazaki"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_MANGA"
+    countryRequired: "Japan"
+    rarity: "LEGENDARY"
+    baseValue: 55000.00
+    price: 69000.00
+    description: "Ghibli-Gründer Originalunterschrift"
+
+  - name: "Sailor Moon Band 1 Takeuchi Signiert"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_MANGA"
+    countryRequired: "Japan"
+    rarity: "RARE"
+    baseValue: 3500.00
+    price: 4400.00
+    description: "Handsigniertes Naoko Takeuchi Original"
+
+  # ── BUECHER_WISSENSCHAFT (Wissenschaftliche Raritäten) ────────────────────
+  - name: "Newton Principia Mathematica 1687"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_WISSENSCHAFT"
+    countryRequired: "UK"
+    rarity: "LEGENDARY"
+    baseValue: 3500000.00
+    price: 4400000.00
+    description: "Fundament der modernen Physik"
+
+  - name: "Darwin On The Origin of Species 1859"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_WISSENSCHAFT"
+    countryRequired: "UK"
+    rarity: "LEGENDARY"
+    baseValue: 220000.00
+    price: 275000.00
+    description: "1. Ausgabe des Evolutionswerks"
+
+  - name: "Einstein AE Sonderdruck 1905"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_WISSENSCHAFT"
+    countryRequired: "Deutschland"
+    rarity: "LEGENDARY"
+    baseValue: 380000.00
+    price: 475000.00
+    description: "Annalen der Physik Separatabdruck"
+
+  - name: "Feynman Lectures Originalmanuskript"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_WISSENSCHAFT"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 85000.00
+    price: 108000.00
+    description: "Handschriftliche Vorlesungsnotizen"
+
+  - name: "Kopernikus De Revolutionibus 1543"
+    collectionType: "BUECHER"
+    collectionName: "BUECHER_WISSENSCHAFT"
+    countryRequired: "Deutschland"
+    rarity: "LEGENDARY"
+    baseValue: 2500000.00
+    price: 3125000.00
+    description: "Das Werk, das die Erde aus dem Zentrum rückte"
+
+  # ── MUENZEN_GOLD (Goldmünzen-Schatz) ─────────────────────────────────────
+  - name: "Double Eagle 1933 Goldmünze"
+    collectionType: "MUENZEN"
+    collectionName: "MUENZEN_GOLD"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 18700000.00
+    price: 23400000.00
+    description: "Seltenste Münze der Welt"
+
+  - name: "Krugerrand 1967 Erster Jahrgang"
+    collectionType: "MUENZEN"
+    collectionName: "MUENZEN_GOLD"
+    countryRequired: "Südafrika"
+    rarity: "EPIC"
+    baseValue: 28000.00
+    price: 35000.00
+    description: "Erstausgabe der bekanntesten Goldmünze"
+
+  - name: "Maple Leaf 1 oz 9999 Proof"
+    collectionType: "MUENZEN"
+    collectionName: "MUENZEN_GOLD"
+    countryRequired: "Kanada"
+    rarity: "RARE"
+    baseValue: 2400.00
+    price: 3000.00
+    description: "Spiegelglanz-Ausgabe der Royal Mint"
+
+  - name: "Wiener Philharmoniker 100 Euro"
+    collectionType: "MUENZEN"
+    collectionName: "MUENZEN_GOLD"
+    countryRequired: "Österreich"
+    rarity: "RARE"
+    baseValue: 2800.00
+    price: 3500.00
+    description: "Österreichische Goldmünze Premium"
+
+  - name: "Panda 1982 Goldmünze Erstausgabe"
+    collectionType: "MUENZEN"
+    collectionName: "MUENZEN_GOLD"
+    countryRequired: "China"
+    rarity: "EPIC"
+    baseValue: 14000.00
+    price: 17500.00
+    description: "Allererste chinesische Panda-Goldmünze"
+
+  # ── MUENZEN_HISTORISCH (Historische Münzprägungen) ────────────────────────
+  - name: "Dekadrachme Syrakus 400 v. Chr."
+    collectionType: "MUENZEN"
+    collectionName: "MUENZEN_HISTORISCH"
+    countryRequired: "Griechenland"
+    rarity: "LEGENDARY"
+    baseValue: 380000.00
+    price: 475000.00
+    description: "Schönste Münze der Antike"
+
+  - name: "Aureus Julius Caesar 44 v. Chr."
+    collectionType: "MUENZEN"
+    collectionName: "MUENZEN_HISTORISCH"
+    countryRequired: "Italien"
+    rarity: "LEGENDARY"
+    baseValue: 450000.00
+    price: 565000.00
+    description: "Goldmünze aus Caesars Todesjahr"
+
+  - name: "Thaler Maria Theresia 1780"
+    collectionType: "MUENZEN"
+    collectionName: "MUENZEN_HISTORISCH"
+    countryRequired: "Österreich"
+    rarity: "COMMON"
+    baseValue: 35.00
+    price: 44.00
+    description: "Welthandelsmünze aus Wien"
+
+  - name: "Guldengroschen Böhmen 1519"
+    collectionType: "MUENZEN"
+    collectionName: "MUENZEN_HISTORISCH"
+    countryRequired: "Tschechien"
+    rarity: "EPIC"
+    baseValue: 12000.00
+    price: 15000.00
+    description: "Vorläufer des Talers aus Joachimsthal"
+
+  - name: "Byzantine Histamenon Nomisma"
+    collectionType: "MUENZEN"
+    collectionName: "MUENZEN_HISTORISCH"
+    countryRequired: "Türkei"
+    rarity: "RARE"
+    baseValue: 3200.00
+    price: 4000.00
+    description: "Byzantinische Goldmünze 1000 n. Chr."
+
+  # ── BRIEFMARKEN (Raritäten-Philatelie) ────────────────────────────────────
+  - name: "British Guiana One-Cent Magenta 1856"
+    collectionType: "BRIEFMARKEN"
+    collectionName: "BRIEFMARKEN"
+    countryRequired: "Guyana"
+    rarity: "LEGENDARY"
+    baseValue: 9480000.00
+    price: 11850000.00
+    description: "Teuerste Briefmarke der Welt"
+
+  - name: "Mauritius Blue Penny 1847"
+    collectionType: "BRIEFMARKEN"
+    collectionName: "BRIEFMARKEN"
+    countryRequired: "Mauritius"
+    rarity: "LEGENDARY"
+    baseValue: 2000000.00
+    price: 2500000.00
+    description: "Post Office Rarität aus dem Indischen Ozean"
+
+  - name: "Inverted Jenny Block of Four"
+    collectionType: "BRIEFMARKEN"
+    collectionName: "BRIEFMARKEN"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 4500000.00
+    price: 5625000.00
+    description: "Druckfehler-Vierblock Flugzeug-Marke 1918"
+
+  - name: "Baden 9 Kreuzer Fehldruck"
+    collectionType: "BRIEFMARKEN"
+    collectionName: "BRIEFMARKEN"
+    countryRequired: "Deutschland"
+    rarity: "EPIC"
+    baseValue: 1800000.00
+    price: 2250000.00
+    description: "Schwärzlichblauer statt Dunkelgrün"
+
+  - name: "Hannover 3 Pfennige 1850"
+    collectionType: "BRIEFMARKEN"
+    collectionName: "BRIEFMARKEN"
+    countryRequired: "Deutschland"
+    rarity: "RARE"
+    baseValue: 8500.00
+    price: 10700.00
+    description: "Frühes deutsches Königreich"
+
+  # ── SPIELZEUG_VINTAGE (Vintage-Spielzeug) ─────────────────────────────────
+  - name: "Steiff Teddybär 1904 Original"
+    collectionType: "SPIELZEUG"
+    collectionName: "SPIELZEUG_VINTAGE"
+    countryRequired: "Deutschland"
+    rarity: "LEGENDARY"
+    baseValue: 120000.00
+    price: 150000.00
+    description: "Allererster Knopf im Ohr"
+
+  - name: "Märklin Uhrwerk-Dampflokomotive 1900"
+    collectionType: "SPIELZEUG"
+    collectionName: "SPIELZEUG_VINTAGE"
+    countryRequired: "Deutschland"
+    rarity: "EPIC"
+    baseValue: 35000.00
+    price: 44000.00
+    description: "Frühe Blechspielzeug-Meisterarbeit"
+
+  - name: "Barbie Nr. 1 1959 Erstausgabe"
+    collectionType: "SPIELZEUG"
+    collectionName: "SPIELZEUG_VINTAGE"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 27450.00
+    price: 34300.00
+    description: "Allererste Barbie-Puppe MIB"
+
+  - name: "Dinky Toys Spitfire 1940er"
+    collectionType: "SPIELZEUG"
+    collectionName: "SPIELZEUG_VINTAGE"
+    countryRequired: "UK"
+    rarity: "RARE"
+    baseValue: 4500.00
+    price: 5700.00
+    description: "Diecast Militärmodell aus dem Krieg"
+
+  - name: "Hot Wheels Rear-Loading VW Bus 1969"
+    collectionType: "SPIELZEUG"
+    collectionName: "SPIELZEUG_VINTAGE"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 25000.00
+    price: 32000.00
+    description: "Seltenste Hot Wheels aller Zeiten"
+
+  # ── SPIELZEUG_LEGO (LEGO Limitiert) ──────────────────────────────────────
+  - name: "LEGO Millennium Falcon 2007 NEU"
+    collectionType: "SPIELZEUG"
+    collectionName: "SPIELZEUG_LEGO"
+    countryRequired: "Dänemark"
+    rarity: "EPIC"
+    baseValue: 8500.00
+    price: 10700.00
+    description: "Erstes Ultimate Collector Series Falcon"
+
+  - name: "LEGO Taj Mahal 2008 Versiegelt"
+    collectionType: "SPIELZEUG"
+    collectionName: "SPIELZEUG_LEGO"
+    countryRequired: "Dänemark"
+    rarity: "EPIC"
+    baseValue: 3800.00
+    price: 4800.00
+    description: "Mit 5922 Teilen weltweit Rekord damals"
+
+  - name: "LEGO Ghostbusters Ecto-1 21108"
+    collectionType: "SPIELZEUG"
+    collectionName: "SPIELZEUG_LEGO"
+    countryRequired: "Dänemark"
+    rarity: "RARE"
+    baseValue: 1200.00
+    price: 1500.00
+    description: "Ideas-Set erster Generation"
+
+  - name: "LEGO Gold Chrome Darth Vader"
+    collectionType: "SPIELZEUG"
+    collectionName: "SPIELZEUG_LEGO"
+    countryRequired: "Dänemark"
+    rarity: "LEGENDARY"
+    baseValue: 12000.00
+    price: 15000.00
+    description: "CEE 2008 exclusive Promotion-Figur"
+
+  - name: "LEGO Space Classic Set 497 Galaxy Explorer"
+    collectionType: "SPIELZEUG"
+    collectionName: "SPIELZEUG_LEGO"
+    countryRequired: "Dänemark"
+    rarity: "RARE"
+    baseValue: 2200.00
+    price: 2800.00
+    description: "Ungeöffneter Weltraumklassiker 1979"
+
+  # ── ACTIONFIGUREN (Actionfiguren-Tresor) ──────────────────────────────────
+  - name: "Star Wars Boba Fett Rocket-Firing 1979"
+    collectionType: "SPIELZEUG"
+    collectionName: "ACTIONFIGUREN"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 185000.00
+    price: 231000.00
+    description: "Nie produziert, einige Prototypen"
+
+  - name: "He-Man First Release MOTU 1982"
+    collectionType: "SPIELZEUG"
+    collectionName: "ACTIONFIGUREN"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 8500.00
+    price: 10700.00
+    description: "Erster Masters-of-the-Universe"
+
+  - name: "G.I. Joe 1964 Prototype"
+    collectionType: "SPIELZEUG"
+    collectionName: "ACTIONFIGUREN"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 200000.00
+    price: 250000.00
+    description: "Hasbro Erstprototyp-Soldat"
+
+  - name: "Transformers Optimus Prime G1 MOC"
+    collectionType: "SPIELZEUG"
+    collectionName: "ACTIONFIGUREN"
+    countryRequired: "Japan"
+    rarity: "EPIC"
+    baseValue: 9000.00
+    price: 11300.00
+    description: "Originalverpackung 1984 Takara"
+
+  - name: "NECA Reel Toys Alien 1979 Signiert"
+    collectionType: "SPIELZEUG"
+    collectionName: "ACTIONFIGUREN"
+    countryRequired: "USA"
+    rarity: "RARE"
+    baseValue: 3500.00
+    price: 4400.00
+    description: "Ridley Scott handsigniert"
+
+  # ── MUSIK_GITARREN (Vintage-Gitarren) ─────────────────────────────────────
+  - name: "Jimi Hendrix Woodstock Stratocaster"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_GITARREN"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 2000000.00
+    price: 2500000.00
+    description: "Gespielt beim legendären Auftritt 1969"
+
+  - name: "Eric Clapton 'Blackie' Strat Repro"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_GITARREN"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 22000.00
+    price: 27500.00
+    description: "Autorisierte Claptons Signature-Replik"
+
+  - name: "Gibson Les Paul 1959 Sunburst"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_GITARREN"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 750000.00
+    price: 940000.00
+    description: "Heiliger Gral der Elektrischen"
+
+  - name: "Martin D-45 1933 Oahu-Umlack"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_GITARREN"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 2300000.00
+    price: 2875000.00
+    description: "Teuerste Akustikgitarre der Welt"
+
+  - name: "Fender Broadcaster 1950"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_GITARREN"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 375000.00
+    price: 470000.00
+    description: "Erste Fender Solidbody-Gitarre überhaupt"
+
+  # ── MUSIK_VINYL (Vinyl-Rarität) ────────────────────────────────────────────
+  - name: "Beatles 'Yesterday and Today' Butcher Cover 1966"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_VINYL"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 180000.00
+    price: 225000.00
+    description: "Unzensiertes Capitol Erstpressung-Coverfoto"
+
+  - name: "Led Zeppelin I Atlantic Turquoise 1969"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_VINYL"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 14000.00
+    price: 17500.00
+    description: "Seltenes türkisfarbenes Label-Erstpressung"
+
+  - name: "Sex Pistols 'God Save The Queen' A&M 1977"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_VINYL"
+    countryRequired: "UK"
+    rarity: "LEGENDARY"
+    baseValue: 16000.00
+    price: 20000.00
+    description: "Sofort zurückgezogene Single"
+
+  - name: "Miles Davis 'Kind of Blue' Columbia 6-Eye"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_VINYL"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 5500.00
+    price: 6900.00
+    description: "Original 6-Eye Columbia Label Erstpressung"
+
+  - name: "Bob Dylan 'Freewheelin' Withdrawn Cover"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_VINYL"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 35000.00
+    price: 44000.00
+    description: "Zurückgerufene Erstpressung 1963"
+
+  # ── MUSIK_KEYBOARDS (Synthesizer-Archiv) ──────────────────────────────────
+  - name: "Moog Modular Synthesizer 1967"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_KEYBOARDS"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 280000.00
+    price: 350000.00
+    description: "Bob Moogs originales Modularsystem"
+
+  - name: "Roland TB-303 Bassline (Mintzustand)"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_KEYBOARDS"
+    countryRequired: "Japan"
+    rarity: "EPIC"
+    baseValue: 8500.00
+    price: 10700.00
+    description: "Urahn der Acid-Musik"
+
+  - name: "Oberheim OB-Xa Vintage"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_KEYBOARDS"
+    countryRequired: "USA"
+    rarity: "RARE"
+    baseValue: 4500.00
+    price: 5700.00
+    description: "80er-Synthie-Ikone"
+
+  - name: "Sequential Circuits Prophet-5 Rev 1"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_KEYBOARDS"
+    countryRequired: "USA"
+    rarity: "RARE"
+    baseValue: 5500.00
+    price: 6900.00
+    description: "Erster polyphoner Programm-Synth"
+
+  - name: "Yamaha DX7 Original 1983"
+    collectionType: "MUSIK"
+    collectionName: "MUSIK_KEYBOARDS"
+    countryRequired: "Japan"
+    rarity: "COMMON"
+    baseValue: 1800.00
+    price: 2300.00
+    description: "FM-Synthesizer der 80er-Popmusik"
+
+  # ── REISE_ASIEN (Asiatische Kunsthandwerke) ────────────────────────────────
+  - name: "Netsuke Elfenbein Meiji-Zeit"
+    collectionType: "REISE"
+    collectionName: "REISE_ASIEN"
+    countryRequired: "Japan"
+    rarity: "EPIC"
+    baseValue: 25000.00
+    price: 32000.00
+    description: "Kleinstskulptur aus Edo-Japan"
+
+  - name: "Tang-Pferd Grabfigur"
+    collectionType: "REISE"
+    collectionName: "REISE_ASIEN"
+    countryRequired: "China"
+    rarity: "EPIC"
+    baseValue: 35000.00
+    price: 44000.00
+    description: "Glasurpferd aus Tang-Dynastiegrab"
+
+  - name: "Tibetische Thangka-Malerei 18. Jh."
+    collectionType: "REISE"
+    collectionName: "REISE_ASIEN"
+    countryRequired: "Tibet"
+    rarity: "RARE"
+    baseValue: 12000.00
+    price: 15000.00
+    description: "Tempelbild auf Seide"
+
+  - name: "Gandhara-Buddha 2. Jahrhundert"
+    collectionType: "REISE"
+    collectionName: "REISE_ASIEN"
+    countryRequired: "Pakistan"
+    rarity: "LEGENDARY"
+    baseValue: 380000.00
+    price: 475000.00
+    description: "Griechisch-buddhistisches Meisterwerk"
+
+  - name: "Japanisches Katana Edo-Zeit"
+    collectionType: "REISE"
+    collectionName: "REISE_ASIEN"
+    countryRequired: "Japan"
+    rarity: "EPIC"
+    baseValue: 85000.00
+    price: 108000.00
+    description: "Signiertes Schwertsches Meisterstück"
+
+  # ── REISE_EUROPA (Europäische Antiquitäten) ───────────────────────────────
+  - name: "Meißener Porzellanvase 1720"
+    collectionType: "REISE"
+    collectionName: "REISE_EUROPA"
+    countryRequired: "Deutschland"
+    rarity: "EPIC"
+    baseValue: 48000.00
+    price: 60000.00
+    description: "Böttger-Ära weißes Gold"
+
+  - name: "Florentinischer Spiegel 17. Jh."
+    collectionType: "REISE"
+    collectionName: "REISE_EUROPA"
+    countryRequired: "Italien"
+    rarity: "EPIC"
+    baseValue: 32000.00
+    price: 40000.00
+    description: "Geschnitzter Goldrahmen Florentine"
+
+  - name: "Normandie Wandteppich Replik"
+    collectionType: "REISE"
+    collectionName: "REISE_EUROPA"
+    countryRequired: "Frankreich"
+    rarity: "RARE"
+    baseValue: 12000.00
+    price: 15000.00
+    description: "Aufwendige Kopie der Bayes-Stickerei"
+
+  - name: "Wiener Secession Plakat Klimt Original"
+    collectionType: "REISE"
+    collectionName: "REISE_EUROPA"
+    countryRequired: "Österreich"
+    rarity: "EPIC"
+    baseValue: 25000.00
+    price: 32000.00
+    description: "Ausstellungsplakat 1898 von Klimt"
+
+  - name: "Delftware Fliesen-Tableau 17. Jh."
+    collectionType: "REISE"
+    collectionName: "REISE_EUROPA"
+    countryRequired: "Niederlande"
+    rarity: "RARE"
+    baseValue: 8500.00
+    price: 10700.00
+    description: "Handbemalte blau-weiße Szenenfolge"
+
+  # ── REISE_AMERICAS (Amerikanische Raritäten) ──────────────────────────────
+  - name: "Aztekischer Kalenderstein Replik"
+    collectionType: "REISE"
+    collectionName: "REISE_AMERICAS"
+    countryRequired: "Mexiko"
+    rarity: "RARE"
+    baseValue: 6500.00
+    price: 8200.00
+    description: "Hochpräzise Kopie 40 cm Durchmesser"
+
+  - name: "Maya-Jade-Maske 600 n. Chr."
+    collectionType: "REISE"
+    collectionName: "REISE_AMERICAS"
+    countryRequired: "Guatemala"
+    rarity: "LEGENDARY"
+    baseValue: 1500000.00
+    price: 1875000.00
+    description: "Bestattungsmaske aus Palenque-Region"
+
+  - name: "Tlingit Totempfahl Miniatur"
+    collectionType: "REISE"
+    collectionName: "REISE_AMERICAS"
+    countryRequired: "Kanada"
+    rarity: "RARE"
+    baseValue: 3800.00
+    price: 4800.00
+    description: "Handgeschnitzte Zeder 60 cm"
+
+  - name: "Navajo-Silberblütenring 1900"
+    collectionType: "REISE"
+    collectionName: "REISE_AMERICAS"
+    countryRequired: "USA"
+    rarity: "COMMON"
+    baseValue: 850.00
+    price: 1100.00
+    description: "Traditioneller Schmied aus Arizona"
+
+  - name: "Inca Goldmaske Replik"
+    collectionType: "REISE"
+    collectionName: "REISE_AMERICAS"
+    countryRequired: "Peru"
+    rarity: "EPIC"
+    baseValue: 22000.00
+    price: 28000.00
+    description: "Hochwertige Nachbildung aus Cuzco"
+
+  # ── DIGITAL_NFT (Blue-Chip NFT Portfolio) ─────────────────────────────────
+  - name: "CryptoPunks #7523"
+    collectionType: "DIGITAL"
+    collectionName: "DIGITAL_NFT"
+    countryRequired: "Internet"
+    rarity: "LEGENDARY"
+    baseValue: 11754000.00
+    price: 14700000.00
+    description: "Covid-Alien – teuerster CryptoPunk"
+
+  - name: "Bored Ape Yacht Club #8817"
+    collectionType: "DIGITAL"
+    collectionName: "DIGITAL_NFT"
+    countryRequired: "Internet"
+    rarity: "LEGENDARY"
+    baseValue: 3400000.00
+    price: 4250000.00
+    description: "Triple-Rare Ape im Goldanzug"
+
+  - name: "Fidenza #313"
+    collectionType: "DIGITAL"
+    collectionName: "DIGITAL_NFT"
+    countryRequired: "Internet"
+    rarity: "EPIC"
+    baseValue: 1000000.00
+    price: 1250000.00
+    description: "Tyler Hobbs generativer Art-Block"
+
+  - name: "Ringers #109 – The Goose"
+    collectionType: "DIGITAL"
+    collectionName: "DIGITAL_NFT"
+    countryRequired: "Internet"
+    rarity: "LEGENDARY"
+    baseValue: 5800000.00
+    price: 7250000.00
+    description: "Art Blocks Curated Grail"
+
+  - name: "Meebit #17522"
+    collectionType: "DIGITAL"
+    collectionName: "DIGITAL_NFT"
+    countryRequired: "Internet"
+    rarity: "RARE"
+    baseValue: 120000.00
+    price: 150000.00
+    description: "Larva Labs 3D Voxel Avatar"
+
+  # ── DIGITAL_HARDWARE (Krypto-Mining Rig Kollektion) ───────────────────────
+  - name: "Antminer S9 Signiert Satoshi Era"
+    collectionType: "DIGITAL"
+    collectionName: "DIGITAL_HARDWARE"
+    countryRequired: "China"
+    rarity: "EPIC"
+    baseValue: 18000.00
+    price: 22500.00
+    description: "Original-Rig aus frühen Bitcoin-Mining-Tagen"
+
+  - name: "ASIC Bitcoin Mining Rig Bitmain Gen1"
+    collectionType: "DIGITAL"
+    collectionName: "DIGITAL_HARDWARE"
+    countryRequired: "China"
+    rarity: "RARE"
+    baseValue: 4500.00
+    price: 5700.00
+    description: "Erste ASIC-Generation ab 2013"
+
+  - name: "Butterfly Labs Jalapeño FPGA"
+    collectionType: "DIGITAL"
+    collectionName: "DIGITAL_HARDWARE"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 12000.00
+    price: 15000.00
+    description: "Erstes kommerzielles FPGA-Miner-Gerät"
+
+  - name: "Ethereum Genesis Miner Rig"
+    collectionType: "DIGITAL"
+    collectionName: "DIGITAL_HARDWARE"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 95000.00
+    price: 120000.00
+    description: "GPU-Rig aus Ethereum Block 0"
+
+  - name: "CoinTerra TerraMiner IV"
+    collectionType: "DIGITAL"
+    collectionName: "DIGITAL_HARDWARE"
+    countryRequired: "USA"
+    rarity: "RARE"
+    baseValue: 6500.00
+    price: 8200.00
+    description: "Hochleistungs-ASIC 2014"
+
+  # ── SONSTIGES_LUXUS (Luxusobjekte der Extraklasse) ────────────────────────
+  - name: "Hermès Birkin 30 Himalaya Krokodil"
+    collectionType: "SONSTIGES"
+    collectionName: "SONSTIGES_LUXUS"
+    countryRequired: "Frankreich"
+    rarity: "LEGENDARY"
+    baseValue: 450000.00
+    price: 565000.00
+    description: "Weißeste Birkin – Heiliger Gral"
+
+  - name: "Chanel 2.55 Reissue Goldkette 1955 Edition"
+    collectionType: "SONSTIGES"
+    collectionName: "SONSTIGES_LUXUS"
+    countryRequired: "Frankreich"
+    rarity: "EPIC"
+    baseValue: 12000.00
+    price: 15000.00
+    description: "Erstausgabe Anniversary Edition"
+
+  - name: "Louis Vuitton Steamer Bag Original"
+    collectionType: "SONSTIGES"
+    collectionName: "SONSTIGES_LUXUS"
+    countryRequired: "Frankreich"
+    rarity: "RARE"
+    baseValue: 4500.00
+    price: 5700.00
+    description: "Early LV Monogramm Koffer"
+
+  - name: "Saint Laurent Mondrian-Kleid Original"
+    collectionType: "SONSTIGES"
+    collectionName: "SONSTIGES_LUXUS"
+    countryRequired: "Frankreich"
+    rarity: "EPIC"
+    baseValue: 85000.00
+    price: 108000.00
+    description: "Revolutionäres Kunstmode-Kleid 1965"
+
+  - name: "Christian Louboutin Pigalle 120 Diamond"
+    collectionType: "SONSTIGES"
+    collectionName: "SONSTIGES_LUXUS"
+    countryRequired: "Frankreich"
+    rarity: "LEGENDARY"
+    baseValue: 150000.00
+    price: 190000.00
+    description: "Diamantbesetzte Pumps One-of-a-Kind"
+
+  # ── SONSTIGES_KURIOSA (Kuriosa & Raritäten) ───────────────────────────────
+  - name: "Galileos Mittelfinger (Museum Replik)"
+    collectionType: "SONSTIGES"
+    collectionName: "SONSTIGES_KURIOSA"
+    countryRequired: "Italien"
+    rarity: "RARE"
+    baseValue: 3500.00
+    price: 4400.00
+    description: "Kurioses Replika aus dem Museo Galileo"
+
+  - name: "Napoleon Hut Original 1821"
+    collectionType: "SONSTIGES"
+    collectionName: "SONSTIGES_KURIOSA"
+    countryRequired: "Frankreich"
+    rarity: "LEGENDARY"
+    baseValue: 1930000.00
+    price: 2415000.00
+    description: "Chapeau von St. Helena"
+
+  - name: "Albert Einsteins Gehirnscheibe (Kopie)"
+    collectionType: "SONSTIGES"
+    collectionName: "SONSTIGES_KURIOSA"
+    countryRequired: "USA"
+    rarity: "EPIC"
+    baseValue: 25000.00
+    price: 32000.00
+    description: "Autorisierte wissenschaftliche Reproduktion"
+
+  - name: "Moon Rock Apollon 14 zertifiziert"
+    collectionType: "SONSTIGES"
+    collectionName: "SONSTIGES_KURIOSA"
+    countryRequired: "USA"
+    rarity: "LEGENDARY"
+    baseValue: 5000000.00
+    price: 6250000.00
+    description: "0.1g Mondgestein – NASA Zertifikat"
+
+  - name: "Darwin's Notizblock Original 1840"
+    collectionType: "SONSTIGES"
+    collectionName: "SONSTIGES_KURIOSA"
+    countryRequired: "UK"
+    rarity: "EPIC"
+    baseValue: 45000.00
+    price: 57000.00
+    description: "Handnotizen Galapagos-Expedition"

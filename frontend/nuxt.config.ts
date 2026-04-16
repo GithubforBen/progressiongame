@@ -9,7 +9,10 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
+    // Private – nur serverseitig (SSR → Docker-internes Netz)
+    apiBase: process.env.NUXT_INTERNAL_API_BASE || process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080',
     public: {
+      // Public – clientseitig (Browser → Cloudflare Tunnel)
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080',
     },
   },
@@ -27,6 +30,8 @@ export default defineNuxtConfig({
   router: {
     middleware: ['auth'],
   },
+
+  ssr: false,
 
   nitro: {
     preset: 'node-server',

@@ -3,6 +3,7 @@ package com.financegame.dto;
 import com.financegame.entity.RealEstateCatalog;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record RealEstateDto(
     Long id,
@@ -13,9 +14,13 @@ public record RealEstateDto(
     BigDecimal purchasePrice,
     BigDecimal monthlyRent,
     BigDecimal rentSavings,
-    boolean owned
+    String requiredCert,
+    boolean owned,
+    boolean locked
 ) {
-    public static RealEstateDto from(RealEstateCatalog c, boolean owned) {
+    public static RealEstateDto from(RealEstateCatalog c, boolean owned, List<String> completedStages) {
+        String req = c.getRequiredCert();
+        boolean locked = req != null && !completedStages.contains(req);
         return new RealEstateDto(
             c.getId(),
             c.getName(),
@@ -25,7 +30,9 @@ public record RealEstateDto(
             c.getPurchasePrice(),
             c.getMonthlyRent(),
             c.getRentSavings(),
-            owned
+            req,
+            owned,
+            locked
         );
     }
 }

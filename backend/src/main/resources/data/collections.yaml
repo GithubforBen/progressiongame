@@ -1,0 +1,287 @@
+collections:
+
+  # ── Autos ──────────────────────────────────────────────────────────────────
+  - name: "AUTOS_KLASSIKER"
+    displayName: "Klassische Sportwagen"
+    bonusType: "MONTHLY_INCOME_BONUS"
+    bonusValue: 800
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_OLDTIMER_1"
+
+  - name: "AUTOS_JAPANISCH"
+    displayName: "Japanische Ikonen"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 5
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_OLDTIMER_1"
+
+  - name: "AUTOS_LUXUS"
+    displayName: "Moderne Luxusflotte"
+    bonusType: "SALARY_MULTIPLIER"
+    bonusValue: 0.06
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_OLDTIMER_2"
+
+  - name: "AUTOS_OLDTIMER"
+    displayName: "Historische Raritäten"
+    bonusType: "MONTHLY_INCOME_BONUS"
+    bonusValue: 500
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_OLDTIMER_1"
+
+  # ── Uhren ──────────────────────────────────────────────────────────────────
+  - name: "UHREN_SCHWEIZ"
+    displayName: "Schweizer Präzision"
+    bonusType: "SALARY_MULTIPLIER"
+    bonusValue: 0.05
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_UHRMACHER_1"
+
+  - name: "UHREN_SPORT"
+    displayName: "Sportuhren-Kollektion"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 4
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_UHRMACHER_1"
+
+  - name: "UHREN_VINTAGE"
+    displayName: "Vintage-Zeitmesser"
+    bonusType: "MONTHLY_INCOME_BONUS"
+    bonusValue: 400
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_UHRMACHER_2"
+
+  # ── Kunst ──────────────────────────────────────────────────────────────────
+  - name: "KUNST_MODERNE"
+    displayName: "Moderne Kunst"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 6
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_KUNSTKENNER_1"
+
+  - name: "KUNST_STREET"
+    displayName: "Street Art & Graffiti"
+    bonusType: "EXPENSE_REDUCTION"
+    bonusValue: 0.03
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_KUNSTKENNER_1"
+
+  - name: "KUNST_KLASSISCH"
+    displayName: "Klassische Gemälde"
+    bonusType: "SALARY_MULTIPLIER"
+    bonusValue: 0.04
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_KUNSTKENNER_2"
+
+  # ── Elektronik ─────────────────────────────────────────────────────────────
+  - name: "TECH_RETRO"
+    displayName: "Retro-Gaming Klassiker"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 5
+    itemCount: 5
+
+  - name: "TECH_KRYPTO"
+    displayName: "Krypto-Hardware Wallet Kollektion"
+    bonusType: "MONTHLY_INCOME_BONUS"
+    bonusValue: 600
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_CRYPTO_1"
+
+  - name: "TECH_LUXUS"
+    displayName: "Premium-Gadgets"
+    bonusType: "EXPENSE_REDUCTION"
+    bonusValue: 0.02
+    itemCount: 5
+
+  # ── Schmuck ────────────────────────────────────────────────────────────────
+  - name: "SCHMUCK_DIAMANT"
+    displayName: "Diamanten-Kollektion"
+    bonusType: "SCHUFA_BONUS"
+    bonusValue: 30
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_MINERALIEN_2"
+
+  - name: "SCHMUCK_GOLD"
+    displayName: "Goldschmuck-Galerie"
+    bonusType: "MONTHLY_INCOME_BONUS"
+    bonusValue: 350
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_MINERALIEN_1"
+
+  - name: "SCHMUCK_VINTAGE"
+    displayName: "Antiker Schmuck"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 4
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_MINERALIEN_1"
+
+  # ── Wein & Spirituosen ─────────────────────────────────────────────────────
+  - name: "WEIN_BORDEAUX"
+    displayName: "Grands Crus Bordeaux"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 7
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_WEINKENNER_1"
+
+  - name: "WEIN_WHISKY"
+    displayName: "Single Malt Sammlung"
+    bonusType: "EXPENSE_REDUCTION"
+    bonusValue: 0.03
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_WHISKY_1"
+
+  - name: "WEIN_CHAMPAGNER"
+    displayName: "Prestige-Champagner"
+    bonusType: "SALARY_MULTIPLIER"
+    bonusValue: 0.03
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_WEINKENNER_2"
+
+  # ── Sportartikel ───────────────────────────────────────────────────────────
+  - name: "SPORT_SCHUHE"
+    displayName: "Sneaker-Galerie"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 5
+    itemCount: 5
+
+  - name: "SPORT_TRIKOTS"
+    displayName: "Fußball-Trikot-Archiv"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 4
+    itemCount: 5
+
+  - name: "SPORT_MEMORABILIA"
+    displayName: "Sport-Memorabilia"
+    bonusType: "MONTHLY_INCOME_BONUS"
+    bonusValue: 300
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_SPORTSAMMLER_1"
+
+  # ── Bücher & Mangas ────────────────────────────────────────────────────────
+  - name: "BUECHER_ERSTAUSGABE"
+    displayName: "Erstausgaben-Bibliothek"
+    bonusType: "SALARY_MULTIPLIER"
+    bonusValue: 0.03
+    itemCount: 5
+
+  - name: "BUECHER_MANGA"
+    displayName: "Manga-Erstauflage"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 5
+    itemCount: 5
+
+  - name: "BUECHER_WISSENSCHAFT"
+    displayName: "Wissenschaftliche Raritäten"
+    bonusType: "SALARY_MULTIPLIER"
+    bonusValue: 0.04
+    itemCount: 5
+
+  # ── Numismatik & Philatelie ────────────────────────────────────────────────
+  - name: "MUENZEN_GOLD"
+    displayName: "Goldmünzen-Schatz"
+    bonusType: "MONTHLY_INCOME_BONUS"
+    bonusValue: 450
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_NUMISMATIK_1"
+
+  - name: "MUENZEN_HISTORISCH"
+    displayName: "Historische Münzprägungen"
+    bonusType: "SCHUFA_BONUS"
+    bonusValue: 20
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_NUMISMATIK_2"
+
+  - name: "BRIEFMARKEN"
+    displayName: "Raritäten-Philatelie"
+    bonusType: "MONTHLY_INCOME_BONUS"
+    bonusValue: 250
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_PHILATELIE_1"
+
+  # ── Kultobjekte & Spielzeug ────────────────────────────────────────────────
+  - name: "SPIELZEUG_VINTAGE"
+    displayName: "Vintage-Spielzeug"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 6
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_ARCHAEOLOGIE_1"
+
+  - name: "SPIELZEUG_LEGO"
+    displayName: "LEGO Limitiert"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 5
+    itemCount: 5
+
+  - name: "ACTIONFIGUREN"
+    displayName: "Actionfiguren-Tresor"
+    bonusType: "EXPENSE_REDUCTION"
+    bonusValue: 0.02
+    itemCount: 5
+
+  # ── Musikinstrumente ───────────────────────────────────────────────────────
+  - name: "MUSIK_GITARREN"
+    displayName: "Vintage-Gitarren"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 7
+    itemCount: 5
+
+  - name: "MUSIK_VINYL"
+    displayName: "Vinyl-Rarität"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 5
+    itemCount: 5
+
+  - name: "MUSIK_KEYBOARDS"
+    displayName: "Synthesizer-Archiv"
+    bonusType: "EXPENSE_REDUCTION"
+    bonusValue: 0.02
+    itemCount: 5
+
+  # ── Reise-Memorabilia ──────────────────────────────────────────────────────
+  - name: "REISE_ASIEN"
+    displayName: "Asiatische Kunsthandwerke"
+    bonusType: "MONTHLY_INCOME_BONUS"
+    bonusValue: 300
+    itemCount: 5
+
+  - name: "REISE_EUROPA"
+    displayName: "Europäische Antiquitäten"
+    bonusType: "SALARY_MULTIPLIER"
+    bonusValue: 0.03
+    itemCount: 5
+
+  - name: "REISE_AMERICAS"
+    displayName: "Amerikanische Raritäten"
+    bonusType: "HAPPINESS_BONUS"
+    bonusValue: 4
+    itemCount: 5
+
+  # ── Krypto & Digital ───────────────────────────────────────────────────────
+  - name: "DIGITAL_NFT"
+    displayName: "Blue-Chip NFT Portfolio"
+    bonusType: "MONTHLY_INCOME_BONUS"
+    bonusValue: 1000
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - name: "DIGITAL_HARDWARE"
+    displayName: "Krypto-Mining Rig Kollektion"
+    bonusType: "MONTHLY_INCOME_BONUS"
+    bonusValue: 700
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_CRYPTO_1"
+
+  # ── Sonstige ───────────────────────────────────────────────────────────────
+  - name: "SONSTIGES_LUXUS"
+    displayName: "Luxusobjekte der Extraklasse"
+    bonusType: "SALARY_MULTIPLIER"
+    bonusValue: 0.08
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_KUNSTKENNER_2"
+
+  - name: "SONSTIGES_KURIOSA"
+    displayName: "Kuriosa & Raritäten"
+    bonusType: "EXPENSE_REDUCTION"
+    bonusValue: 0.04
+    itemCount: 5
+    requiredCert: "WEITERBILDUNG_ARCHAEOLOGIE_1"

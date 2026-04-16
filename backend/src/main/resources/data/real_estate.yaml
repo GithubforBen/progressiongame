@@ -1,48 +1,186 @@
 properties:
+
+  # ── Level 1 – Einsteiger ────────────────────────────────────────────────────
+  - name: "Studio-Apartment Frankfurt"
+    location: "Frankfurt"
+    category: "WOHNUNG"
+    requiredCert: ~
+    purchasePrice: 80000.00
+    monthlyRent: 450.00
+    rentSavings: 280.00
+    description: "Kompaktes Studio im Bankenviertel"
+
   - name: "1-Zimmer-Wohnung Berlin"
     location: "Berlin"
     category: "WOHNUNG"
-    purchasePrice: 150000.00
-    monthlyRent: 700.00
-    rentSavings: 450.00
+    requiredCert: ~
+    purchasePrice: 130000.00
+    monthlyRent: 650.00
+    rentSavings: 420.00
     description: "Kleine Wohnung in Berlin-Mitte, ideal als Kapitalanlage"
 
+  - name: "Garagenstellplatz Muenchen"
+    location: "Muenchen"
+    category: "GEWERBE"
+    requiredCert: ~
+    purchasePrice: 55000.00
+    monthlyRent: 180.00
+    rentSavings: 0.00
+    description: "Innenstadtnahe Einzelgarage – solide Rendite"
+
+  - name: "Studenten-WG Koeln"
+    location: "Koeln"
+    category: "WOHNUNG"
+    requiredCert: ~
+    purchasePrice: 95000.00
+    monthlyRent: 580.00
+    rentSavings: 350.00
+    description: "3-Zimmer-WG nahe Uni Köln, dauerhaft vermietet"
+
+  # ── Level 2 – Fortgeschrittener ─────────────────────────────────────────────
   - name: "3-Zimmer-Wohnung Muenchen"
     location: "Muenchen"
     category: "WOHNUNG"
-    purchasePrice: 420000.00
-    monthlyRent: 1800.00
-    rentSavings: 1200.00
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+    purchasePrice: 380000.00
+    monthlyRent: 1600.00
+    rentSavings: 1100.00
     description: "Grosse Wohnung in Schwabing mit Balkon"
 
+  - name: "Zweifamilienhaus Leipzig"
+    location: "Leipzig"
+    category: "HAUS"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+    purchasePrice: 280000.00
+    monthlyRent: 1400.00
+    rentSavings: 950.00
+    description: "Gründerzeitvilla mit zwei Wohneinheiten"
+
+  - name: "Eigentumswohnung Duesseldorf"
+    location: "Duesseldorf"
+    category: "WOHNUNG"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+    purchasePrice: 210000.00
+    monthlyRent: 950.00
+    rentSavings: 650.00
+    description: "Moderne 2-Zimmer-Wohnung nahe Altstadt"
+
+  - name: "Kleines Buero Hannover"
+    location: "Hannover"
+    category: "GEWERBE"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+    purchasePrice: 180000.00
+    monthlyRent: 1200.00
+    rentSavings: 0.00
+    description: "Zentrales Büro 60 qm in der City"
+
+  # ── Level 3 – Erfahrener Investor ───────────────────────────────────────────
   - name: "Einfamilienhaus Hamburg"
     location: "Hamburg"
     category: "HAUS"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_2"
     purchasePrice: 550000.00
     monthlyRent: 2200.00
     rentSavings: 1500.00
     description: "Freistehendes Einfamilienhaus mit Garten in Blankenese"
 
-  - name: "Studio-Apartment Frankfurt"
-    location: "Frankfurt"
-    category: "WOHNUNG"
-    purchasePrice: 95000.00
-    monthlyRent: 500.00
-    rentSavings: 300.00
-    description: "Kompaktes Studio im Bankenviertel"
-
-  - name: "Zweifamilienhaus Leipzig"
-    location: "Leipzig"
-    category: "HAUS"
-    purchasePrice: 280000.00
-    monthlyRent: 1400.00
-    rentSavings: 950.00
-    description: "Gruenderzeithvilla mit zwei Wohneinheiten"
-
   - name: "Bueroflaeche Stuttgart"
     location: "Stuttgart"
     category: "GEWERBE"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_2"
     purchasePrice: 320000.00
     monthlyRent: 2500.00
     rentSavings: 0.00
-    description: "Moderne Bueroflaeche in der Innenstadt"
+    description: "Moderne Bürofläche in der Innenstadt"
+
+  - name: "Mehrfamilienhaus Dresden"
+    location: "Dresden"
+    category: "HAUS"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_2"
+    purchasePrice: 480000.00
+    monthlyRent: 2800.00
+    rentSavings: 1400.00
+    description: "6-Parteien-Haus in Striesen, saniert"
+
+  - name: "Gewerbepark Nuernberg"
+    location: "Nuernberg"
+    category: "GEWERBE"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_2"
+    purchasePrice: 650000.00
+    monthlyRent: 4500.00
+    rentSavings: 0.00
+    description: "Industrieanlage mit 5 Mietern"
+
+  # ── Level 4 – Profi-Investor ────────────────────────────────────────────────
+  - name: "Penthouse Muenchen Maxvorstadt"
+    location: "Muenchen"
+    category: "WOHNUNG"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_3"
+    purchasePrice: 1200000.00
+    monthlyRent: 5500.00
+    rentSavings: 3500.00
+    description: "Exklusives Penthouse mit Alpenpanorama"
+
+  - name: "Wohnblock Frankfurt Sachsenhausen"
+    location: "Frankfurt"
+    category: "HAUS"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_3"
+    purchasePrice: 2500000.00
+    monthlyRent: 14000.00
+    rentSavings: 5000.00
+    description: "18 Einheiten, Vollvermietung, A-Lage"
+
+  - name: "Shoppingcenter-Einheit Berlin Mitte"
+    location: "Berlin"
+    category: "GEWERBE"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_3"
+    purchasePrice: 1800000.00
+    monthlyRent: 12000.00
+    rentSavings: 0.00
+    description: "Premium-Ladeneinheit im Passagenzentrum"
+
+  - name: "Ferienhaus Sylt Strandnah"
+    location: "Sylt"
+    category: "HAUS"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_3"
+    purchasePrice: 1500000.00
+    monthlyRent: 8500.00
+    rentSavings: 4500.00
+    description: "Reetgedecktes Ferienhaus 200m vom Strand"
+
+  # ── Level 5 – Magnaten ──────────────────────────────────────────────────────
+  - name: "Luxusvilla Muenchen Gruenwald"
+    location: "Muenchen"
+    category: "HAUS"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_4"
+    purchasePrice: 5500000.00
+    monthlyRent: 25000.00
+    rentSavings: 15000.00
+    description: "Promi-Residenz in Grünwald mit Pool und Tennisplatz"
+
+  - name: "Hochhaus Duesseldorf Medienhafen"
+    location: "Duesseldorf"
+    category: "GEWERBE"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_4"
+    purchasePrice: 12000000.00
+    monthlyRent: 75000.00
+    rentSavings: 0.00
+    description: "20-stöckiges Büroturm-Segment, DAX-Mieter"
+
+  - name: "Hotel Boutique Hamburg Hafencity"
+    location: "Hamburg"
+    category: "GEWERBE"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_4"
+    purchasePrice: 8000000.00
+    monthlyRent: 55000.00
+    rentSavings: 20000.00
+    description: "35-Zimmer-Designhotel mit Vollauslastung"
+
+  - name: "Schloss Bayern Historisch"
+    location: "Bayern"
+    category: "HAUS"
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_4"
+    purchasePrice: 15000000.00
+    monthlyRent: 80000.00
+    rentSavings: 40000.00
+    description: "Denkmalgeschütztes Anwesen mit 40 Zimmern und Schlosspark"

@@ -47,7 +47,10 @@ services:
     depends_on:
       - backend
     environment:
+      # Öffentliche URL (Browser → Cloudflare Tunnel → Backend)
       NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-http://localhost:8080}
+      # Interne URL (Nuxt SSR → Docker-internes Netz → Backend, umgeht Cloudflare)
+      NUXT_INTERNAL_API_BASE: ${NUXT_INTERNAL_API_BASE:-http://backend:8080}
     ports:
       - "3000:3000"
     networks:

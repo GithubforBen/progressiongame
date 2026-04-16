@@ -38,6 +38,7 @@ public class TurnService {
     private final RelationshipService relationshipService;
     private final PlayerRealEstateRepository playerRealEstateRepository;
     private final PlayerLoanRepository playerLoanRepository;
+    private final CollectionService collectionService;
 
     private final Random random = new Random();
 
@@ -57,7 +58,8 @@ public class TurnService {
         RandomEventService randomEventService,
         RelationshipService relationshipService,
         PlayerRealEstateRepository playerRealEstateRepository,
-        PlayerLoanRepository playerLoanRepository
+        PlayerLoanRepository playerLoanRepository,
+        CollectionService collectionService
     ) {
         this.characterService = characterService;
         this.characterRepository = characterRepository;
@@ -75,6 +77,7 @@ public class TurnService {
         this.relationshipService = relationshipService;
         this.playerRealEstateRepository = playerRealEstateRepository;
         this.playerLoanRepository = playerLoanRepository;
+        this.collectionService = collectionService;
     }
 
     @Transactional
@@ -92,9 +95,27 @@ public class TurnService {
         // --- 2. Calculate salary income ---
         BigDecimal grossIncome = calculateSalaries(playerId, currentTurn, incomeBreakdown, events);
 
+        // --- 2a. Collection bonuses: SALARY_MULTIPLIER ---
+        List<CollectionService.ActiveBonus> collectionBonuses =
+            collectionService.getActiveCollectionBonuses(playerId);
+        for (CollectionService.ActiveBonus bonus : collectionBonuses) {
+            if ("SALARY_MULTIPLIER".equals(bonus.bonusType())) {
+                BigDecimal factor = BigDecimal.ONE.add(bonus.bonusValue());
+                grossIncome = grossIncome.multiply(factor).setScale(2, RoundingMode.HALF_UP);
+            }
+        }
+
         // --- 2b. Rental income from RENTED_OUT properties ---
         BigDecimal rentalIncome = calculateRentalIncome(playerId, incomeBreakdown);
         grossIncome = grossIncome.add(rentalIncome);
+
+        // --- 2c. Collection bonuses: MONTHLY_INCOME_BONUS ---
+        for (CollectionService.ActiveBonus bonus : collectionBonuses) {
+            if ("MONTHLY_INCOME_BONUS".equals(bonus.bonusType())) {
+                grossIncome = grossIncome.add(bonus.bonusValue());
+                incomeBreakdown.add(new TurnResultDto.LineItem("Sammlungs-Bonus", bonus.bonusValue()));
+            }
+        }
 
         // --- 3. Progressive tax on income ---
         BigDecimal taxPaid = calculateTax(grossIncome);
@@ -104,6 +125,15 @@ public class TurnService {
 
         // --- 4. Monthly expenses ---
         BigDecimal totalExpenses = deductExpenses(playerId, expenseBreakdown);
+
+        // --- 4a. Collection bonuses: EXPENSE_REDUCTION ---
+        for (CollectionService.ActiveBonus bonus : collectionBonuses) {
+            if ("EXPENSE_REDUCTION".equals(bonus.bonusType())) {
+                BigDecimal factor = BigDecimal.ONE.subtract(bonus.bonusValue());
+                totalExpenses = totalExpenses.multiply(factor).setScale(2, RoundingMode.HALF_UP);
+            }
+        }
+
         totalExpenses = totalExpenses.add(taxPaid);
 
         // --- 4b. Loan repayments ---
@@ -130,6 +160,16 @@ public class TurnService {
         // --- 6b. Relationship happiness bonus (Step 14) ---
         int happinessBonus = relationshipService.advanceRelationships(playerId, events);
         character.setHappiness(clamp(character.getHappiness() + happinessBonus));
+
+        // --- 6c. Collection bonuses: HAPPINESS_BONUS + SCHUFA_BONUS ---
+        for (CollectionService.ActiveBonus bonus : collectionBonuses) {
+            if ("HAPPINESS_BONUS".equals(bonus.bonusType())) {
+                character.setHappiness(clamp(character.getHappiness() + bonus.bonusValue().intValue()));
+            } else if ("SCHUFA_BONUS".equals(bonus.bonusType())) {
+                character.setSchufaScore(LoanService.clampSchufa(
+                    character.getSchufaScore() + bonus.bonusValue().intValue()));
+            }
+        }
 
         // --- 7. Stress from active jobs ---
         updateStress(character, playerId);

@@ -262,6 +262,107 @@ Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService
 - `pages/beziehungen.vue`: Summary-Cards (Bekannte, Ø Level, Bonus), NPC-Grid mit Persönlichkeits-Farben, Level-Balken, "Kennenlernen"/"Zeit verbringen"-Buttons ✅
 - `Sidebar.vue`: Beziehungen-Link (♥) hinzugefügt ✅
 
+### ✅ V7 – Immobilien, Kredite, Collection-Progress & YAML-Datendateien (IMPLEMENTIERT)
+
+**Migration:**
+- `V7__real_estate_loans_schufa.sql`: `schufa_score INTEGER 0–1000` auf `characters` (DEFAULT 500), UNIQUE-Constraints auf `jobs.name` und `collectibles.name` (für Upserts), `education_requirements_json JSONB` auf `jobs`, neue Tabellen `real_estate_catalog`, `player_real_estate`, `player_loans`.
+
+**YAML-Datendateien + DataLoader:**
+- `backend/src/main/resources/data/jobs.yaml` (12 Jobs), `collectibles.yaml` (12 Items), `real_estate.yaml` (6 Objekte), `education.yaml` (alle Stufen + Zertifikate)
+- `GameDataLoaderService` (`ApplicationRunner`): läuft nach Flyway, upsert per `ON CONFLICT (name) DO UPDATE` für Jobs, Collectibles und Immobilien-Katalog. Nutzt snakeyaml (bereits im Classpath via Spring Boot).
+- `EducationService`: statische Maps durch Instanzvariablen ersetzt, `@PostConstruct loadEducationData()` lädt `education.yaml`. Fallback auf Hardcoded-Defaults bei Fehler.
+
+**Immobilien-Backend:**
+- Entities: `RealEstateCatalog`, `PlayerRealEstate`
+- Repositories: `RealEstateCatalogRepository`, `PlayerRealEstateRepository` (EntityManager-Muster)
+- `RealEstateService`: `getCatalog()`, `getMyProperties()`, `buy()` (deductCash + persist + recalculateNetWorth), `changeMode()` (SELF_OCCUPIED ↔ RENTED_OUT)
+- `RealEstateController`: `GET /api/real-estate`, `GET /api/real-estate/my`, `POST /api/real-estate/{id}/buy`, `PATCH /api/real-estate/{id}/mode`
+- `CharacterService.recalculateNetWorth()`: summiert jetzt auch `player_real_estate.purchase_price`
+
+**Kredite & SCHUFA-Backend:**
+- Entity: `PlayerLoan`, Repository: `PlayerLoanRepository`
+- `GameCharacter` + `CharacterDto`: neues Feld `schufaScore` (int)
+- `CharacterService.updateSchufaScore()`: neue Hilfsmethode (clamp 0–1000 + persist)
+- `LoanService`: SCHUFA prüfen (< 300 → abgelehnt), Zinssatz nach Score (800+→3%, 600–799→5%, 400–599→8%, <400→12%), Annuitätenformel, SCHUFA –20 bei Aufnahme, Methoden als package-private statics (testbar)
+- `LoanController`: `GET /api/loans`, `GET /api/loans/schufa`, `POST /api/loans/take`
+
+**TurnService-Erweiterungen:**
+- Nach `calculateSalaries()`: Mieteinnahmen aller `RENTED_OUT`-Immobilien werden zum Bruttoeinkommen addiert
+- In `deductExpenses()`: MIETE-Ausgabe wird übersprungen (→ 0 €), wenn mind. 1 `SELF_OCCUPIED`-Immobilie vorhanden
+- Nach Ausgaben: `processLoanRepayments()` — aktive Kredite werden abgezogen; SCHUFA +2 bei pünktlicher Rate, +5 bei vollständiger Tilgung, –50 bei Zahlungsausfall → Status DEFAULTED
+
+**OR-Logik für Job-Anforderungen:**
+- `Job.educationRequirementsJson` (JSONB, nullable): Format `[{"type":"BACHELOR","field":"BWL"},{"type":"MASTER","field":"BWL"}]`
+- `JobService.meetsEducationRequirementWithJson()`: prüft JSON zuerst (OR-Logik), Fallback auf Legacy-Felder wenn JSON null
+- `getAvailableJobs()` nutzt die neue Methode
+
+**Collection-Progress:**
+- `CollectibleService.getCollectionProgress()`: gruppiert alle Collectibles nach `collectionType`, zählt owned vs. total
+- `CollectionProgressDto(collectionType, total, owned, percentage)`
+- `GET /api/collectibles/progress` in `CollectibleController`
+
+**Frontend:**
+- `pages/immobilien.vue`: Katalog-Karten (Kaufpreis, Mieteinnahmen, Ersparnis), Kaufen-Button, eigene Immobilien mit Modus-Toggle (Einziehen / Vermieten), Status-Badge (grün / blau)
+- `pages/kredite.vue`: SCHUFA-Score-Gauge (Farbbalken + Label), Zinsstaffel-Tabelle, aktive Kredite mit Restschuld-Fortschrittsbalken, Kreditformular mit Echtzeit-Vorschau (Rate + Gesamtkosten), abgeschlossene Kredite
+- `pages/reisen.vue`: neue Sektion „Sammlungs-Fortschritt" mit Fortschrittsbalken pro Typ (AUTOS, UHREN, KUNST)
+- `components/Sidebar.vue`: Links für Immobilien (🏠) und Kredite (🏦) ergänzt
+- `composables/useFormatting.ts`: `formatSchufaScore(score)` → `{label, color, bgColor}`, `formatLoanRate(rate)` → `"5,00 % p.a."`
+
+### ✅ V8 – Vollständiger Job- und Bildungskatalog (IMPLEMENTIERT)
+
+**Migration:**
+- `V8__jobs_and_education_catalog.sql`: Neue Spalten auf `jobs` (`category VARCHAR(50)`, `max_parallel INT DEFAULT 1`, `required_side_cert VARCHAR(100)`). Bestehende Jobs auf `available = false` gesetzt; DataLoader reaktiviert Katalog-Jobs per Upsert.
+
+**Education YAML (`education.yaml`):**
+- AUSBILDUNG: 6 Fachrichtungen (EINZELHANDEL, FACHINFORMATIKER, KFZTECH, PFLEGE, KOCH, ELEKTRIKER)
+- BACHELOR: 6 Fachrichtungen inkl. INGENIEURWESEN + PSYCHOLOGIE; Feld-spezifische Dauer (MEDIZIN 8 Mo., JURA 7 Mo.)
+- MASTER: 5 Fachrichtungen inkl. INGENIEURWESEN
+- Kosten pro Stufe: Ausbildung €500, Bachelor €3.000, Master €5.000
+- 11 Weiterbildungen mit individuellen Kosten und Voraussetzungen (BARKEEPER/FITNESSTRAINER ohne Voraussetzung, PROJEKTMANAGEMENT/STEUERN/HACKER erfordern bestimmten Bachelor)
+
+**Jobs YAML (`jobs.yaml`):** 50 Jobs in 7 Kategorien — EINSTIEG, HANDWERK, BUERO, TECH, MANAGEMENT, GESUNDHEIT, RECHT
+
+**Backend-Änderungen:**
+- `Job.java`: neue Felder `category`, `maxParallel`, `requiredSideCert`
+- `JobDto.java`: `category`, `maxParallel`, `requiredSideCert` (deutsche Anzeigename), Signatur von `from()` erweitert
+- `EducationProgressDto.java`: `AvailableStageDto` + `SideCertDto` haben jetzt `cost`-Feld; `FieldOption` hat `durationMonths` für Feld-spezifische Abweichungen
+- `EducationService.java`: `StageDefinition` mit `cost` + `fieldDurations`; neue `SideCertDef`-Record mit `requiresAny`; `enrollMain` zieht Kosten ab; `enrollSide` prüft per-Zertifikat-Voraussetzungen (kein globaler Realschulabschluss-Check mehr); MASTER in `buildAvailableMainStages` zeigt nur Felder, für die der passende Bachelor existiert; `CharacterService`-Abhängigkeit ergänzt; statische `sideCertLabel()`-Methode für JobService
+- `GameDataLoaderService.java`: Upsert um `category`, `max_parallel`, `required_side_cert`, `available = true` erweitert; neues YAML-Feld `requiredStageKey` (voller Stage-Key direkt)
+- `JobService.java`: `meetsSideCertRequirement()`; `meetsRequirements`-Flag kombiniert jetzt Bildung + Side-Cert + Erfahrung
+
+**Frontend-Änderungen:**
+- `useFormatting.ts`: `formatEducationRequirement` versteht jetzt vollständige Stage-Keys wie "AUSBILDUNG_EINZELHANDEL"; Stress-Label 4-stufig (Niedrig/Mittel/Hoch/Sehr hoch)
+- `karriere.vue`: Kategorie-Filterleiste (Alle/Verfügbar/Meine + 7 Kategorie-Buttons); "Alle"-Ansicht gruppiert nach Kategorie mit farbigen Abschnitts-Headern; Flat-Ansicht für Filter/Kategorie zeigt Kategorie-Badge; Anforderungszeile zeigt 📚 Bildungsabschluss + 🎓 Weiterbildung + ⏱ Erfahrung
+
+**Bekannte Einschränkung:**
+- `max_parallel > 1` (Zeitungsausträger, Babysitter) wird gespeichert aber nicht durchgesetzt, da `player_jobs` eine (player_id, job_id) PRIMARY KEY hat (kein doppelter Eintrag möglich). Benötigt Schema-Änderung für vollständige Umsetzung.
+
+### ✅ Frontend-Polish: Ausbildung, Monatsbilanz, Einstellungen (IMPLEMENTIERT)
+
+**`ausbildung.vue`:**
+- TREE aktualisiert: alle 6 Ausbildungsberufe, 6 Bachelor-Fächer (inkl. INGENIEURWESEN + PSYCHOLOGIE), 5 Master-Fächer
+- `FieldOption.durationMonths`: zeigt abweichende Dauer im Dropdown (MEDIZIN 8 Mo., JURA 7 Mo. werden hervorgehoben)
+- Kosten auf "Einschreiben"-Button (€ in Gelb, kommt aus Backend-DTO)
+- `CERT_DURATIONS` + `SIDE_CERT_LABELS` Maps für alle 11 Weiterbildungen; Fortschrittsbalken korrekt auch für 2-Monats-Zertifikate
+- `mainProgress`-Bar unterstützt feldspezifische Gesamtdauer via `STAGE_DURATIONS`-Lookup
+
+**`EducationStageCard.vue`:**
+- Zeigt Kosten in Gelb neben dem Einschreiben-Button
+- Dropdown-Optionen zeigen abweichende Feld-Dauer (z.B. "Medizin (8 Mo.)")
+- `FieldOption` + `AvailableStage` Interfaces um `durationMonths` und `cost` erweitert
+
+**`MonthlyBalanceSheet.vue`:**
+- Zwei Donut-Charts (Chart.js, client-side) für Einnahmen und Ausgaben
+- Erstellt/zerstört on `show`-Änderung via `watch`; `onBeforeUnmount` cleanup
+- Modalbreite auf `max-w-2xl` erweitert
+- `stores/game.ts`: `Character.schufaScore?: number` ergänzt
+
+**`einstellungen.vue`:**
+- Profilbereich mit Avatar-Initial + Username + aktueller Spielmonat
+- Spielstatistiken: Nettovermögen, Bargeld, Spielmonat, SCHUFA-Score (aus `gameStore.character`)
+- Needs-Mini-Übersicht (NeedBar-Komponente)
+- Toggle-Einstellungen (Toast-Benachrichtigungen, Kompakt-Ansicht) — gespeichert in `localStorage`
+
 ### Schritt 15 – Sprachwahl DE/EN (Optional)
 - i18n-Toggle in Einstellungen
 
@@ -286,21 +387,37 @@ Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService
 │       │   ├── security/
 │       │   │   ├── JwtAuthenticationFilter.java
 │       │   │   └── PlayerPrincipal.java        ← record(Long id, String username)
-│       │   ├── entity/        ← Player, GameCharacter, Job, PlayerJob, PlayerJobId,
-│       │   │                     JobApplication, EducationProgress, MonthlyExpense,
-│       │   │                     MonthlySnapshot, EventLog
+│       │   ├── entity/        ← Player, GameCharacter (+ schufaScore), Job (+ educationRequirementsJson),
+│       │   │                     PlayerJob, PlayerJobId, JobApplication, EducationProgress,
+│       │   │                     MonthlyExpense, MonthlySnapshot, EventLog, Investment, Stock,
+│       │   │                     Collectible, PlayerCollectible, Country, PlayerTravel, ActiveEvent,
+│       │   │                     GamblingSession, Npc, PlayerRelationship,
+│       │   │                     RealEstateCatalog, PlayerRealEstate, PlayerLoan
 │       │   ├── repository/    ← alle via EntityManager, kein JpaRepository
-│       │   ├── service/       ← AuthService, CharacterService, JobService,
-│       │   │                     EducationService, TurnService, JwtService
-│       │   ├── controller/    ← Auth, Character, Job, Education, MonthlyExpense,
-│       │   │                     Turn, Health
+│       │   ├── service/       ← AuthService, CharacterService, JobService, EducationService (YAML),
+│       │   │                     TurnService, JwtService, StockService, CollectibleService,
+│       │   │                     TravelService, GamblingService, RandomEventService,
+│       │   │                     RelationshipService, RealEstateService, LoanService,
+│       │   │                     GameDataLoaderService (ApplicationRunner)
+│       │   ├── controller/    ← Auth, Character, Job, Education, MonthlyExpense, Turn, Health,
+│       │   │                     Stock, Investment, Collectible, Travel, Gambling, Npc,
+│       │   │                     Leaderboard, Stats, Tax, RealEstate, Loan
 │       │   └── dto/           ← alle Request/Response Records
 │       └── resources/
 │           ├── application.yml
+│           ├── data/
+│           │   ├── jobs.yaml             ← 12 Jobs (upsert via GameDataLoaderService)
+│           │   ├── collectibles.yaml     ← 12 Items
+│           │   ├── real_estate.yaml      ← 6 Immobilien-Objekte
+│           │   └── education.yaml        ← Bildungsstufen + Zertifikate
 │           └── db/migration/
 │               ├── V1__initial_schema.sql
 │               ├── V2__investments_and_price_history.sql
-│               └── V3__travel_collectibles_events.sql
+│               ├── V3__travel_collectibles_events.sql
+│               ├── V4__gambling.sql
+│               ├── V5__relationships.sql
+│               ├── V6__fix_npc_id_types.sql
+│               └── V7__real_estate_loans_schufa.sql
 └── frontend/
     ├── nuxt.config.ts
     ├── tailwind.config.js
@@ -311,7 +428,8 @@ Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService
     ├── middleware/auth.ts              ← Redirect zu /login wenn kein Token
     ├── composables/
     │   ├── useApi.ts                   ← get/post/del/patch mit Auth-Header
-    │   └── useFormatting.ts           ← formatCurrency, formatEducationRequirement, stressLabel
+    │   └── useFormatting.ts           ← formatCurrency, formatEducationRequirement, stressLabel,
+│                                      formatSchufaScore, formatLoanRate
     ├── stores/
     │   ├── auth.ts                     ← token, user, login/logout/restoreSession
     │   ├── game.ts                     ← character, expenses, lastTurnResult, init()
@@ -322,15 +440,36 @@ Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService
     │   ├── MonthlyBalanceSheet.vue     ← Turn-Result Modal
     │   └── EducationStageCard.vue
     └── pages/
-        ├── index.vue                   ← Dashboard (live)
+        ├── index.vue                   ← Dashboard mit Charts
         ├── login.vue, register.vue     ← auth layout
         ├── karriere.vue               ← vollständig implementiert
         ├── ausbildung.vue             ← vollständig implementiert
-        ├── leben.vue                  ← STUB
-        ├── investitionen.vue          ← STUB
-        ├── rangliste.vue              ← STUB
+        ├── leben.vue                  ← vollständig implementiert
+        ├── investitionen.vue          ← vollständig implementiert
+        ├── reisen.vue                 ← vollständig implementiert (inkl. Collection-Progress)
+        ├── gluecksspiel.vue           ← vollständig implementiert
+        ├── beziehungen.vue            ← vollständig implementiert
+        ├── immobilien.vue             ← vollständig implementiert (V7)
+        ├── kredite.vue                ← vollständig implementiert (V7)
+        ├── rangliste.vue              ← vollständig implementiert
         └── einstellungen.vue          ← nur Logout
 ```
+
+---
+
+## Cloudflare Tunnel Kompatibilität
+
+Das gesamte Setup ist für den Betrieb hinter einem Cloudflare Tunnel ausgelegt:
+
+- **`application.yml`**: `forward-headers-strategy: framework` → Spring's `ForwardedHeaderFilter` verarbeitet `X-Forwarded-For` / `X-Forwarded-Proto` korrekt.
+- **`nuxt.config.ts`**: Zwei API-Basis-URLs:
+  - `runtimeConfig.apiBase` (privat, SSR) ← `NUXT_INTERNAL_API_BASE` (Standard: `http://backend:8080` im Docker-Netz)
+  - `runtimeConfig.public.apiBase` (öffentlich, Client) ← `NUXT_PUBLIC_API_BASE` (die Cloudflare-Tunnel-URL)
+- **`useApi.ts`**: `import.meta.server` → interne URL; Client → öffentliche URL. SSR-Calls gehen direkt im Docker-Netz zum Backend, ohne Cloudflare zu durchlaufen.
+- **Keine WebSocket-Abhängigkeit** in Production; kein SSE oder Polling mit ws://-URLs.
+- **CORS**: `allowedOriginPatterns("*")` mit `allowCredentials = true` — funktioniert hinter Cloudflare, da der Browser den `Origin`-Header setzt und der Tunnel ihn weiterleitet.
+
+Für das Deployment nur `NUXT_PUBLIC_API_BASE` in `.env` auf die öffentliche Backend-Tunnel-URL setzen. `NUXT_INTERNAL_API_BASE` bleibt unverändert (`http://backend:8080`).
 
 ---
 

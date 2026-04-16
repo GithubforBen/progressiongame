@@ -4,6 +4,7 @@ import com.financegame.dto.InvestmentDto;
 import com.financegame.entity.GameCharacter;
 import com.financegame.entity.Investment;
 import com.financegame.entity.Stock;
+import com.financegame.repository.EducationProgressRepository;
 import com.financegame.repository.InvestmentRepository;
 import com.financegame.repository.StockRepository;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -21,13 +23,16 @@ public class InvestmentService {
     private final InvestmentRepository investmentRepository;
     private final StockRepository stockRepository;
     private final CharacterService characterService;
+    private final EducationProgressRepository educationProgressRepository;
 
     public InvestmentService(InvestmentRepository investmentRepository,
                               StockRepository stockRepository,
-                              CharacterService characterService) {
+                              CharacterService characterService,
+                              EducationProgressRepository educationProgressRepository) {
         this.investmentRepository = investmentRepository;
         this.stockRepository = stockRepository;
         this.characterService = characterService;
+        this.educationProgressRepository = educationProgressRepository;
     }
 
     @Transactional(readOnly = true)
@@ -51,6 +56,17 @@ public class InvestmentService {
         BigDecimal totalCost = stock.getCurrentPrice()
             .multiply(quantity)
             .setScale(2, RoundingMode.HALF_UP);
+
+        // Cert-based access check
+        if (stock.getRequiredCert() != null) {
+            List<String> completedStages = educationProgressRepository.findByPlayerId(playerId)
+                .map(ep -> Arrays.asList(ep.getCompletedStages()))
+                .orElse(List.of());
+            if (!completedStages.contains(stock.getRequiredCert())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Weiterbildung erforderlich: " + stock.getRequiredCert());
+            }
+        }
 
         // Deduct cash (throws 400 if insufficient)
         characterService.deductCash(playerId, totalCost, "Aktie " + ticker);

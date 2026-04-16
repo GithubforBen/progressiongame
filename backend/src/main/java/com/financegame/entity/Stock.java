@@ -23,6 +23,9 @@ public class Stock {
     @Column(name = "current_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal currentPrice;
 
+    @Column(name = "required_cert", length = 100)
+    private String requiredCert;
+
     // history JSONB column exists in DB but is managed via stock_price_history table
 
     public Long getId() { return id; }
@@ -39,4 +42,7 @@ public class Stock {
 
     public BigDecimal getCurrentPrice() { return currentPrice; }
     public void setCurrentPrice(BigDecimal currentPrice) { this.currentPrice = currentPrice; }
+
+    public String getRequiredCert() { return requiredCert; }
+    public void setRequiredCert(String requiredCert) { this.requiredCert = requiredCert; }
 }

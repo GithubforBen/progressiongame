@@ -11,6 +11,7 @@ export interface Character {
   energy: number
   happiness: number
   currentTurn: number
+  schufaScore?: number
 }
 
 export interface MonthlyExpense {

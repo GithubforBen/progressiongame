@@ -4,6 +4,7 @@ import com.financegame.dto.StockDto;
 import com.financegame.entity.Investment;
 import com.financegame.entity.Stock;
 import com.financegame.entity.StockPriceHistory;
+import com.financegame.repository.EducationProgressRepository;
 import com.financegame.repository.InvestmentRepository;
 import com.financegame.repository.StockPriceHistoryRepository;
 import com.financegame.repository.StockRepository;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -21,28 +23,33 @@ public class StockService {
     private final StockRepository stockRepository;
     private final StockPriceHistoryRepository historyRepository;
     private final InvestmentRepository investmentRepository;
+    private final EducationProgressRepository educationProgressRepository;
     private final Random random = new Random();
 
     public StockService(StockRepository stockRepository,
                         StockPriceHistoryRepository historyRepository,
-                        InvestmentRepository investmentRepository) {
+                        InvestmentRepository investmentRepository,
+                        EducationProgressRepository educationProgressRepository) {
         this.stockRepository = stockRepository;
         this.historyRepository = historyRepository;
         this.investmentRepository = investmentRepository;
+        this.educationProgressRepository = educationProgressRepository;
     }
 
     @Transactional(readOnly = true)
-    public List<StockDto> getAllStocks() {
+    public List<StockDto> getAllStocks(Long playerId) {
+        List<String> completedStages = getCompletedStages(playerId);
         return stockRepository.findAll().stream()
-            .map(s -> StockDto.from(s, historyRepository.findByStockIdOrderByTurnAsc(s.getId())))
+            .map(s -> StockDto.from(s, historyRepository.findByStockIdOrderByTurnAsc(s.getId()), completedStages))
             .toList();
     }
 
     @Transactional(readOnly = true)
-    public StockDto getByTicker(String ticker) {
+    public StockDto getByTicker(String ticker, Long playerId) {
         Stock s = stockRepository.findByTicker(ticker)
             .orElseThrow(() -> new RuntimeException("Aktie nicht gefunden: " + ticker));
-        return StockDto.from(s, historyRepository.findByStockIdOrderByTurnAsc(s.getId()));
+        List<String> completedStages = getCompletedStages(playerId);
+        return StockDto.from(s, historyRepository.findByStockIdOrderByTurnAsc(s.getId()), completedStages);
     }
 
     /**
@@ -82,5 +89,11 @@ public class StockService {
             .multiply(factor)
             .max(BigDecimal.valueOf(0.01))
             .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private List<String> getCompletedStages(Long playerId) {
+        return educationProgressRepository.findByPlayerId(playerId)
+            .map(ep -> Arrays.asList(ep.getCompletedStages()))
+            .orElse(List.of());
     }
 }
