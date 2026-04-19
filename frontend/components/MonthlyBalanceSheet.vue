@@ -25,6 +25,45 @@
 
           <div class="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
 
+            <!-- Tax evasion caught section -->
+            <div v-if="result.taxEvasionCaught" class="rounded-xl border border-red-500/50 bg-red-950/30 p-4 space-y-3">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">⚠️</span>
+                <div>
+                  <p class="text-red-400 font-bold text-sm">STEUERFAHNDUNG — Du wurdest erwischt!</p>
+                  <p class="text-gray-400 text-xs">Hinterzogene Steuern gesamt: {{ formatCurrency(result.taxEvasionCaughtAmount ?? 0) }}</p>
+                </div>
+              </div>
+              <p class="text-gray-300 text-xs">Wähle dein Schicksal. Du kannst erst weiterspielen, wenn du entschieden hast.</p>
+              <div class="grid grid-cols-2 gap-3">
+                <button
+                  class="flex flex-col items-center gap-1 p-3 rounded-lg border border-surface-600 bg-surface-700 hover:bg-surface-600 transition-colors disabled:opacity-40"
+                  :disabled="resolvingCaught"
+                  @click="resolve('JAIL')"
+                >
+                  <span class="text-lg">🔒</span>
+                  <span class="text-xs font-semibold text-white">Gefängnis</span>
+                  <span class="text-xs text-gray-400">6 Monate, kein Einkommen</span>
+                  <span class="text-xs text-red-400">SCHUFA −100</span>
+                </button>
+                <button
+                  class="flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors disabled:opacity-40"
+                  :class="canAffordFlee
+                    ? 'border-surface-600 bg-surface-700 hover:bg-surface-600'
+                    : 'border-surface-700 bg-surface-800 cursor-not-allowed'"
+                  :disabled="!canAffordFlee || resolvingCaught"
+                  @click="resolve('FLEE')"
+                >
+                  <span class="text-lg">✈️</span>
+                  <span class="text-xs font-semibold text-white">Kaution + Flucht</span>
+                  <span class="text-xs text-yellow-400 font-mono">{{ formatCurrency(bailAmount) }}</span>
+                  <span class="text-xs text-gray-400">3 Monate Exil</span>
+                  <span class="text-xs text-orange-400">SCHUFA −50</span>
+                  <span v-if="!canAffordFlee" class="text-xs text-red-400">Nicht genug Geld</span>
+                </button>
+              </div>
+            </div>
+
             <!-- Charts row -->
             <ClientOnly>
               <div v-if="hasChartData" class="grid grid-cols-2 gap-4">
@@ -97,7 +136,13 @@
               Neuer Kontostand:
               <span class="font-mono text-white font-semibold">{{ formatCurrency(result.character.cash) }}</span>
             </div>
-            <button class="btn-primary" @click="$emit('close')">Weiter</button>
+            <button
+              class="btn-primary disabled:opacity-40"
+              :disabled="result.taxEvasionCaught && !caughtResolved"
+              @click="$emit('close')"
+            >
+              {{ result.taxEvasionCaught && !caughtResolved ? 'Entscheide zuerst' : 'Weiter' }}
+            </button>
           </div>
         </div>
       </div>
@@ -107,6 +152,7 @@
 
 <script setup lang="ts">
 import type { TurnResult } from '~/stores/game'
+import { useGameStore } from '~/stores/game'
 import {
   Chart as ChartJS,
   DoughnutController,
@@ -124,7 +170,28 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: [] }>()
+
+const gameStore = useGameStore()
+const resolvingCaught = ref(false)
+const caughtResolved = ref(false)
+
+const bailAmount = computed(() => {
+  const evaded = props.result.taxEvasionCaughtAmount ?? 0
+  return Math.max(5000, evaded * 3)
+})
+const canAffordFlee = computed(() => (props.result.character.cash ?? 0) >= bailAmount.value)
+
+async function resolve(choice: 'JAIL' | 'FLEE') {
+  if (resolvingCaught.value) return
+  resolvingCaught.value = true
+  try {
+    await gameStore.resolveCaught(choice)
+    caughtResolved.value = true
+  } finally {
+    resolvingCaught.value = false
+  }
+}
 
 const netChange = computed(() => props.result.netChange)
 const hasChartData = computed(() =>

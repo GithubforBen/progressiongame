@@ -38,6 +38,27 @@ public class GameCharacter {
     @Column(name = "schufa_score", nullable = false)
     private int schufaScore = 500;
 
+    @Column(name = "depression_months_remaining", nullable = false)
+    private int depressionMonthsRemaining = 0;
+
+    @Column(name = "burnout_active", nullable = false)
+    private boolean burnoutActive = false;
+
+    @Column(name = "tax_evasion_active", nullable = false)
+    private boolean taxEvasionActive = false;
+
+    @Column(name = "tax_evasion_caught_pending", nullable = false)
+    private boolean taxEvasionCaughtPending = false;
+
+    @Column(name = "cumulative_evaded_taxes", nullable = false, precision = 15, scale = 2)
+    private BigDecimal cumulativeEvadedTaxes = BigDecimal.ZERO;
+
+    @Column(name = "jail_months_remaining", nullable = false)
+    private int jailMonthsRemaining = 0;
+
+    @Column(name = "exile_months_remaining", nullable = false)
+    private int exileMonthsRemaining = 0;
+
     // --- Getters & Setters ---
 
     public Long getId() { return id; }
@@ -69,4 +90,25 @@ public class GameCharacter {
 
     public int getSchufaScore() { return schufaScore; }
     public void setSchufaScore(int schufaScore) { this.schufaScore = schufaScore; }
+
+    public int getDepressionMonthsRemaining() { return depressionMonthsRemaining; }
+    public void setDepressionMonthsRemaining(int v) { this.depressionMonthsRemaining = v; }
+
+    public boolean isBurnoutActive() { return burnoutActive; }
+    public void setBurnoutActive(boolean burnoutActive) { this.burnoutActive = burnoutActive; }
+
+    public boolean isTaxEvasionActive() { return taxEvasionActive; }
+    public void setTaxEvasionActive(boolean taxEvasionActive) { this.taxEvasionActive = taxEvasionActive; }
+
+    public boolean isTaxEvasionCaughtPending() { return taxEvasionCaughtPending; }
+    public void setTaxEvasionCaughtPending(boolean taxEvasionCaughtPending) { this.taxEvasionCaughtPending = taxEvasionCaughtPending; }
+
+    public BigDecimal getCumulativeEvadedTaxes() { return cumulativeEvadedTaxes; }
+    public void setCumulativeEvadedTaxes(BigDecimal cumulativeEvadedTaxes) { this.cumulativeEvadedTaxes = cumulativeEvadedTaxes; }
+
+    public int getJailMonthsRemaining() { return jailMonthsRemaining; }
+    public void setJailMonthsRemaining(int jailMonthsRemaining) { this.jailMonthsRemaining = jailMonthsRemaining; }
+
+    public int getExileMonthsRemaining() { return exileMonthsRemaining; }
+    public void setExileMonthsRemaining(int exileMonthsRemaining) { this.exileMonthsRemaining = exileMonthsRemaining; }
 }

@@ -1,5 +1,8 @@
 package com.financegame.service;
 
+import com.financegame.domain.GameContext;
+import com.financegame.domain.condition.HasCertCondition;
+import com.financegame.domain.events.CollectiblePurchasedEvent;
 import com.financegame.dto.CollectibleDto;
 import com.financegame.dto.CollectionDto;
 import java.util.stream.Collectors;
@@ -12,6 +15,7 @@ import com.financegame.repository.CollectionRepository;
 import com.financegame.repository.EducationProgressRepository;
 import com.financegame.repository.PlayerCollectibleRepository;
 import com.financegame.repository.PlayerTravelRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +41,7 @@ public class CollectionService {
     private final PlayerTravelRepository playerTravelRepository;
     private final EducationProgressRepository educationProgressRepository;
     private final CharacterService characterService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public CollectionService(
         CollectionRepository collectionRepository,
@@ -44,7 +49,8 @@ public class CollectionService {
         PlayerCollectibleRepository playerCollectibleRepository,
         PlayerTravelRepository playerTravelRepository,
         EducationProgressRepository educationProgressRepository,
-        CharacterService characterService
+        CharacterService characterService,
+        ApplicationEventPublisher eventPublisher
     ) {
         this.collectionRepository = collectionRepository;
         this.collectibleRepository = collectibleRepository;
@@ -52,6 +58,7 @@ public class CollectionService {
         this.playerTravelRepository = playerTravelRepository;
         this.educationProgressRepository = educationProgressRepository;
         this.characterService = characterService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -136,9 +143,10 @@ public class CollectionService {
             Collection col = collectionRepository.findByName(item.getCollectionName()).orElse(null);
             if (col != null && col.getRequiredCert() != null) {
                 List<String> completedStages = getCompletedStages(playerId);
-                if (!completedStages.contains(col.getRequiredCert())) {
-                    throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "Weiterbildung erforderlich: " + col.getRequiredCert());
+                GameContext ctx = new GameContext(null, completedStages, null, false, 0);
+                HasCertCondition certCheck = new HasCertCondition(col.getRequiredCert());
+                if (!certCheck.isMet(ctx)) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, certCheck.describe());
                 }
             }
         }
@@ -153,6 +161,9 @@ public class CollectionService {
         playerCollectibleRepository.save(pc);
 
         characterService.recalculateNetWorth(playerId);
+
+        eventPublisher.publishEvent(new CollectiblePurchasedEvent(
+            playerId, collectibleId, item.getName(), item.getCollectionName(), price));
 
         return CollectibleDto.forShop(item, true, false, currentCountry);
     }

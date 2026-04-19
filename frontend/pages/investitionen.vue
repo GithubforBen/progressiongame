@@ -63,8 +63,16 @@
 
     <!-- Stock Market -->
     <div class="card">
-      <div class="flex items-center gap-3 mb-4">
-        <h3 class="text-base font-semibold text-white flex-1">Börse</h3>
+      <div class="space-y-3 mb-4">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h3 class="text-base font-semibold text-white flex-1">Börse</h3>
+          <input
+            v-model="stockSearch"
+            type="text"
+            placeholder="Suchen (Name, Ticker)..."
+            class="bg-surface-700 text-white text-sm rounded px-3 py-1.5 border border-white/10 focus:outline-none focus:border-accent/50 w-52"
+          />
+        </div>
         <div class="flex gap-1 flex-wrap">
           <button
             v-for="f in typeFilters"
@@ -78,6 +86,10 @@
             {{ f.label }}
           </button>
         </div>
+        <label class="flex items-center gap-2 cursor-pointer w-fit">
+          <input type="checkbox" v-model="showLocked" class="accent-accent" />
+          <span class="text-xs text-gray-400">Gesperrte anzeigen</span>
+        </label>
       </div>
 
       <div v-if="stocksLoading" class="text-gray-500 text-sm">Lade...</div>
@@ -218,6 +230,8 @@ const buyError = ref('')
 const sellLoading = ref<number | null>(null)
 
 const typeFilter = ref('ALL')
+const stockSearch = ref('')
+const showLocked = ref(true)
 const typeFilters = [
   { value: 'ALL',           label: 'Alle' },
   { value: 'NORMAL',        label: 'Normal' },
@@ -231,9 +245,16 @@ const typeFilters = [
   { value: 'SHORT',         label: 'Short' },
 ]
 
-const filteredStocks = computed(() =>
-  typeFilter.value === 'ALL' ? stocks.value : stocks.value.filter(s => s.type === typeFilter.value)
-)
+const filteredStocks = computed(() => {
+  let list = stocks.value
+  if (!showLocked.value) list = list.filter(s => !s.locked)
+  if (typeFilter.value !== 'ALL') list = list.filter(s => s.type === typeFilter.value)
+  if (stockSearch.value.trim()) {
+    const q = stockSearch.value.toLowerCase()
+    list = list.filter(s => s.name.toLowerCase().includes(q) || s.ticker.toLowerCase().includes(q))
+  }
+  return list
+})
 
 function stockTypeLabel(type: string): string {
   const map: Record<string, string> = {

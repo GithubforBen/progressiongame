@@ -18,6 +18,10 @@
       >
         <span class="w-5 text-center text-base leading-none select-none">{{ item.icon }}</span>
         {{ item.label }}
+        <span
+          v-if="item.path === '/steuerhinterziehung' && hasCaughtPending"
+          class="ml-auto w-2 h-2 rounded-full bg-red-500 animate-pulse"
+        />
       </NuxtLink>
     </nav>
 
@@ -38,9 +42,11 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
+import { useGameStore } from '~/stores/game'
 
 const route = useRoute()
 const authStore = useAuthStore()
+const gameStore = useGameStore()
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: '▦' },
@@ -48,15 +54,19 @@ const navItems = [
   { path: '/karriere', label: 'Karriere', icon: '◈' },
   { path: '/ausbildung', label: 'Ausbildung', icon: '◎' },
   { path: '/leben', label: 'Leben', icon: '⌂' },
+  { path: '/beduerfnisse', label: 'Bedürfnisse', icon: '❤' },
   { path: '/reisen', label: 'Reisen', icon: '✈' },
   { path: '/sammlungen', label: 'Sammlungen', icon: '★' },
   { path: '/immobilien', label: 'Immobilien', icon: '🏠' },
   { path: '/kredite', label: 'Kredite', icon: '🏦' },
   { path: '/gluecksspiel', label: 'Glücksspiel', icon: '🎰' },
   { path: '/beziehungen', label: 'Beziehungen', icon: '♥' },
+  { path: '/steuerhinterziehung', label: 'Steuern', icon: '🕵️' },
   { path: '/rangliste', label: 'Rangliste', icon: '◆' },
   { path: '/einstellungen', label: 'Einstellungen', icon: '⚙' },
 ]
+
+const hasCaughtPending = computed(() => gameStore.character?.taxEvasionCaughtPending === true)
 
 const isActive = (path: string) => {
   if (path === '/') return route.path === '/'

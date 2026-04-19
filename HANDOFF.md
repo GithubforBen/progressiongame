@@ -8,68 +8,12 @@
 ## Projekt-Überblick
 
 Browser-basierte passive Finanz-Lebenssimulation.
-- **Frontend:** Nuxt.js 3 + Tailwind CSS — `frontend/` (WebStorm öffnen)
-- **Backend:** Java 21 + Spring Boot 3.3 + Hibernate direkt (kein Spring Data JPA) — `backend/` (IntelliJ IDEA öffnen, `pom.xml` im Root)
+- **Frontend:** Nuxt.js 3 + Tailwind CSS — `frontend/`
+- **Backend:** Java 21 + Spring Boot 3.3 + Hibernate direkt (kein Spring Data JPA) — `backend/`
 - **DB:** PostgreSQL 15, Flyway-Migrationen in `backend/src/main/resources/db/migration/`
 - **Auth:** JWT (jjwt 0.12.x), stateless, BCrypt-Passwörter
 - **Deploy:** Docker Compose (`docker-compose.yml` im Root)
-
----
-
-## Git-Status
-
-```
-Branch: main
-Letzter Commit: feat: Step 10 – Gambling (Slots, Blackjack, Poker)
-```
-
-Alle 10 Schritte committed, **kein uncommitted state**.
-
----
-
-## Was bisher implementiert wurde (Schritte 1–6)
-
-### Schritt 1 – Scaffolding + Docker ✅
-- `docker-compose.yml`: Services `db` (PostgreSQL 15), `backend` (:8080), `frontend` (:3000)
-- `.env.example` mit allen nötigen Variablen
-- Flyway-Migration `V1__initial_schema.sql` — **alle Tabellen** sind bereits angelegt inkl. Seed-Daten für Jobs, Stocks, Collectibles
-
-### Schritt 2 – Auth ✅
-- `POST /api/auth/register` → erstellt Player + Character (€1000 Start) + EducationProgress + 3 Standard-Ausgaben
-- `POST /api/auth/login` → gibt JWT zurück
-- JWT-Filter (`JwtAuthenticationFilter`) setzt `PlayerPrincipal` (id + username) in SecurityContext
-- In Controllern: `@AuthenticationPrincipal PlayerPrincipal principal` → `principal.id()`
-- `GlobalExceptionHandler` liefert saubere JSON-Fehler an Frontend
-
-### Schritt 3 – Character + Needs ✅
-- `GET /api/character` → `CharacterDto`
-- `GET /api/expenses`, `PATCH /api/expenses/{id}/toggle`
-- `CharacterService` mit `applyNeedsDecay()`, `deductCash()`, `addCash()`, `recalculateNetWorth()`
-- Decay pro Monat: Hunger −15 (oder −5 mit aktivem Essen-Expense), Energie −8, Glück −5
-
-### Schritt 4 – Turn Engine ✅
-- `POST /api/turn/end` → `TurnResultDto` (in **einer** `@Transactional` Methode in `TurnService`)
-- Reihenfolge: Bewerbungen auflösen → Gehalt → Steuer → Ausgaben → Needs-Decay → Stress setzen → Bildung voranbringen → Turn++  → MonthlySnapshot speichern → Events loggen
-- Progressive Steuer: 0% / 20% / 32% / 42%
-- `MonthlySnapshot` wird pro Monat gespeichert (Basis für spätere Charts)
-- Frontend: `MonthlyBalanceSheet.vue` Modal öffnet sich automatisch nach Monatsabschluss
-
-### Schritt 5 – Jobs ✅
-- `GET /api/jobs` → alle Jobs mit player-spezifischen Flags (`meetsRequirements`, `alreadyApplied`, `alreadyWorking`)
-- `GET /api/jobs/my`, `GET /api/jobs/applications`
-- `POST /api/jobs/{id}/apply` → erstellt `JobApplication` (Ergebnis kommt nächsten Monat)
-- `DELETE /api/jobs/{id}/quit` → sofortige Kündigung
-- Karriere-Seite: Job-Browser (3 Filter), aktive Jobs, Bewerbungshistorie
-
-### Schritt 6 – Ausbildung ✅
-- `GET /api/education`, `POST /api/education/main`, `POST /api/education/side`
-- Statischer Stufenkatalog in `EducationService`:
-  - Hauptpfad: GRUNDSCHULE → REALSCHULABSCHLUSS → ABITUR → BACHELOR (6 Mo.) → MASTER (4 Mo.)
-  - Branch: AUSBILDUNG (4 Mo., 4 Fachrichtungen, erfordert nur REALSCHULABSCHLUSS)
-  - 4 Weiterbildungen: SOCIAL_MEDIA, EXCEL, FUEHRERSCHEIN, CRYPTO (je 1 Monat, parallel)
-- Education-Stage-Keys im `completed_stages`-Array: `"REALSCHULABSCHLUSS"`, `"BACHELOR_INFORMATIK"`, `"WEITERBILDUNG_SOCIAL_MEDIA"` usw.
-- TurnService in Schritt 4 bringt Bildung automatisch voran und fügt abgeschlossene Stages zu `completed_stages` hinzu
-- `EducationStageCard.vue` Komponente mit depth-basierter Einrückung, Feld-Picker, Status-Dot
+- **Version-Badge:** `v7` (in `frontend/layouts/default.vue` unten rechts — nach jeder Session auf `v(N+1)` erhöhen)
 
 ---
 
@@ -77,408 +21,236 @@ Alle 10 Schritte committed, **kein uncommitted state**.
 
 ### Backend – Hibernate direkt, kein Spring Data JPA
 Alle Repositories injizieren `EntityManager` via `@PersistenceContext` und haben explizite Methoden.
-**Niemals** `JpaRepository` einführen. Beispielmuster:
-```java
-@Repository
-public class XyzRepository {
-    @PersistenceContext
-    private EntityManager em;
-
-    public Xyz save(Xyz entity) {
-        if (entity.getId() == null) { em.persist(entity); return entity; }
-        return em.merge(entity);
-    }
-}
-```
+**Niemals** `JpaRepository` einführen.
 
 ### Backend – Transaktionen
 `@Transactional` gehört auf **Service-Methoden**, nicht auf Repositories.
-Lesende Methoden bekommen `@Transactional(readOnly = true)`.
 
 ### Backend – PlayerPrincipal
-Jeder authenticated Endpoint bekommt den eingeloggten User so:
 ```java
 @GetMapping("/something")
 public Dto method(@AuthenticationPrincipal PlayerPrincipal principal) {
     // principal.id() = playerId (Long)
-    // principal.username() = username
 }
 ```
 
-### Frontend – useApi Composable
-Alle API-Calls gehen über `~/composables/useApi.ts`:
+### Frontend – $fetch statt useApi
+API-Calls in Seiten/Stores direkt mit `$fetch`:
 ```typescript
-const api = useApi()
-await api.get<T>('/api/...')
-await api.post<T>('/api/...', body)
-await api.del('/api/...')
-await api.patch<T>('/api/...', body)
+await $fetch<T>(`${config.public.apiBase}/api/...`, {
+  headers: { Authorization: `Bearer ${authStore.token}` },
+})
 ```
-
-### Frontend – useFormatting Composable
-`~/composables/useFormatting.ts` hat `formatCurrency`, `formatEducationRequirement`, `stressLabel`, `stressColor`. Immer dort ergänzen, nie inline duplizieren.
 
 ### Frontend – Store-Struktur
 - `stores/auth.ts` – token, user, login/register/logout/restoreSession
-- `stores/game.ts` – character, expenses, lastTurnResult; `init()` lädt beides parallel
+- `stores/game.ts` – character, expenses, lastTurnResult, init(); **enthält alle Character-Felder inkl. Tax-Evasion-Status**
 - `stores/toast.ts` – success/error/warning/info Toasts
 
 ### Flyway-Migrationen
-`V1__initial_schema.sql` enthält alle Tabellen + Seed-Daten. **Nie V1 anfassen.**
-Neue Tabellen/Spalten → neue Datei `V2__...sql`, `V3__...sql` usw.
+Neue Tabellen/Spalten → neue Datei `V{N+1}__....sql`. **Nie V1 anfassen.**
 
 ### Education Stage Keys
-Jobs prüfen Education-Anforderungen gegen das `completed_stages` TEXT[]-Array in `education_progress`.
-Format: `"REALSCHULABSCHLUSS"`, `"ABITUR"`, `"AUSBILDUNG_FACHINFORMATIKER"`, `"BACHELOR_INFORMATIK"`, `"MASTER_BWL"`, `"WEITERBILDUNG_SOCIAL_MEDIA"`.
-Die Methode `meetsEducationRequirement()` steht in `JobService` und `TurnService` (leicht dupliziert — kann in Schritt 7+ refactored werden).
+Format im `completed_stages` TEXT[]-Array:
+`"REALSCHULABSCHLUSS"`, `"AUSBILDUNG_FACHINFORMATIKER"`, `"BACHELOR_INFORMATIK"`, `"WEITERBILDUNG_STEUERN_1"`, `"WEITERBILDUNG_STEUERHINTERZIEHUNG_1"` usw.
 
 ---
 
-## Bekannte Probleme / Technische Schulden
+## Implementierte Features (vollständig)
 
-1. **`meetsEducationRequirement()` ist dupliziert** in `JobService` und `TurnService`. Sollte in einen gemeinsamen `EducationService.meetsRequirement(playerId, type, field)` extrahiert werden.
+### Flyway-Migrationen V1–V13
 
-2. ~~**`MonthlyExpenseController.toggleExpense()` ist nicht `@Transactional`**~~ — **Behoben in Schritt 7**: `ExpenseService` mit `@Transactional` eingeführt, Controller nutzt jetzt den Service.
+| Migration | Inhalt |
+|---|---|
+| V1 | Initial Schema (alle Kerntabellen, Seed-Daten) |
+| V2 | Investitionen + Stock Price History |
+| V3 | Reisen, Sammlerstücke, Active Events |
+| V4 | Glücksspiel (gambling_sessions) |
+| V5 | Beziehungssystem (npcs, player_relationships) |
+| V6 | Fix NPC-ID-Typen |
+| V7 | Immobilien, Kredite, SCHUFA (real_estate_catalog, player_real_estate, player_loans, schufa_score) |
+| V8 | Job-Katalog (category, max_parallel, required_side_cert auf jobs) |
+| V9 | Level-System + Collections (collections, player_collections, player_collectibles, collection_name auf collectibles) |
+| V10 | Cert-basiertes Unlock-System (required_cert auf stocks/real_estate_catalog/collectibles) |
+| V11 | Erweiterte Stock-Typen (DIVIDEND_STOCK, BOND, REIT, LEVERAGE, WARRANT, SHORT, FUTURES) |
+| V12 | Bedürfnissystem (needs_items, depression_months_remaining + burnout_active auf characters) |
+| V13 | Steuerhinterziehung (tax_evasion_active, tax_evasion_caught_pending, cumulative_evaded_taxes, jail_months_remaining, exile_months_remaining auf characters) |
 
-3. **`TurnController.endTurn()` hat `@Transactional` auf dem Controller** (nicht auf dem Service) — das ist unüblich. TurnService.endTurn() hat selbst `@Transactional`, was ausreicht. Die Annotation auf dem Controller ist redundant und kann entfernt werden.
+### Feature Wave 2 (vollständig implementiert)
 
-4. **Stress-Berechnung**: Im TurnService wird Stress auf `sum(stressPerMonth)` der aktiven Jobs gesetzt. Das bedeutet: egal wie lange du einen stressigen Job hast, Stress bleibt konstant. Das ist die gewollte Mechanik (kein kumulativer Stress), aber gut zu wissen.
+**Glücksspiel-Bug-Fix:**
+- `gluecksspiel.vue`: Alle catch-Blöcke nutzen `toastStore.error(e?.data?.message ?? e?.message ?? 'Fehler')`
 
-5. ~~**Net Worth** ist nur `= cash`~~ — **Behoben in Schritt 8**: `recalculateNetWorth()` summiert Cash + alle Investment-Werte.
+**Sammlungen – Suche + Filter:**
+- `sammlungen.vue`: Suchfeld, Filter-Chips (Alle/Verfügbar/Besessen/Reise), Kollektions-Filter
 
-6. **`frontend/pages/leben.vue`**, `investitionen.vue`, `rangliste.vue` sind noch Stubs.
+**Kredite – SCHUFA-Breakdown:**
+- `GET /api/loans/schufa-breakdown` → Faktoren (Basispunkte, Kredite, Bildung, Glücksspiel)
+- `LoanController.java`, `LoanService.getSchufaBreakdown()`
+- `kredite.vue`: Breakdown-Karte unter SCHUFA-Balken
 
-7. **Maven** — `mvn` ist im PATH (`/usr/bin/mvn`). Lokal kompilieren mit `mvn compile -f backend/pom.xml`. Im Docker-Build passiert das automatisch.
+**Aktien – YAML + 127 Stocks + Suche:**
+- `stocks.yaml`: 127 Aktien (NORMAL, ETF, DIVIDEND_STOCK, BOND, REIT, CRYPTO, LEVERAGE, WARRANT, SHORT, FUTURES) mit required_cert-Staffelung
+- `GameDataLoaderService.loadStocks()`: `ON CONFLICT (ticker) DO UPDATE SET name, type, required_cert` — **current_price wird NICHT überschrieben** (schützt laufende Spielpreise)
+- `investitionen.vue`: Suche (Name/Ticker), Filter (Typ, Gesperrt), gesperrte Aktien mit Cert-Hinweis
 
-8. **Frontend wurde nicht via `npm run dev` getestet** (kein Browser-Test möglich in diesem Setup). Der Code ist syntaktisch korrekt und folgt Nuxt-3-Konventionen, sollte aber beim ersten echten Start auf TS-Fehler oder fehlende Dependencies geprüft werden.
+**Karriere-Baum (Pan/Zoom):**
+- `karriere.vue`: Vollständig neu als Pan/Zoom-Baum (wie ausbildung.vue)
+- 5 Bildungsknoten auf linker Achse (Kein/Realschul/Ausbildung/Bachelor/Master)
+- 9 Job-Reihen (51 Jobs), SVG-Kanten, slide-in Detail-Panel mit Gehalts-Delta
+- "My Jobs"-Overlay, node-pulse Animation für verfügbare Jobs
+
+**Bedürfnissystem:**
+- `needs_items.yaml`: 20 Items (Wasser, Pizza, Kaffee, Sport, Therapie, …)
+- `GameDataLoaderService.loadNeedsItems()`: Upsert per `ON CONFLICT (id)`
+- `NeedsController`: `GET /api/needs/items`, `POST /api/needs/purchase`
+- `CharacterService.purchaseNeedItem()`: Preis abziehen, Effekte clamped 0–100 anwenden
+- `TurnService.applyNeedsCriticalEvents()`: Burnout (stress≥100 → Jobs weg, -100€) + Depression (happiness=0 → 3 Monate +3 Stress/Mo)
+- `beduerfnisse.vue`: Grid mit Effekt-Chips, Needs-Balken oben, Burnout/Depression-Banner
+- `Sidebar.vue`: Bedürfnisse-Link
+
+**Reisen – Weltkarte:**
+- `reisen.vue`: SVG-Weltkarte mit Länderpunkten, Klick → Detail-Panel, Panning/Zooming
+
+**Version-Badge:** v5 → v6 → v7
 
 ---
 
-## Nächste Schritte (Schritte 7–15)
+### Steuerhinterziehungs-System (aktuelle Session)
 
-### ✅ Schritt 7 – Monatliche Ausgaben + Steuern + KV-Risiko (IMPLEMENTIERT)
+**Design:**
+- Toggle AN/AUS auf eigener Seite
+- 3 Skill-Level via Ausbildungsbaum (STEUERHINTERZIEHUNG_1/2/3, Voraussetzung: WEITERBILDUNG_STEUERN_1)
+- Entdeckungsrisiko pro Monat — bei Erwischung: Sofort-Wahl in der Monatsbilanz
+
+| Level | Cert | Hinterziehungsquote | Entdeckungsrisiko/Mo | Dauer | Kosten |
+|---|---|---|---|---|---|
+| 1 | WEITERBILDUNG_STEUERHINTERZIEHUNG_1 | 20% | 15% | 2 Mo | 800€ |
+| 2 | WEITERBILDUNG_STEUERHINTERZIEHUNG_2 | 40% | 8% | 3 Mo | 2.500€ |
+| 3 | WEITERBILDUNG_STEUERHINTERZIEHUNG_3 | 60% | 3% | 4 Mo | 5.000€ |
+
+**Erwischt-Optionen:**
+- Gefängnis: 6 Monate kein Einkommen, Stress +15/Mo, Happiness -10/Mo, SCHUFA -100
+- Kaution + Flucht: `max(5000, cumulativeEvadedTaxes × 3)` €, 3 Monate Exil (Einkommen bleibt), SCHUFA -50
+
 **Backend:**
-- `ExpenseService` mit `@Transactional` für alle Expense-Mutationen (behebt Schuld #2) ✅
-- `POST /api/expenses` → neue Ausgaben hinzufügbar (GYM, STREAMING, KRANKENVERSICHERUNG, MOBILFUNK, INTERNET, ZEITSCHRIFTEN, SONSTIGES) ✅
-- `DELETE /api/expenses/{id}` → nicht-mandatory Ausgaben löschen ✅
-- `GET /api/tax/preview` → Steuervorschau basierend auf aktiven Jobs ✅
-- KV-Risiko in `TurnService`: 10% Chance auf Arztrechnung (200–2000 €) ohne aktive KRANKENVERSICHERUNG-Ausgabe ✅
-- `MonthlyExpenseController` nutzt jetzt `ExpenseService` statt direkten Repository-Zugriff ✅
+- `V13__tax_evasion.sql`: 5 neue Felder auf `characters`
+- `GameCharacter.java`: +5 Felder (taxEvasionActive, taxEvasionCaughtPending, cumulativeEvadedTaxes, jailMonthsRemaining, exileMonthsRemaining)
+- `CharacterDto.java`: alle 5 Felder exponiert
+- `TurnResultDto.java`: +taxEvasionCaught, +taxEvasionCaughtAmount
+- `TurnService.java`:
+  - Jail/Exile-Ticks am Anfang von `endTurn()` (vor Gehalt)
+  - Evasion-Hook nach `calculateTax()` (taxPaid wird reduziert, Entdeckungscheck)
+  - Hilfsmethoden: `taxEvasionLevel(playerId)`, `evasionRate(int)`, `detectionChance(int)`
+- `TaxEvasionService.java` (neu): `getStatus()`, `toggle()`, `resolveCaught()`
+- `TaxEvasionController.java` (neu): `GET /api/tax-evasion/status`, `POST /api/tax-evasion/toggle`, `POST /api/tax-evasion/resolve-caught`
+- `education.yaml`: neue Family `STEUERHINTERZIEHUNG` am Ende von `sideCertFamilies`
 
 **Frontend:**
-- `pages/leben.vue` vollständig implementiert: KV-Warnung/Status, Steuervorschau mit Bracket-Highlight, Ausgaben-Liste mit Toggle/Delete, Neue-Ausgabe-Formular ✅
+- `steuerhinterziehung.vue` (neu): Status-Card mit Toggle, Statistik-Card, Caught-Fallback, Info-Card
+- `MonthlyBalanceSheet.vue`: caught-Sektion mit Gefängnis/Flucht-Buttons; "Weiter" gesperrt bis Wahl
+- `Sidebar.vue`: 🕵️-Link mit rotem Pulsieren bei `taxEvasionCaughtPending`
+- `game.ts`: Character-Interface +5 Felder, TurnResult +2 Felder, `toggleTaxEvasion()` + `resolveCaught()`
 
-### ✅ Schritt 9 – Sammlerstücke + Reisen + Tages-Events (IMPLEMENTIERT)
-**Backend:**
-- V3-Migration: `countries` Tabelle (6 Länder), `player_travel` Tabelle, `player_id` auf `active_events` ✅
-- `Country`, `PlayerTravel`, `Collectible`, `PlayerCollectible`, `ActiveEvent` Entities ✅
-- `TravelService`: Länder anzeigen, Reise buchen (`POST /api/travel/depart`), heimkehren ✅
-- `CollectibleService`: Sammlerstücke kaufen (nur im richtigen Land oder bei aktivem Sale-Event) ✅
-- `TurnService`: prüft Reiseankunft + generiert 20% Zufalls-Tages-Events (COLLECTIBLE_SALE) ✅
-- Tages-Events: 30% Rabatt auf zufällige Sammlerstücke, player-spezifisch, expire nach 2 Turns ✅
-
-**Frontend:**
-- `pages/reisen.vue`: Reisstatus, Länderkarten mit Buchungsbutton, Sammlerstücke-Liste mit Rarität/Rabatt, Meine Sammlung ✅
-- `Sidebar.vue`: Reisen-Link hinzugefügt ✅
-- `layouts/default.vue`: Bug gefixt (Events wurden nach clearTurnResult() gelesen → null); Tages-Events zeigen als warning-Toast ✅
-
-### ✅ Schritt 10 – Glücksspiel (IMPLEMENTIERT)
-
-### ✅ Schritt 8 – Investitionen (IMPLEMENTIERT)
-**Backend:**
-- `Stock`, `StockPriceHistory`, `Investment` Entities ✅
-- V2-Migration: `stock_price_history` Tabelle (sauber statt JSONB) + `stock_id` auf `investments` ✅
-- `StockService.simulatePrices()`: NORMAL ±15%, MEME ±80% pro Monat ✅
-- `GET /api/stocks`, `POST /api/investments/stocks/buy`, `POST /api/investments/{id}/sell` ✅
-- `CharacterService.recalculateNetWorth()`: Cash + Investment-Werte (behebt Schuld #5) ✅
-
-**Frontend:**
-- `pages/investitionen.vue`: Portfolio-Summary, Börse mit Filter, Chart.js Preischart, Kauf/Verkauf ✅
-
-### Schritt 9 – Sammlerstücke + Reisen + Tages-Events
-- Travel-System: Länder bereisen, Kosten, Reisezeit in Monaten
-- Collectibles: nur in bereistem Land kaufbar
-- Tages-Events: zeitlich begrenzte seltene Items → Toast-Notification
-
-### ✅ Schritt 10 – Glücksspiel (IMPLEMENTIERT)
-**Backend:**
-- V4-Migration: `gambling_sessions` Tabelle ✅
-- `GamblingSession` Entity + `GamblingRepository` ✅
-- `GamblingService`: Slots (~85% RTP), Blackjack (stateful, Dealer zieht bis 17, BJ=2,5×), Poker (5-Karten vs KI, 5% Rake) ✅
-- `POST /api/gambling/slots`, `/blackjack/start`, `/blackjack/{id}/hit`, `/blackjack/{id}/stand`, `/poker` ✅
-- Blackjack-Spielzustand wird als JSON in `game_state` gespeichert (Jackson) ✅
-
-**Frontend:**
-- `pages/gluecksspiel.vue`: Tab-Navigation (Slots / Blackjack / Poker), Karten-Display, Einsatz-Input, Schnellauswahl-Buttons ✅
-- `components/CardDisplay.vue`: Echte Spielkarten-Optik (rot/schwarz, Wert + Symbol) ✅
-- `Sidebar.vue`: Glücksspiel-Link hinzugefügt ✅
-
-### ✅ Schritt 11 – Zufallsereignisse (IMPLEMENTIERT)
-**Backend:**
-- `RandomEventService` mit 6 unabhängigen Ereignissen (je eigene Wahrscheinlichkeit) ✅
-  - GEHALTSBONUS (7 %, nur wenn Job aktiv): +200–800 €, Happiness +5
-  - AUTOPANNE (8 %): -150–500 €, Stress +10
-  - GLUECKSFALL (5 %): +30–250 €, Happiness +10
-  - DIEBSTAHL (5 %): 10–30 % des Bargelds (max. 400 €), Happiness -15, Stress +5
-  - STRESSABBAU (6 %): Stress -25, Energie +15, Happiness +10
-  - UNERWARTETE_RECHNUNG (7 %): -100–300 €
-- `TurnService` ruft `randomEventService.applyRandomEvents()` nach Step 5 (Netto-Cashänderung) auf ✅
-- KV-Risiko (applyHealthInsuranceRisk) bleibt separat in Step 4b (geht korrekt in expenseBreakdown) ✅
-- Alle Events erscheinen in der `events`-Liste des `TurnResultDto` → Toast-Anzeige im Frontend ✅
-
-### ✅ Schritt 12 – Monatsbilanz + Statistik-Dashboard (IMPLEMENTIERT)
-**Backend:**
-- `SnapshotDto` record (turn, cash, netWorth, totalIncome, totalExpenses) ✅
-- `GET /api/stats/snapshots` → alle MonthlySnapshots des eingeloggten Spielers, aufsteigend nach Turn ✅
-
-**Frontend:**
-- `pages/index.vue`: Placeholder ersetzt durch zwei echte Chart.js-Diagramme ✅
-  - Linienchart "Vermögensverlauf": Nettovermögen (indigo) + Bargeld (grün gestrichelt)
-  - Balkenchart "Einnahmen vs. Ausgaben": grün/rot pro Monat
-- Charts werden mit `<ClientOnly>` gerendert (SSR-safe), zeigen Platzhalter wenn < 2 Datenpunkte ✅
-- `BarElement` zu ChartJS.register() hinzugefügt ✅
-
-### ✅ Schritt 13 – Rangliste (IMPLEMENTIERT)
-**Backend:**
-- `LeaderboardEntryDto` record (rank, playerId, username, netWorth, currentTurn, isMe) ✅
-- `GET /api/leaderboard` → native SQL gegen die bestehende `leaderboard` DB-View, Rang-Nummerierung serverseitig, `isMe`-Flag für den eingeloggten Spieler ✅
-
-**Frontend:**
-- `pages/rangliste.vue`: vollständig implementiert ✅
-  - "Deine Platzierung"-Highlight-Card (accent-Border) oben
-  - Tabelle: Rang (🥇/🥈/🥉 für Top 3), Spielername + "(du)"-Badge, Nettovermögen, Monat
-  - Eigene Zeile wird farblich hervorgehoben
-
-### ✅ Schritt 14 – Beziehungssystem (IMPLEMENTIERT)
-**Backend:**
-- V5-Migration: `npcs` Tabelle + `player_relationships` Tabelle, 5 Seed-NPCs (Klaus, Dr. Müller, Sarah, Marco, Lena) ✅
-- `Npc`, `PlayerRelationship` Entities + `NpcRepository`, `PlayerRelationshipRepository` ✅
-- `RelationshipService`: `getAll`, `meet`, `interact` (+10 Level, einmal pro Turn), `advanceRelationships` (+1 passiv/Monat, Happiness-Bonus) ✅
-- `GET /api/npcs`, `POST /api/npcs/{id}/meet`, `POST /api/npcs/{id}/interact` ✅
-- `TurnService`: ruft `relationshipService.advanceRelationships()` nach Needs-Decay auf, wendet Happiness-Bonus an ✅
-- Happiness-Bonus-Formel: round(level × happinessBonusPerLevel / 100) pro Beziehung ✅
-
-**Frontend:**
-- `pages/beziehungen.vue`: Summary-Cards (Bekannte, Ø Level, Bonus), NPC-Grid mit Persönlichkeits-Farben, Level-Balken, "Kennenlernen"/"Zeit verbringen"-Buttons ✅
-- `Sidebar.vue`: Beziehungen-Link (♥) hinzugefügt ✅
-
-### ✅ V7 – Immobilien, Kredite, Collection-Progress & YAML-Datendateien (IMPLEMENTIERT)
-
-**Migration:**
-- `V7__real_estate_loans_schufa.sql`: `schufa_score INTEGER 0–1000` auf `characters` (DEFAULT 500), UNIQUE-Constraints auf `jobs.name` und `collectibles.name` (für Upserts), `education_requirements_json JSONB` auf `jobs`, neue Tabellen `real_estate_catalog`, `player_real_estate`, `player_loans`.
-
-**YAML-Datendateien + DataLoader:**
-- `backend/src/main/resources/data/jobs.yaml` (12 Jobs), `collectibles.yaml` (12 Items), `real_estate.yaml` (6 Objekte), `education.yaml` (alle Stufen + Zertifikate)
-- `GameDataLoaderService` (`ApplicationRunner`): läuft nach Flyway, upsert per `ON CONFLICT (name) DO UPDATE` für Jobs, Collectibles und Immobilien-Katalog. Nutzt snakeyaml (bereits im Classpath via Spring Boot).
-- `EducationService`: statische Maps durch Instanzvariablen ersetzt, `@PostConstruct loadEducationData()` lädt `education.yaml`. Fallback auf Hardcoded-Defaults bei Fehler.
-
-**Immobilien-Backend:**
-- Entities: `RealEstateCatalog`, `PlayerRealEstate`
-- Repositories: `RealEstateCatalogRepository`, `PlayerRealEstateRepository` (EntityManager-Muster)
-- `RealEstateService`: `getCatalog()`, `getMyProperties()`, `buy()` (deductCash + persist + recalculateNetWorth), `changeMode()` (SELF_OCCUPIED ↔ RENTED_OUT)
-- `RealEstateController`: `GET /api/real-estate`, `GET /api/real-estate/my`, `POST /api/real-estate/{id}/buy`, `PATCH /api/real-estate/{id}/mode`
-- `CharacterService.recalculateNetWorth()`: summiert jetzt auch `player_real_estate.purchase_price`
-
-**Kredite & SCHUFA-Backend:**
-- Entity: `PlayerLoan`, Repository: `PlayerLoanRepository`
-- `GameCharacter` + `CharacterDto`: neues Feld `schufaScore` (int)
-- `CharacterService.updateSchufaScore()`: neue Hilfsmethode (clamp 0–1000 + persist)
-- `LoanService`: SCHUFA prüfen (< 300 → abgelehnt), Zinssatz nach Score (800+→3%, 600–799→5%, 400–599→8%, <400→12%), Annuitätenformel, SCHUFA –20 bei Aufnahme, Methoden als package-private statics (testbar)
-- `LoanController`: `GET /api/loans`, `GET /api/loans/schufa`, `POST /api/loans/take`
-
-**TurnService-Erweiterungen:**
-- Nach `calculateSalaries()`: Mieteinnahmen aller `RENTED_OUT`-Immobilien werden zum Bruttoeinkommen addiert
-- In `deductExpenses()`: MIETE-Ausgabe wird übersprungen (→ 0 €), wenn mind. 1 `SELF_OCCUPIED`-Immobilie vorhanden
-- Nach Ausgaben: `processLoanRepayments()` — aktive Kredite werden abgezogen; SCHUFA +2 bei pünktlicher Rate, +5 bei vollständiger Tilgung, –50 bei Zahlungsausfall → Status DEFAULTED
-
-**OR-Logik für Job-Anforderungen:**
-- `Job.educationRequirementsJson` (JSONB, nullable): Format `[{"type":"BACHELOR","field":"BWL"},{"type":"MASTER","field":"BWL"}]`
-- `JobService.meetsEducationRequirementWithJson()`: prüft JSON zuerst (OR-Logik), Fallback auf Legacy-Felder wenn JSON null
-- `getAvailableJobs()` nutzt die neue Methode
-
-**Collection-Progress:**
-- `CollectibleService.getCollectionProgress()`: gruppiert alle Collectibles nach `collectionType`, zählt owned vs. total
-- `CollectionProgressDto(collectionType, total, owned, percentage)`
-- `GET /api/collectibles/progress` in `CollectibleController`
-
-**Frontend:**
-- `pages/immobilien.vue`: Katalog-Karten (Kaufpreis, Mieteinnahmen, Ersparnis), Kaufen-Button, eigene Immobilien mit Modus-Toggle (Einziehen / Vermieten), Status-Badge (grün / blau)
-- `pages/kredite.vue`: SCHUFA-Score-Gauge (Farbbalken + Label), Zinsstaffel-Tabelle, aktive Kredite mit Restschuld-Fortschrittsbalken, Kreditformular mit Echtzeit-Vorschau (Rate + Gesamtkosten), abgeschlossene Kredite
-- `pages/reisen.vue`: neue Sektion „Sammlungs-Fortschritt" mit Fortschrittsbalken pro Typ (AUTOS, UHREN, KUNST)
-- `components/Sidebar.vue`: Links für Immobilien (🏠) und Kredite (🏦) ergänzt
-- `composables/useFormatting.ts`: `formatSchufaScore(score)` → `{label, color, bgColor}`, `formatLoanRate(rate)` → `"5,00 % p.a."`
-
-### ✅ V8 – Vollständiger Job- und Bildungskatalog (IMPLEMENTIERT)
-
-**Migration:**
-- `V8__jobs_and_education_catalog.sql`: Neue Spalten auf `jobs` (`category VARCHAR(50)`, `max_parallel INT DEFAULT 1`, `required_side_cert VARCHAR(100)`). Bestehende Jobs auf `available = false` gesetzt; DataLoader reaktiviert Katalog-Jobs per Upsert.
-
-**Education YAML (`education.yaml`):**
-- AUSBILDUNG: 6 Fachrichtungen (EINZELHANDEL, FACHINFORMATIKER, KFZTECH, PFLEGE, KOCH, ELEKTRIKER)
-- BACHELOR: 6 Fachrichtungen inkl. INGENIEURWESEN + PSYCHOLOGIE; Feld-spezifische Dauer (MEDIZIN 8 Mo., JURA 7 Mo.)
-- MASTER: 5 Fachrichtungen inkl. INGENIEURWESEN
-- Kosten pro Stufe: Ausbildung €500, Bachelor €3.000, Master €5.000
-- 11 Weiterbildungen mit individuellen Kosten und Voraussetzungen (BARKEEPER/FITNESSTRAINER ohne Voraussetzung, PROJEKTMANAGEMENT/STEUERN/HACKER erfordern bestimmten Bachelor)
-
-**Jobs YAML (`jobs.yaml`):** 50 Jobs in 7 Kategorien — EINSTIEG, HANDWERK, BUERO, TECH, MANAGEMENT, GESUNDHEIT, RECHT
-
-**Backend-Änderungen:**
-- `Job.java`: neue Felder `category`, `maxParallel`, `requiredSideCert`
-- `JobDto.java`: `category`, `maxParallel`, `requiredSideCert` (deutsche Anzeigename), Signatur von `from()` erweitert
-- `EducationProgressDto.java`: `AvailableStageDto` + `SideCertDto` haben jetzt `cost`-Feld; `FieldOption` hat `durationMonths` für Feld-spezifische Abweichungen
-- `EducationService.java`: `StageDefinition` mit `cost` + `fieldDurations`; neue `SideCertDef`-Record mit `requiresAny`; `enrollMain` zieht Kosten ab; `enrollSide` prüft per-Zertifikat-Voraussetzungen (kein globaler Realschulabschluss-Check mehr); MASTER in `buildAvailableMainStages` zeigt nur Felder, für die der passende Bachelor existiert; `CharacterService`-Abhängigkeit ergänzt; statische `sideCertLabel()`-Methode für JobService
-- `GameDataLoaderService.java`: Upsert um `category`, `max_parallel`, `required_side_cert`, `available = true` erweitert; neues YAML-Feld `requiredStageKey` (voller Stage-Key direkt)
-- `JobService.java`: `meetsSideCertRequirement()`; `meetsRequirements`-Flag kombiniert jetzt Bildung + Side-Cert + Erfahrung
-
-**Frontend-Änderungen:**
-- `useFormatting.ts`: `formatEducationRequirement` versteht jetzt vollständige Stage-Keys wie "AUSBILDUNG_EINZELHANDEL"; Stress-Label 4-stufig (Niedrig/Mittel/Hoch/Sehr hoch)
-- `karriere.vue`: Kategorie-Filterleiste (Alle/Verfügbar/Meine + 7 Kategorie-Buttons); "Alle"-Ansicht gruppiert nach Kategorie mit farbigen Abschnitts-Headern; Flat-Ansicht für Filter/Kategorie zeigt Kategorie-Badge; Anforderungszeile zeigt 📚 Bildungsabschluss + 🎓 Weiterbildung + ⏱ Erfahrung
-
-**Bekannte Einschränkung:**
-- `max_parallel > 1` (Zeitungsausträger, Babysitter) wird gespeichert aber nicht durchgesetzt, da `player_jobs` eine (player_id, job_id) PRIMARY KEY hat (kein doppelter Eintrag möglich). Benötigt Schema-Änderung für vollständige Umsetzung.
-
-### ✅ Frontend-Polish: Ausbildung, Monatsbilanz, Einstellungen (IMPLEMENTIERT)
-
-**`ausbildung.vue`:**
-- TREE aktualisiert: alle 6 Ausbildungsberufe, 6 Bachelor-Fächer (inkl. INGENIEURWESEN + PSYCHOLOGIE), 5 Master-Fächer
-- `FieldOption.durationMonths`: zeigt abweichende Dauer im Dropdown (MEDIZIN 8 Mo., JURA 7 Mo. werden hervorgehoben)
-- Kosten auf "Einschreiben"-Button (€ in Gelb, kommt aus Backend-DTO)
-- `CERT_DURATIONS` + `SIDE_CERT_LABELS` Maps für alle 11 Weiterbildungen; Fortschrittsbalken korrekt auch für 2-Monats-Zertifikate
-- `mainProgress`-Bar unterstützt feldspezifische Gesamtdauer via `STAGE_DURATIONS`-Lookup
-
-**`EducationStageCard.vue`:**
-- Zeigt Kosten in Gelb neben dem Einschreiben-Button
-- Dropdown-Optionen zeigen abweichende Feld-Dauer (z.B. "Medizin (8 Mo.)")
-- `FieldOption` + `AvailableStage` Interfaces um `durationMonths` und `cost` erweitert
-
-**`MonthlyBalanceSheet.vue`:**
-- Zwei Donut-Charts (Chart.js, client-side) für Einnahmen und Ausgaben
-- Erstellt/zerstört on `show`-Änderung via `watch`; `onBeforeUnmount` cleanup
-- Modalbreite auf `max-w-2xl` erweitert
-- `stores/game.ts`: `Character.schufaScore?: number` ergänzt
-
-**`einstellungen.vue`:**
-- Profilbereich mit Avatar-Initial + Username + aktueller Spielmonat
-- Spielstatistiken: Nettovermögen, Bargeld, Spielmonat, SCHUFA-Score (aus `gameStore.character`)
-- Needs-Mini-Übersicht (NeedBar-Komponente)
-- Toggle-Einstellungen (Toast-Benachrichtigungen, Kompakt-Ansicht) — gespeichert in `localStorage`
-
-### Schritt 15 – Sprachwahl DE/EN (Optional)
-- i18n-Toggle in Einstellungen
+**DB-Hotfix:** `WEITERBILDUNG_STEUERHINTERZIEHUNG_1` manuell per SQL zu `01bensch+12@gmail.com` hinzugefügt (Nutzer hatte Kurs abgeschlossen aber Eintrag fehlte).
 
 ---
 
 ## Wichtige Dateipfade
 
 ```
-/home/bestimmtnichtben/Documents/game/
+progressiongame/
 ├── docker-compose.yml
-├── .env.example
-├── HANDOFF.md                          ← diese Datei
-├── backend/
-│   ├── pom.xml                         ← Spring Boot 3.3.5, Java 21, jjwt 0.12.6
-│   ├── Dockerfile
-│   └── src/main/
-│       ├── java/com/financegame/
-│       │   ├── FinanceGameApplication.java
-│       │   ├── config/
-│       │   │   ├── SecurityConfig.java         ← CORS, JWT-Filter, BCrypt Bean
-│       │   │   └── GlobalExceptionHandler.java
-│       │   ├── security/
-│       │   │   ├── JwtAuthenticationFilter.java
-│       │   │   └── PlayerPrincipal.java        ← record(Long id, String username)
-│       │   ├── entity/        ← Player, GameCharacter (+ schufaScore), Job (+ educationRequirementsJson),
-│       │   │                     PlayerJob, PlayerJobId, JobApplication, EducationProgress,
-│       │   │                     MonthlyExpense, MonthlySnapshot, EventLog, Investment, Stock,
-│       │   │                     Collectible, PlayerCollectible, Country, PlayerTravel, ActiveEvent,
-│       │   │                     GamblingSession, Npc, PlayerRelationship,
-│       │   │                     RealEstateCatalog, PlayerRealEstate, PlayerLoan
-│       │   ├── repository/    ← alle via EntityManager, kein JpaRepository
-│       │   ├── service/       ← AuthService, CharacterService, JobService, EducationService (YAML),
-│       │   │                     TurnService, JwtService, StockService, CollectibleService,
-│       │   │                     TravelService, GamblingService, RandomEventService,
-│       │   │                     RelationshipService, RealEstateService, LoanService,
-│       │   │                     GameDataLoaderService (ApplicationRunner)
-│       │   ├── controller/    ← Auth, Character, Job, Education, MonthlyExpense, Turn, Health,
-│       │   │                     Stock, Investment, Collectible, Travel, Gambling, Npc,
-│       │   │                     Leaderboard, Stats, Tax, RealEstate, Loan
-│       │   └── dto/           ← alle Request/Response Records
-│       └── resources/
-│           ├── application.yml
-│           ├── data/
-│           │   ├── jobs.yaml             ← 12 Jobs (upsert via GameDataLoaderService)
-│           │   ├── collectibles.yaml     ← 12 Items
-│           │   ├── real_estate.yaml      ← 6 Immobilien-Objekte
-│           │   └── education.yaml        ← Bildungsstufen + Zertifikate
-│           └── db/migration/
-│               ├── V1__initial_schema.sql
-│               ├── V2__investments_and_price_history.sql
-│               ├── V3__travel_collectibles_events.sql
-│               ├── V4__gambling.sql
-│               ├── V5__relationships.sql
-│               ├── V6__fix_npc_id_types.sql
-│               └── V7__real_estate_loans_schufa.sql
+├── HANDOFF.md
+├── backend/src/main/
+│   ├── java/com/financegame/
+│   │   ├── entity/
+│   │   │   ├── GameCharacter.java          ← +depression/burnout/taxEvasion/jail/exile Felder
+│   │   │   ├── EducationProgress.java      ← completedStages TEXT[]
+│   │   │   ├── Job.java, PlayerJob.java, JobApplication.java
+│   │   │   ├── Investment.java, Stock.java
+│   │   │   ├── Collectible.java, PlayerCollectible.java
+│   │   │   ├── RealEstateCatalog.java, PlayerRealEstate.java
+│   │   │   ├── PlayerLoan.java
+│   │   │   ├── PlayerTravel.java, Country.java, ActiveEvent.java
+│   │   │   ├── GamblingSession.java
+│   │   │   └── Npc.java, PlayerRelationship.java
+│   │   ├── dto/
+│   │   │   ├── CharacterDto.java           ← alle 16 Felder inkl. Tax-Evasion
+│   │   │   └── TurnResultDto.java          ← +taxEvasionCaught, taxEvasionCaughtAmount
+│   │   ├── service/
+│   │   │   ├── TurnService.java            ← jail/exile ticks, evasion hook, Hilfsmethoden
+│   │   │   ├── TaxEvasionService.java      ← NEU
+│   │   │   ├── CharacterService.java       ← purchaseNeedItem()
+│   │   │   ├── EducationService.java       ← loadEducationData() aus YAML, loadDefaults()
+│   │   │   ├── GameDataLoaderService.java  ← loadCollections/Jobs/Collectibles/RealEstate/NeedsItems/Stocks
+│   │   │   ├── LoanService.java            ← clampSchufa() static, getSchufaBreakdown()
+│   │   │   ├── StockService.java, CollectibleService.java, TravelService.java
+│   │   │   ├── GamblingService.java, RandomEventService.java
+│   │   │   ├── RelationshipService.java, RealEstateService.java
+│   │   │   └── CollectionService.java
+│   │   └── controller/
+│   │       ├── TaxEvasionController.java   ← NEU (/api/tax-evasion/*)
+│   │       ├── LoanController.java         ← /api/loans/schufa-breakdown
+│   │       ├── NeedsController.java        ← /api/needs/*
+│   │       └── [alle anderen Controller]
+│   └── resources/
+│       ├── data/
+│       │   ├── education.yaml              ← STEUERHINTERZIEHUNG Family am Ende
+│       │   ├── jobs.yaml                   ← 51 Jobs
+│       │   ├── stocks.yaml                 ← 127 Stocks
+│       │   ├── collectibles.yaml
+│       │   ├── real_estate.yaml
+│       │   ├── collections.yaml
+│       │   └── needs_items.yaml
+│       └── db/migration/
+│           ├── V1–V12 (bestehend)
+│           └── V13__tax_evasion.sql        ← NEU
 └── frontend/
-    ├── nuxt.config.ts
-    ├── tailwind.config.js
-    ├── assets/css/main.css             ← .card, .btn-primary, .btn-secondary, .input, .badge
-    ├── layouts/
-    │   ├── default.vue                 ← Sidebar + Header + MonthlyBalanceSheet Modal
-    │   └── auth.vue
-    ├── middleware/auth.ts              ← Redirect zu /login wenn kein Token
-    ├── composables/
-    │   ├── useApi.ts                   ← get/post/del/patch mit Auth-Header
-    │   └── useFormatting.ts           ← formatCurrency, formatEducationRequirement, stressLabel,
-│                                      formatSchufaScore, formatLoanRate
-    ├── stores/
-    │   ├── auth.ts                     ← token, user, login/logout/restoreSession
-    │   ├── game.ts                     ← character, expenses, lastTurnResult, init()
-    │   └── toast.ts                    ← success/error/warning/info
+    ├── layouts/default.vue                 ← v7 Badge, MonthlyBalanceSheet eingebunden
+    ├── stores/game.ts                      ← Character +5 Tax-Felder, TurnResult +2, toggleTaxEvasion/resolveCaught
     ├── components/
-    │   ├── Sidebar.vue, StatCard.vue, NeedBar.vue, ToastContainer.vue
-    │   ├── CharacterNeeds.vue, ExpensesWidget.vue
-    │   ├── MonthlyBalanceSheet.vue     ← Turn-Result Modal
-    │   └── EducationStageCard.vue
+    │   ├── Sidebar.vue                     ← 🕵️ Steuerhinterziehung + Pulse
+    │   └── MonthlyBalanceSheet.vue         ← caught-Sektion, "Weiter" gesperrt
     └── pages/
-        ├── index.vue                   ← Dashboard mit Charts
-        ├── login.vue, register.vue     ← auth layout
-        ├── karriere.vue               ← vollständig implementiert
-        ├── ausbildung.vue             ← vollständig implementiert
-        ├── leben.vue                  ← vollständig implementiert
-        ├── investitionen.vue          ← vollständig implementiert
-        ├── reisen.vue                 ← vollständig implementiert (inkl. Collection-Progress)
-        ├── gluecksspiel.vue           ← vollständig implementiert
-        ├── beziehungen.vue            ← vollständig implementiert
-        ├── immobilien.vue             ← vollständig implementiert (V7)
-        ├── kredite.vue                ← vollständig implementiert (V7)
-        ├── rangliste.vue              ← vollständig implementiert
-        └── einstellungen.vue          ← nur Logout
+        ├── steuerhinterziehung.vue         ← NEU
+        ├── karriere.vue                    ← Pan/Zoom-Baum
+        ├── ausbildung.vue                  ← Pan/Zoom-Baum
+        ├── investitionen.vue               ← Suche + Filter + gesperrte Stocks
+        ├── beduerfnisse.vue                ← Kaufseite + Needs-Balken + Status-Banner
+        ├── reisen.vue                      ← SVG-Weltkarte
+        ├── sammlungen.vue                  ← Suche + Filter
+        ├── kredite.vue                     ← SCHUFA-Breakdown
+        ├── gluecksspiel.vue                ← Slots/BJ/Poker
+        ├── beziehungen.vue, immobilien.vue, rangliste.vue
+        └── [alle anderen Seiten]
 ```
 
 ---
 
-## Cloudflare Tunnel Kompatibilität
+## Bekannte Technische Schulden
 
-Das gesamte Setup ist für den Betrieb hinter einem Cloudflare Tunnel ausgelegt:
-
-- **`application.yml`**: `forward-headers-strategy: framework` → Spring's `ForwardedHeaderFilter` verarbeitet `X-Forwarded-For` / `X-Forwarded-Proto` korrekt.
-- **`nuxt.config.ts`**: Zwei API-Basis-URLs:
-  - `runtimeConfig.apiBase` (privat, SSR) ← `NUXT_INTERNAL_API_BASE` (Standard: `http://backend:8080` im Docker-Netz)
-  - `runtimeConfig.public.apiBase` (öffentlich, Client) ← `NUXT_PUBLIC_API_BASE` (die Cloudflare-Tunnel-URL)
-- **`useApi.ts`**: `import.meta.server` → interne URL; Client → öffentliche URL. SSR-Calls gehen direkt im Docker-Netz zum Backend, ohne Cloudflare zu durchlaufen.
-- **Keine WebSocket-Abhängigkeit** in Production; kein SSE oder Polling mit ws://-URLs.
-- **CORS**: `allowedOriginPatterns("*")` mit `allowCredentials = true` — funktioniert hinter Cloudflare, da der Browser den `Origin`-Header setzt und der Tunnel ihn weiterleitet.
-
-Für das Deployment nur `NUXT_PUBLIC_API_BASE` in `.env` auf die öffentliche Backend-Tunnel-URL setzen. `NUXT_INTERNAL_API_BASE` bleibt unverändert (`http://backend:8080`).
+1. **`meetsEducationRequirement()` ist dupliziert** in `JobService` und `TurnService`. Sollte in `EducationService` extrahiert werden.
+2. **`max_parallel > 1`** wird gespeichert aber nicht durchgesetzt (player_jobs hat (player_id, job_id) PRIMARY KEY).
+3. **TurnController.endTurn()** hat redundante `@Transactional` — TurnService.endTurn() hat selbst eine.
+4. **loadDefaults() in EducationService** enthält keine STEUERHINTERZIEHUNG-Certs — falls education.yaml nicht ladbar ist, fehlen diese im Fallback.
 
 ---
 
 ## Workflow-Hinweise
 
-- **Vor jedem Schritt** kurz bestätigen lassen, dann implementieren
-- **Nach jedem Schritt** `mvn compile` ausführen (Pfad oben) und committen
 - Antworten auf **Deutsch**, Code auf **Englisch**
-- Keine Spring Data JPA Repositories einführen
+- Keine Spring Data JPA Repositories — immer `EntityManager` direkt
 - Neue DB-Spalten/-Tabellen → neue Flyway-Migration (nie V1 anfassen)
-- Alle neuen API-Calls im Frontend über `useApi` Composable
-- Wiederverwendbare Formatierung in `useFormatting` ergänzen, nicht inline
+- `mvn compile` nach Backend-Änderungen: `/usr/bin/mvn compile -f backend/pom.xml`
+- Docker rebuild: `docker compose build && docker compose up -d`
+- Version-Badge in `layouts/default.vue` nach jeder Session erhöhen
+
+---
+
+## Cloudflare Tunnel Kompatibilität
+
+- `application.yml`: `forward-headers-strategy: framework`
+- `nuxt.config.ts`: `runtimeConfig.public.apiBase` ← `NUXT_PUBLIC_API_BASE` (Tunnel-URL)
+- SSR-Calls gehen intern über `http://backend:8080`, Client-Calls über Tunnel
+- CORS: `allowedOriginPatterns("*")` mit `allowCredentials = true`

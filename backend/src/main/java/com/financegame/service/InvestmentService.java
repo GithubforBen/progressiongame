@@ -1,12 +1,17 @@
 package com.financegame.service;
 
+import com.financegame.domain.GameContext;
+import com.financegame.domain.GameContextFactory;
+import com.financegame.domain.condition.HasCertCondition;
+import com.financegame.domain.events.StockPurchasedEvent;
+import com.financegame.domain.events.StockSoldEvent;
 import com.financegame.dto.InvestmentDto;
 import com.financegame.entity.GameCharacter;
 import com.financegame.entity.Investment;
 import com.financegame.entity.Stock;
-import com.financegame.repository.EducationProgressRepository;
 import com.financegame.repository.InvestmentRepository;
 import com.financegame.repository.StockRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,7 +19,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -23,16 +27,19 @@ public class InvestmentService {
     private final InvestmentRepository investmentRepository;
     private final StockRepository stockRepository;
     private final CharacterService characterService;
-    private final EducationProgressRepository educationProgressRepository;
+    private final GameContextFactory gameContextFactory;
+    private final ApplicationEventPublisher eventPublisher;
 
     public InvestmentService(InvestmentRepository investmentRepository,
                               StockRepository stockRepository,
                               CharacterService characterService,
-                              EducationProgressRepository educationProgressRepository) {
+                              GameContextFactory gameContextFactory,
+                              ApplicationEventPublisher eventPublisher) {
         this.investmentRepository = investmentRepository;
         this.stockRepository = stockRepository;
         this.characterService = characterService;
-        this.educationProgressRepository = educationProgressRepository;
+        this.gameContextFactory = gameContextFactory;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -59,12 +66,10 @@ public class InvestmentService {
 
         // Cert-based access check
         if (stock.getRequiredCert() != null) {
-            List<String> completedStages = educationProgressRepository.findByPlayerId(playerId)
-                .map(ep -> Arrays.asList(ep.getCompletedStages()))
-                .orElse(List.of());
-            if (!completedStages.contains(stock.getRequiredCert())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Weiterbildung erforderlich: " + stock.getRequiredCert());
+            GameContext ctx = gameContextFactory.build(playerId);
+            HasCertCondition certCheck = new HasCertCondition(stock.getRequiredCert());
+            if (!certCheck.isMet(ctx)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, certCheck.describe());
             }
         }
 
@@ -84,8 +89,9 @@ public class InvestmentService {
         investment.setAcquiredAtTurn(character.getCurrentTurn());
         investmentRepository.save(investment);
 
-        // Update net worth
         recalcNetWorth(playerId);
+
+        eventPublisher.publishEvent(new StockPurchasedEvent(playerId, ticker, quantity, totalCost));
 
         return InvestmentDto.from(investment);
     }
@@ -103,11 +109,16 @@ public class InvestmentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nur Aktien koennen so verkauft werden");
         }
 
-        // Return current value to cash
-        characterService.addCash(playerId, investment.getCurrentValue());
+        BigDecimal proceeds = investment.getCurrentValue();
+        BigDecimal profitLoss = proceeds.subtract(investment.getAmountInvested());
+        String ticker = investment.getName();
+
+        characterService.addCash(playerId, proceeds);
         investmentRepository.delete(investmentId);
 
         recalcNetWorth(playerId);
+
+        eventPublisher.publishEvent(new StockSoldEvent(playerId, ticker, proceeds, profitLoss));
     }
 
     private void recalcNetWorth(Long playerId) {

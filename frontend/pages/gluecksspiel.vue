@@ -265,7 +265,7 @@ import { useFormatting } from '~/composables/useFormatting'
 import { useGameStore } from '~/stores/game'
 import { useToastStore } from '~/stores/toast'
 
-definePageMeta({ middleware: 'auth' })
+definePageMeta({ layout: 'default', middleware: 'auth' })
 
 const api = useApi()
 const { formatCurrency } = useFormatting()

@@ -77,8 +77,16 @@
 
     <!-- Shop -->
     <div class="card">
-      <div class="flex items-center gap-3 mb-4 flex-wrap">
-        <h3 class="text-base font-semibold text-white flex-1">Sammelgegenstände kaufen</h3>
+      <div class="space-y-3 mb-4">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h3 class="text-base font-semibold text-white flex-1">Sammelgegenstände kaufen</h3>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Suchen..."
+            class="bg-surface-700 text-white text-sm rounded px-3 py-1.5 border border-white/10 focus:outline-none focus:border-accent/50 w-48"
+          />
+        </div>
         <div class="flex gap-1 flex-wrap">
           <button
             v-for="f in availabilityFilters"
@@ -199,6 +207,7 @@ const itemsLoading = ref(false)
 const buyingId = ref<number | null>(null)
 const collectionFilter = ref('ALL')
 const availFilter = ref('ALL')
+const searchQuery = ref('')
 
 const availabilityFilters = [
   { value: 'ALL', label: 'Alle' },
@@ -214,6 +223,10 @@ const typeFilters = computed(() => [
 
 const filteredItems = computed(() => {
   let list = items.value
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase()
+    list = list.filter(i => i.name.toLowerCase().includes(q) || i.collectionName.toLowerCase().includes(q))
+  }
   if (collectionFilter.value !== 'ALL')
     list = list.filter(i => i.collectionName === collectionFilter.value)
   if (availFilter.value === 'AVAILABLE')

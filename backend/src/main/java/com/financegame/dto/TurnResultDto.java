@@ -12,7 +12,9 @@ public record TurnResultDto(
     BigDecimal netChange,
     List<LineItem> incomeBreakdown,
     List<LineItem> expenseBreakdown,
-    List<String> events
+    List<String> events,
+    boolean taxEvasionCaught,
+    BigDecimal taxEvasionCaughtAmount
 ) {
     public record LineItem(String label, BigDecimal amount) {}
 }

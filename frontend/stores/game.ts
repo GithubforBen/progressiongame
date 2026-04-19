@@ -12,6 +12,13 @@ export interface Character {
   happiness: number
   currentTurn: number
   schufaScore?: number
+  depressionMonthsRemaining?: number
+  burnoutActive?: boolean
+  taxEvasionActive?: boolean
+  taxEvasionCaughtPending?: boolean
+  cumulativeEvadedTaxes?: number
+  jailMonthsRemaining?: number
+  exileMonthsRemaining?: number
 }
 
 export interface MonthlyExpense {
@@ -38,6 +45,8 @@ export interface TurnResult {
   incomeBreakdown: LineItem[]
   expenseBreakdown: LineItem[]
   events: string[]
+  taxEvasionCaught?: boolean
+  taxEvasionCaughtAmount?: number
 }
 
 export const useGameStore = defineStore('game', {
@@ -116,6 +125,25 @@ export const useGameStore = defineStore('game', {
       })
       const idx = this.expenses.findIndex((e) => e.id === id)
       if (idx !== -1) this.expenses[idx] = updated
+    },
+
+    async toggleTaxEvasion() {
+      const config = useRuntimeConfig()
+      const authStore = useAuthStore()
+      this.character = await $fetch<Character>(`${config.public.apiBase}/api/tax-evasion/toggle`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authStore.token}` },
+      })
+    },
+
+    async resolveCaught(choice: 'JAIL' | 'FLEE') {
+      const config = useRuntimeConfig()
+      const authStore = useAuthStore()
+      this.character = await $fetch<Character>(`${config.public.apiBase}/api/tax-evasion/resolve-caught`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authStore.token}` },
+        body: { choice },
+      })
     },
 
     clearTurnResult() {

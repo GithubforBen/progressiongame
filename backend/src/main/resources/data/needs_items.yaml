@@ -1,0 +1,180 @@
+needsItems:
+  - id: "WASSER"
+    name: "Wasser"
+    price: 0.50
+    hungerEffect: 3
+    energyEffect: 5
+    happinessEffect: 0
+    stressEffect: -2
+    depressionReduction: false
+
+  - id: "KAFFEE"
+    name: "Kaffee"
+    price: 3.50
+    hungerEffect: -5
+    energyEffect: 25
+    happinessEffect: 5
+    stressEffect: 3
+    depressionReduction: false
+
+  - id: "EIS"
+    name: "Eis"
+    price: 2.50
+    hungerEffect: 10
+    energyEffect: 5
+    happinessEffect: 12
+    stressEffect: -5
+    depressionReduction: false
+
+  - id: "FAST_FOOD"
+    name: "Fast Food"
+    price: 8.00
+    hungerEffect: 35
+    energyEffect: -5
+    happinessEffect: 5
+    stressEffect: 0
+    depressionReduction: false
+
+  - id: "PIZZA"
+    name: "Pizza"
+    price: 12.00
+    hungerEffect: 45
+    energyEffect: 10
+    happinessEffect: 10
+    stressEffect: -5
+    depressionReduction: false
+
+  - id: "RESTAURANT"
+    name: "Restaurantbesuch"
+    price: 35.00
+    hungerEffect: 60
+    energyEffect: 10
+    happinessEffect: 20
+    stressEffect: -10
+    depressionReduction: false
+
+  - id: "SPORT"
+    name: "Sport (Fitnessstudio)"
+    price: 20.00
+    hungerEffect: -10
+    energyEffect: 30
+    happinessEffect: 15
+    stressEffect: -20
+    depressionReduction: false
+
+  - id: "SPAZIERGANG"
+    name: "Spaziergang im Park"
+    price: 0.00
+    hungerEffect: -5
+    energyEffect: 10
+    happinessEffect: 10
+    stressEffect: -10
+    depressionReduction: false
+
+  - id: "KINO"
+    name: "Kinobesuch"
+    price: 14.00
+    hungerEffect: 0
+    energyEffect: -5
+    happinessEffect: 20
+    stressEffect: -15
+    depressionReduction: false
+
+  - id: "KONZERT"
+    name: "Konzert-Ticket"
+    price: 60.00
+    hungerEffect: 0
+    energyEffect: 10
+    happinessEffect: 35
+    stressEffect: -20
+    depressionReduction: false
+
+  - id: "URLAUB_TAG"
+    name: "Urlaubstag"
+    price: 80.00
+    hungerEffect: 10
+    energyEffect: 30
+    happinessEffect: 30
+    stressEffect: -25
+    depressionReduction: false
+
+  - id: "THERAPIE"
+    name: "Therapie-Sitzung"
+    price: 80.00
+    hungerEffect: 0
+    energyEffect: 10
+    happinessEffect: 20
+    stressEffect: -25
+    depressionReduction: true
+
+  - id: "MASSAGE"
+    name: "Massage"
+    price: 55.00
+    hungerEffect: 0
+    energyEffect: 20
+    happinessEffect: 15
+    stressEffect: -30
+    depressionReduction: false
+
+  - id: "BUCH"
+    name: "Buch lesen"
+    price: 15.00
+    hungerEffect: 0
+    energyEffect: -5
+    happinessEffect: 12
+    stressEffect: -8
+    depressionReduction: false
+
+  - id: "VIDEOSPIEL"
+    name: "Videospiel"
+    price: 60.00
+    hungerEffect: 0
+    energyEffect: -10
+    happinessEffect: 25
+    stressEffect: -12
+    depressionReduction: false
+
+  - id: "SAUNA"
+    name: "Sauna"
+    price: 25.00
+    hungerEffect: -5
+    energyEffect: 20
+    happinessEffect: 15
+    stressEffect: -25
+    depressionReduction: false
+
+  - id: "SHOPPEN"
+    name: "Shopping-Tour"
+    price: 100.00
+    hungerEffect: 0
+    energyEffect: -10
+    happinessEffect: 25
+    stressEffect: -5
+    depressionReduction: false
+
+  - id: "MEDITATION"
+    name: "Meditations-App (Monat)"
+    price: 10.00
+    hungerEffect: 0
+    energyEffect: 5
+    happinessEffect: 8
+    stressEffect: -15
+    depressionReduction: false
+
+  - id: "SCHLAFEN"
+    name: "Ausschlafen (freier Tag)"
+    price: 0.00
+    hungerEffect: -10
+    energyEffect: 50
+    happinessEffect: 5
+    stressEffect: -10
+    depressionReduction: false
+
+  - id: "PARTY"
+    name: "Party-Nacht"
+    price: 45.00
+    hungerEffect: -20
+    energyEffect: -30
+    happinessEffect: 35
+    stressEffect: -15
+    depressionReduction: false

@@ -1,163 +1,195 @@
 <template>
-  <div class="space-y-5">
-    <h2 class="text-xl font-bold text-white">Ausbildung</h2>
+  <div class="-m-6 flex" style="height: calc(100vh - 3.5rem)">
 
-    <div v-if="loading" class="card flex items-center justify-center h-32 text-gray-600 text-sm">
-      Lade Bildungsstand…
+    <!-- Skill-tree viewport -->
+    <div
+      ref="viewportEl"
+      class="flex-1 relative overflow-hidden"
+      :class="isDragging ? 'cursor-grabbing' : 'cursor-grab'"
+      @mousedown="startPan"
+      @mousemove="doPan"
+      @mouseup="stopPan"
+      @mouseleave="stopPan"
+      @wheel.prevent="doZoom"
+      @click="selectedNodeKey = null"
+    >
+      <!-- Canvas (pannable + zoomable) -->
+      <div
+        class="absolute origin-top-left will-change-transform"
+        :style="{ transform: `translate(${panX}px,${panY}px) scale(${zoom})`, width: CANVAS_W + 'px', height: CANVAS_H + 'px' }"
+      >
+        <!-- SVG edges -->
+        <svg class="absolute inset-0 pointer-events-none" :width="CANVAS_W" :height="CANVAS_H" overflow="visible">
+          <path
+            v-for="edge in allEdges"
+            :key="edge.id"
+            :d="edge.d"
+            :stroke="edge.color"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+          />
+        </svg>
+
+        <!-- Family labels -->
+        <div
+          v-for="fl in familyLabels"
+          :key="fl.id"
+          class="absolute text-xs font-semibold tracking-widest uppercase whitespace-nowrap pointer-events-none"
+          :style="{ left: fl.x + 'px', top: fl.y + 'px', color: '#374151', transform: 'translateX(-50%)' }"
+        >{{ fl.text }}</div>
+
+        <!-- Nodes -->
+        <div
+          v-for="node in allNodes"
+          :key="node.id"
+          class="absolute flex flex-col items-center justify-center rounded-lg border transition-colors duration-150 select-none"
+          :class="nodeClasses(node)"
+          :style="nodeStyle(node)"
+          @click.stop="handleNodeClick(node.id)"
+        >
+          <div class="text-sm leading-none mb-0.5">
+            <span v-if="node.state === 'done'">✓</span>
+            <span v-else-if="node.state === 'active'" class="animate-pulse">▶</span>
+            <span v-else-if="node.state === 'locked'" class="opacity-50">🔒</span>
+            <span v-else class="font-bold font-mono">{{ node.levelIndex + 1 }}</span>
+          </div>
+          <div class="text-xs leading-tight px-1.5 w-full text-center truncate" :class="node.type === 'main' ? 'font-semibold' : ''">
+            {{ node.line1 }}
+          </div>
+          <div v-if="node.line2" class="text-xs opacity-60 px-1.5 w-full text-center truncate">{{ node.line2 }}</div>
+        </div>
+      </div>
+
+      <!-- Progress overlay -->
+      <div v-if="hasActiveProgress && !loading" class="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none" style="min-width:260px;max-width:360px">
+        <div class="bg-surface-800/95 backdrop-blur border border-surface-700 rounded-xl px-4 py-3 space-y-2 pointer-events-auto shadow-xl">
+          <div v-if="progress && progress.mainStageMonthsRemaining > 0" class="space-y-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-300 font-medium">{{ mainStageLabel }}</span>
+              <span class="text-gray-500">{{ progress.mainStageMonthsRemaining }} Mo.</span>
+            </div>
+            <div class="h-1.5 bg-surface-700 rounded-full overflow-hidden">
+              <div class="h-full bg-accent rounded-full" :style="{ width: `${mainProgress}%` }" />
+            </div>
+          </div>
+          <div v-if="progress && progress.sideCertMonthsRemaining > 0" class="space-y-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-300 font-medium">{{ sideCertDisplayLabel }}</span>
+              <span class="text-gray-500">{{ progress.sideCertMonthsRemaining }} Mo.</span>
+            </div>
+            <div class="h-1.5 bg-surface-700 rounded-full overflow-hidden">
+              <div class="h-full bg-purple-500 rounded-full" :style="{ width: `${sideProgress}%` }" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="absolute bottom-4 left-4 flex items-center gap-2 z-20">
+        <button class="bg-surface-800/90 border border-surface-700 text-gray-400 hover:text-white text-xs px-3 py-1.5 rounded transition-colors" @click.stop="resetView">
+          ⌂ Startansicht
+        </button>
+        <span class="bg-surface-900/70 text-gray-600 text-xs px-2 py-1 rounded font-mono">{{ Math.round(zoom * 100) }}%</span>
+        <span class="text-gray-700 text-xs hidden lg:block">Ziehen · Scroll = Zoom</span>
+      </div>
+
+      <!-- Loading -->
+      <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-surface-900/80 z-50">
+        <span class="text-gray-400 text-sm animate-pulse">Lade Bildungsstand…</span>
+      </div>
     </div>
 
-    <template v-else-if="progress">
-      <!-- Active progress banner -->
+    <!-- Detail panel -->
+    <Transition
+      enter-from-class="opacity-0 translate-x-8"
+      enter-active-class="transition-all duration-200 ease-out"
+      leave-to-class="opacity-0 translate-x-8"
+      leave-active-class="transition-all duration-150 ease-in"
+    >
       <div
-        v-if="progress.mainStageMonthsRemaining > 0 || progress.sideCertMonthsRemaining > 0"
-        class="card border-accent/40 bg-accent/5"
+        v-if="selectedDetail"
+        class="w-72 flex-shrink-0 bg-surface-800 border-l border-surface-700 flex flex-col overflow-y-auto z-40"
+        @mousedown.stop
+        @click.stop
       >
-        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Laufende Ausbildung</h3>
-        <div class="flex flex-col sm:flex-row gap-4">
-          <div v-if="progress.mainStageMonthsRemaining > 0" class="flex-1">
-            <p class="text-sm text-gray-300 mb-1">
-              <span class="text-white font-medium">{{ mainStageLabel }}</span>
-              <span class="text-gray-500"> · Hauptausbildung</span>
-            </p>
-            <div class="h-2 bg-surface-700 rounded-full overflow-hidden">
-              <div class="h-full bg-accent rounded-full transition-all duration-500"
-                :style="{ width: `${mainProgress}%` }" />
-            </div>
-            <p class="text-xs text-gray-500 mt-1">
-              {{ progress.mainStageMonthsRemaining }} {{ progress.mainStageMonthsRemaining === 1 ? 'Monat' : 'Monate' }} verbleibend
-            </p>
+        <div class="flex items-start justify-between p-4 border-b border-surface-700 gap-2">
+          <div class="flex-1 min-w-0">
+            <p class="text-white font-semibold text-sm leading-snug">{{ selectedDetail.label }}</p>
+            <p v-if="selectedDetail.familyLabel" class="text-gray-500 text-xs mt-0.5">{{ selectedDetail.familyLabel }}</p>
           </div>
-          <div v-if="progress.sideCertMonthsRemaining > 0" class="flex-1">
-            <p class="text-sm text-gray-300 mb-1">
-              <span class="text-white font-medium">{{ sideCertDisplayLabel }}</span>
-              <span class="text-gray-500"> · Weiterbildung</span>
-            </p>
-            <div class="h-2 bg-surface-700 rounded-full overflow-hidden">
-              <div class="h-full bg-purple-500 rounded-full transition-all duration-500"
-                :style="{ width: `${sideProgress}%` }" />
-            </div>
-            <p class="text-xs text-gray-500 mt-1">
-              {{ progress.sideCertMonthsRemaining }} {{ progress.sideCertMonthsRemaining === 1 ? 'Monat' : 'Monate' }} verbleibend
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        <!-- ── Main education tree ── -->
-        <div class="xl:col-span-2 space-y-3">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Hauptausbildungsweg</h3>
-
-          <div class="relative">
-            <div class="absolute left-5 top-8 bottom-8 w-px bg-surface-600 z-0" />
-            <div class="space-y-2 relative z-10">
-              <EducationStageCard
-                v-for="stage in mainTree"
-                :key="stage.key"
-                :stage="stage"
-                :available-stages="progress.availableMainStages"
-                :busy="progress.mainStageMonthsRemaining > 0"
-                @enroll="enrollMain"
-              />
-            </div>
-          </div>
+          <button class="text-gray-500 hover:text-white text-xl leading-none flex-shrink-0" @click="selectedNodeKey = null">×</button>
         </div>
 
-        <!-- ── Side certifications ── -->
-        <div class="space-y-3">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Weiterbildungen</h3>
+        <div class="flex-1 p-4 space-y-4">
+          <span
+            class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border"
+            :class="{
+              'bg-green-500/15 border-green-500/30 text-green-400': selectedDetail.state === 'done',
+              'bg-purple-500/15 border-purple-500/30 text-purple-300': selectedDetail.state === 'active',
+              'bg-accent/15 border-accent/30 text-accent': selectedDetail.state === 'available',
+              'bg-surface-700 border-white/5 text-gray-500': selectedDetail.state === 'locked',
+            }"
+          >{{ STATE_LABELS[selectedDetail.state] }}</span>
 
-          <!-- In-progress side cert -->
-          <div v-if="progress.sideCertMonthsRemaining > 0" class="card border-purple-600/30">
-            <div class="flex items-center gap-3">
-              <span class="text-purple-400 text-base">▶</span>
-              <div>
-                <p class="text-sm font-medium text-white">{{ sideCertDisplayLabel }}</p>
-                <p class="text-xs text-gray-500">{{ progress.sideCertMonthsRemaining }} Monate verbleibend</p>
+          <!-- Main stage -->
+          <template v-if="selectedDetail.type === 'main'">
+            <template v-if="selectedDetail.availableStage">
+              <div class="text-sm text-gray-400 space-y-1">
+                <div>Dauer: <span class="text-white">{{ selectedDetail.availableStage.durationMonths }} Monate</span></div>
+                <div v-if="selectedDetail.availableStage.cost > 0">Kosten: <span class="text-yellow-400 font-mono">{{ formatCost(selectedDetail.availableStage.cost) }}</span></div>
               </div>
-            </div>
-          </div>
-
-          <!-- Cert families with level chains -->
-          <div
-            v-for="family in certFamilies"
-            :key="family.name"
-            :id="`cert-family-${family.name}`"
-            class="card space-y-2 transition-all duration-300"
-            :class="isFamilyHighlighted(family) ? 'ring-2 ring-accent/60 bg-accent/5' : ''"
-          >
-            <p class="text-xs font-semibold uppercase tracking-wider"
-               :class="isFamilyHighlighted(family) ? 'text-accent' : 'text-gray-400'">
-              {{ family.label }}
-              <span v-if="isFamilyHighlighted(family)" class="ml-1 text-accent">← Hier!</span>
-            </p>
-            <div class="flex items-center gap-1">
-              <template v-for="(lvl, idx) in family.levels" :key="lvl.key">
-                <!-- connector line -->
-                <div v-if="idx > 0" class="h-px w-3 bg-surface-600 flex-shrink-0" />
-                <!-- level node -->
-                <div
-                  class="flex-1 min-w-0 rounded px-2 py-1.5 text-center text-xs font-medium border"
-                  :class="lvl.state === 'done'
-                    ? 'bg-green-500/15 border-green-500/30 text-green-400'
-                    : lvl.state === 'active'
-                    ? 'bg-purple-500/15 border-purple-500/40 text-purple-300'
-                    : lvl.state === 'available'
-                    ? 'bg-accent/10 border-accent/30 text-accent cursor-pointer hover:bg-accent/20'
-                    : 'bg-surface-700 border-white/5 text-gray-600'"
-                  :title="lvl.label + (CERT_UNLOCKS[lvl.key] ? ' → ' + CERT_UNLOCKS[lvl.key] : '')"
-                  @click="lvl.state === 'available' && progress.sideCertMonthsRemaining === 0 && enrollSide(lvl.key)"
-                >
-                  <span v-if="lvl.state === 'done'">✓</span>
-                  <span v-else-if="lvl.state === 'active'">▶</span>
-                  <span v-else-if="lvl.state === 'locked'">🔒</span>
-                  <span v-else>{{ idx + 1 }}</span>
-                </div>
-              </template>
-            </div>
-            <!-- Available cert in this family: show details + enroll -->
-            <template v-for="lvl in family.levels" :key="`btn-${lvl.key}`">
-              <div v-if="lvl.state === 'available' && progress.sideCertMonthsRemaining === 0"
-                   class="flex items-start justify-between gap-2 pt-1">
-                <div>
-                  <p class="text-xs text-white">{{ lvl.label }}</p>
-                  <p class="text-xs text-gray-500">{{ lvl.durationMonths }} {{ lvl.durationMonths === 1 ? 'Monat' : 'Monate' }}</p>
-                  <p v-if="CERT_UNLOCKS[lvl.key]" class="text-xs text-accent/70 mt-0.5">
-                    Schaltet frei: {{ CERT_UNLOCKS[lvl.key] }}
-                  </p>
-                </div>
-                <div class="flex flex-col items-end gap-1 flex-shrink-0">
-                  <span v-if="lvl.cost > 0" class="text-xs text-yellow-400 font-mono">{{ formatCost(lvl.cost) }}</span>
-                  <button
-                    class="btn-primary text-xs px-3 py-1"
-                    :disabled="enrollingSide === lvl.key"
-                    @click="enrollSide(lvl.key)"
-                  >
-                    {{ enrollingSide === lvl.key ? '…' : 'Einschreiben' }}
-                  </button>
-                </div>
+              <div v-if="selectedDetail.availableStage.requiresField" class="space-y-2">
+                <label class="text-xs text-gray-500 uppercase tracking-wider">Fachrichtung</label>
+                <select v-model="selectedField" class="w-full bg-surface-700 border border-surface-600 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
+                  <option value="" disabled>Bitte wählen…</option>
+                  <option v-for="opt in selectedDetail.availableStage.fieldOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                </select>
+                <p v-if="selectedField" class="text-xs text-gray-500">
+                  Dauer: {{ selectedDetail.availableStage.fieldOptions.find(o => o.value === selectedField)?.durationMonths ?? selectedDetail.availableStage.durationMonths }} Monate
+                </p>
               </div>
+              <button
+                class="btn-primary w-full text-sm"
+                :disabled="(selectedDetail.availableStage.requiresField && !selectedField) || (progress?.mainStageMonthsRemaining ?? 0) > 0"
+                @click="doEnrollMain(selectedDetail.id, selectedDetail.availableStage.requiresField ? selectedField : null)"
+              >Einschreiben</button>
+              <p v-if="(progress?.mainStageMonthsRemaining ?? 0) > 0" class="text-xs text-gray-500">Derzeit läuft eine andere Hauptausbildung.</p>
             </template>
-          </div>
+            <template v-else-if="selectedDetail.state === 'active'">
+              <p class="text-sm text-gray-400">Noch <span class="text-white font-semibold">{{ progress?.mainStageMonthsRemaining }} Monate</span> verbleibend.</p>
+            </template>
+            <template v-else-if="selectedDetail.state === 'locked'">
+              <p class="text-sm text-gray-500">Schließe zuerst die vorausgehende Stufe ab.</p>
+            </template>
+          </template>
 
-          <div
-            v-if="progress.availableSideCerts.length === 0 && progress.sideCertMonthsRemaining === 0
-                  && completedSideCerts.length === 0"
-            class="card border-dashed text-center text-gray-600 text-sm py-4"
-          >
-            Keine Weiterbildungen verfügbar
-          </div>
-
-          <!-- Info -->
-          <div class="card border-dashed">
-            <p class="text-xs text-gray-500 leading-relaxed">
-              Weiterbildungen laufen parallel zur Hauptausbildung und schalten neue Jobs frei.
-              Nur eine Weiterbildung gleichzeitig möglich. Kosten werden sofort abgezogen.
-            </p>
-          </div>
+          <!-- Side cert -->
+          <template v-else>
+            <div class="text-sm text-gray-400 space-y-1">
+              <div v-if="selectedDetail.durationMonths">Dauer: <span class="text-white">{{ selectedDetail.durationMonths }} {{ selectedDetail.durationMonths === 1 ? 'Monat' : 'Monate' }}</span></div>
+              <div v-if="selectedDetail.cost">Kosten: <span class="text-yellow-400 font-mono">{{ formatCost(selectedDetail.cost) }}</span></div>
+            </div>
+            <div v-if="selectedDetail.certUnlocks" class="rounded-lg bg-surface-700/60 border border-surface-600/50 px-3 py-2.5">
+              <p class="text-xs text-gray-500 uppercase tracking-wider mb-1.5">Schaltet frei</p>
+              <p class="text-xs text-accent leading-relaxed">{{ selectedDetail.certUnlocks }}</p>
+            </div>
+            <template v-if="selectedDetail.state === 'available'">
+              <button
+                v-if="!(progress?.sideCertMonthsRemaining)"
+                class="btn-primary w-full text-sm"
+                :disabled="enrollingSide === selectedDetail.id"
+                @click="doEnrollSide(selectedDetail.id)"
+              >{{ enrollingSide === selectedDetail.id ? '…' : 'Einschreiben' }}</button>
+              <p v-else class="text-xs text-yellow-500 bg-yellow-500/10 rounded px-3 py-2 border border-yellow-500/20">Weiterbildung aktiv — erst abschließen.</p>
+            </template>
+            <template v-else-if="selectedDetail.state === 'locked'">
+              <p class="text-sm text-gray-500">Schließe die vorausgehenden Stufen ab.</p>
+            </template>
+          </template>
         </div>
       </div>
-    </template>
+    </Transition>
   </div>
 </template>
 
@@ -167,70 +199,81 @@ import { useToastStore } from '~/stores/toast'
 
 definePageMeta({ layout: 'default' })
 
-const api = useApi()
-const toast = useToastStore()
-
+// ── Types ─────────────────────────────────────────────────────────────────────
 interface FieldOption { value: string; label: string; durationMonths: number }
-interface AvailableStage {
-  stageKey: string; label: string; durationMonths: number
-  requiresField: boolean; fieldOptions: FieldOption[]; cost: number
-}
+interface AvailableStage { stageKey: string; label: string; durationMonths: number; requiresField: boolean; fieldOptions: FieldOption[]; cost: number }
 interface SideCert { certKey: string; label: string; durationMonths: number; cost: number }
-
 interface Progress {
-  mainStage: string
-  mainStageMonthsRemaining: number
-  mainStageField: string | null
-  sideCert: string | null
-  sideCertMonthsRemaining: number
-  completedStages: string[]
-  availableMainStages: AvailableStage[]
-  availableSideCerts: SideCert[]
+  mainStage: string; mainStageMonthsRemaining: number; mainStageField: string | null
+  sideCert: string | null; sideCertMonthsRemaining: number
+  completedStages: string[]; availableMainStages: AvailableStage[]; availableSideCerts: SideCert[]
+}
+interface StaticNode { id: string; x: number; y: number; type: 'main' | 'side'; line1: string; line2?: string; levelIndex: number; familyLabel?: string }
+interface TreeNode extends StaticNode { state: 'done' | 'active' | 'available' | 'locked' }
+interface SelectedDetail {
+  id: string; label: string; familyLabel?: string; state: TreeNode['state']; type: 'main' | 'side'
+  durationMonths?: number; cost?: number; certUnlocks?: string; availableStage?: AvailableStage
 }
 
-interface TreeStage {
-  key: string; label: string; months: number | null
-  depth: number; requiresField: boolean; fieldOptions: FieldOption[]
-}
+// ── Canvas layout constants ───────────────────────────────────────────────────
+const CANVAS_W = 3100, CANVAS_H = 1300
+const COL_W = 200, ROW_H = 130
+const CX = 1500, CY = 100   // origin of main path
+const MAIN_W = 150, MAIN_H = 60
+const SIDE_W = 120, SIDE_H = 48
 
-// Static display tree — synced with education.yaml
-// FieldOption.durationMonths: shown in dropdown only if different from stage default
-const TREE: TreeStage[] = [
-  { key: 'GRUNDSCHULE',        label: 'Grundschule',        months: null, depth: 0, requiresField: false, fieldOptions: [] },
-  { key: 'REALSCHULABSCHLUSS', label: 'Realschulabschluss', months: 2,    depth: 1, requiresField: false, fieldOptions: [] },
-  { key: 'ABITUR',             label: 'Abitur',             months: 3,    depth: 2, requiresField: false, fieldOptions: [] },
-  { key: 'AUSBILDUNG', label: 'Ausbildung', months: 4, depth: 2, requiresField: true, fieldOptions: [
-    { value: 'EINZELHANDEL',   label: 'Einzelhandelskaufmann/-frau', durationMonths: 4 },
-    { value: 'FACHINFORMATIKER', label: 'Fachinformatiker/-in',      durationMonths: 4 },
-    { value: 'KFZTECH',        label: 'KFZ-Mechatroniker/-in',       durationMonths: 4 },
-    { value: 'PFLEGE',         label: 'Pflegefachkraft',             durationMonths: 4 },
-    { value: 'KOCH',           label: 'Koch/Köchin',                 durationMonths: 4 },
-    { value: 'ELEKTRIKER',     label: 'Elektriker/-in',              durationMonths: 4 },
-  ]},
-  { key: 'BACHELOR', label: 'Bachelor', months: 6, depth: 3, requiresField: true, fieldOptions: [
-    { value: 'INFORMATIK',    label: 'Informatik (B.Sc.)',                      durationMonths: 6 },
-    { value: 'BWL',           label: 'Betriebswirtschaft (B.Sc.)',              durationMonths: 6 },
-    { value: 'MEDIZIN',       label: 'Medizin (Staatsexamen)',                  durationMonths: 8 },
-    { value: 'JURA',          label: 'Rechtswissenschaften (1. Staatsexamen)', durationMonths: 7 },
-    { value: 'INGENIEURWESEN',label: 'Ingenieurwesen (B.Eng.)',                 durationMonths: 6 },
-    { value: 'PSYCHOLOGIE',   label: 'Psychologie (B.Sc.)',                     durationMonths: 6 },
-  ]},
-  { key: 'MASTER', label: 'Master', months: 4, depth: 4, requiresField: true, fieldOptions: [
-    { value: 'INFORMATIK',    label: 'Informatik (M.Sc.)',                       durationMonths: 4 },
-    { value: 'BWL',           label: 'Betriebswirtschaft (MBA)',                 durationMonths: 4 },
-    { value: 'MEDIZIN',       label: 'Medizin (Approbation)',                   durationMonths: 4 },
-    { value: 'JURA',          label: 'Rechtswissenschaften (2. Staatsexamen)', durationMonths: 4 },
-    { value: 'INGENIEURWESEN',label: 'Ingenieurwesen (M.Eng.)',                  durationMonths: 4 },
-  ]},
+const nx = (col: number) => CX + col * COL_W
+const ny = (row: number) => CY + row * ROW_H
+
+// ── Static layout definitions ─────────────────────────────────────────────────
+const MAIN_DEF = [
+  { id: 'GRUNDSCHULE',        line1: 'Grundschule',  line2: undefined,    col: 0,  row: 0 },
+  { id: 'REALSCHULABSCHLUSS', line1: 'Realschul-',   line2: 'abschluss', col: 0,  row: 1 },
+  { id: 'AUSBILDUNG',         line1: 'Ausbildung',   line2: undefined,    col: -2, row: 2 },
+  { id: 'ABITUR',             line1: 'Abitur',       line2: undefined,    col: 0,  row: 3 },
+  { id: 'BACHELOR',           line1: 'Bachelor',     line2: undefined,    col: 0,  row: 5 },
+  { id: 'MASTER',             line1: 'Master',       line2: undefined,    col: 0,  row: 7 },
 ]
 
-// For progress bar: total duration per stage+field combination
-const STAGE_DURATIONS: Record<string, number> = {
-  REALSCHULABSCHLUSS: 2, ABITUR: 3, AUSBILDUNG: 4, BACHELOR: 6, MASTER: 4,
-  BACHELOR_MEDIZIN: 8, BACHELOR_JURA: 7,
+// dir: +1 = levels extend right, -1 = extend left
+const FAM_DEF = [
+  { name: 'BARKEEPER',         label: 'Barkeeper',       row: 1, sc: 1,  dir: 1,  anchor: 'REALSCHULABSCHLUSS', levels: ['WEITERBILDUNG_BARKEEPER_1','WEITERBILDUNG_BARKEEPER_2','WEITERBILDUNG_BARKEEPER_3'] },
+  { name: 'FITNESSTRAINER',    label: 'Fitnesstrainer',  row: 1, sc: 4,  dir: 1,  anchor: 'REALSCHULABSCHLUSS', levels: ['WEITERBILDUNG_FITNESSTRAINER_1','WEITERBILDUNG_FITNESSTRAINER_2','WEITERBILDUNG_FITNESSTRAINER_3'] },
+  { name: 'SOCIAL_MEDIA',      label: 'Social-Media',    row: 2, sc: 1,  dir: 1,  anchor: 'REALSCHULABSCHLUSS', levels: ['WEITERBILDUNG_SOCIAL_MEDIA_1','WEITERBILDUNG_SOCIAL_MEDIA_2','WEITERBILDUNG_SOCIAL_MEDIA_3'] },
+  { name: 'EXCEL',             label: 'Excel',           row: 2, sc: 4,  dir: 1,  anchor: 'REALSCHULABSCHLUSS', levels: ['WEITERBILDUNG_EXCEL_1','WEITERBILDUNG_EXCEL_2','WEITERBILDUNG_EXCEL_3'] },
+  { name: 'FUEHRERSCHEIN',     label: 'Führerschein',    row: 3, sc: 1,  dir: 1,  anchor: 'ABITUR',             levels: ['WEITERBILDUNG_FUEHRERSCHEIN_1','WEITERBILDUNG_FUEHRERSCHEIN_2','WEITERBILDUNG_FUEHRERSCHEIN_3'] },
+  { name: 'CRYPTO',            label: 'Krypto-Trading',  row: 3, sc: 4,  dir: 1,  anchor: 'ABITUR',             levels: ['WEITERBILDUNG_CRYPTO_1','WEITERBILDUNG_CRYPTO_2','WEITERBILDUNG_CRYPTO_3'] },
+  { name: 'BUCHHALTUNG',       label: 'Buchhaltung',     row: 4, sc: 1,  dir: 1,  anchor: 'ABITUR',             levels: ['WEITERBILDUNG_BUCHHALTUNG_1','WEITERBILDUNG_BUCHHALTUNG_2','WEITERBILDUNG_BUCHHALTUNG_3'] },
+  { name: 'IMMOBILIEN',        label: 'Immobilien',      row: 4, sc: 4,  dir: 1,  anchor: 'ABITUR',             levels: ['WEITERBILDUNG_IMMOBILIEN_1','WEITERBILDUNG_IMMOBILIEN_2','WEITERBILDUNG_IMMOBILIEN_3','WEITERBILDUNG_IMMOBILIEN_4'] },
+  { name: 'STEUERN',           label: 'Steuern',         row: 5, sc: 1,  dir: 1,  anchor: 'BACHELOR',           levels: ['WEITERBILDUNG_STEUERN_1','WEITERBILDUNG_STEUERN_2','WEITERBILDUNG_STEUERN_3'] },
+  { name: 'PROJEKTMANAGEMENT', label: 'Projektmgmt.',    row: 5, sc: 4,  dir: 1,  anchor: 'BACHELOR',           levels: ['WEITERBILDUNG_PROJEKTMANAGEMENT_1','WEITERBILDUNG_PROJEKTMANAGEMENT_2','WEITERBILDUNG_PROJEKTMANAGEMENT_3'] },
+  { name: 'HACKER',            label: 'Ethical Hacking', row: 6, sc: 1,  dir: 1,  anchor: 'BACHELOR',           levels: ['WEITERBILDUNG_HACKER_1','WEITERBILDUNG_HACKER_2','WEITERBILDUNG_HACKER_3'] },
+  { name: 'STEUERHINTERZIEHUNG', label: 'Steuerhinterziehung', row: 6, sc: 4, dir: 1, anchor: 'BACHELOR', levels: ['WEITERBILDUNG_STEUERHINTERZIEHUNG_1','WEITERBILDUNG_STEUERHINTERZIEHUNG_2','WEITERBILDUNG_STEUERHINTERZIEHUNG_3'] },
+  { name: 'OLDTIMER',          label: 'Oldtimer',        row: 3, sc: -1, dir: -1, anchor: 'ABITUR',             levels: ['WEITERBILDUNG_OLDTIMER_1','WEITERBILDUNG_OLDTIMER_2','WEITERBILDUNG_OLDTIMER_3'] },
+  { name: 'WEINKENNER',        label: 'Weinkenner',      row: 3, sc: -4, dir: -1, anchor: 'ABITUR',             levels: ['WEITERBILDUNG_WEINKENNER_1','WEITERBILDUNG_WEINKENNER_2','WEITERBILDUNG_WEINKENNER_3'] },
+  { name: 'KUNSTKENNER',       label: 'Kunstkenner',     row: 4, sc: -1, dir: -1, anchor: 'ABITUR',             levels: ['WEITERBILDUNG_KUNSTKENNER_1','WEITERBILDUNG_KUNSTKENNER_2','WEITERBILDUNG_KUNSTKENNER_3'] },
+  { name: 'UHRMACHER',         label: 'Uhrmacher',       row: 4, sc: -4, dir: -1, anchor: 'ABITUR',             levels: ['WEITERBILDUNG_UHRMACHER_1','WEITERBILDUNG_UHRMACHER_2','WEITERBILDUNG_UHRMACHER_3'] },
+  { name: 'NUMISMATIK',        label: 'Numismatik',      row: 5, sc: -1, dir: -1, anchor: 'BACHELOR',           levels: ['WEITERBILDUNG_NUMISMATIK_1','WEITERBILDUNG_NUMISMATIK_2'] },
+  { name: 'PHILATELIE',        label: 'Philatelie',      row: 5, sc: -3, dir: -1, anchor: 'BACHELOR',           levels: ['WEITERBILDUNG_PHILATELIE_1','WEITERBILDUNG_PHILATELIE_2'] },
+  { name: 'MINERALIEN',        label: 'Gemmologie',      row: 5, sc: -5, dir: -1, anchor: 'BACHELOR',           levels: ['WEITERBILDUNG_MINERALIEN_1','WEITERBILDUNG_MINERALIEN_2','WEITERBILDUNG_MINERALIEN_3'] },
+  { name: 'ARCHAEOLOGIE',      label: 'Archäologie',     row: 6, sc: -1, dir: -1, anchor: 'BACHELOR',           levels: ['WEITERBILDUNG_ARCHAEOLOGIE_1','WEITERBILDUNG_ARCHAEOLOGIE_2'] },
+  { name: 'SPORTSAMMLER',      label: 'Sportsammler',    row: 6, sc: -3, dir: -1, anchor: 'BACHELOR',           levels: ['WEITERBILDUNG_SPORTSAMMLER_1','WEITERBILDUNG_SPORTSAMMLER_2'] },
+  { name: 'WHISKY',            label: 'Whisky',          row: 6, sc: -5, dir: -1, anchor: 'BACHELOR',           levels: ['WEITERBILDUNG_WHISKY_1','WEITERBILDUNG_WHISKY_2'] },
+]
+
+// Build static node map once (non-reactive)
+const STATIC: Record<string, StaticNode> = {}
+for (const m of MAIN_DEF) {
+  STATIC[m.id] = { id: m.id, x: nx(m.col), y: ny(m.row), type: 'main', line1: m.line1, line2: m.line2, levelIndex: 0 }
+}
+for (const fam of FAM_DEF) {
+  for (let i = 0; i < fam.levels.length; i++) {
+    const id = fam.levels[i]
+    STATIC[id] = { id, x: nx(fam.sc + fam.dir * i), y: ny(fam.row), type: 'side', line1: fam.label, levelIndex: i, familyLabel: fam.label }
+  }
 }
 
-// Total durations for side certs (for progress bar only)
+// ── Side cert data ────────────────────────────────────────────────────────────
 const CERT_DURATIONS: Record<string, number> = {
   WEITERBILDUNG_BARKEEPER_1: 1, WEITERBILDUNG_BARKEEPER_2: 2, WEITERBILDUNG_BARKEEPER_3: 2,
   WEITERBILDUNG_FITNESSTRAINER_1: 1, WEITERBILDUNG_FITNESSTRAINER_2: 2, WEITERBILDUNG_FITNESSTRAINER_3: 2,
@@ -239,11 +282,11 @@ const CERT_DURATIONS: Record<string, number> = {
   WEITERBILDUNG_FUEHRERSCHEIN_1: 1, WEITERBILDUNG_FUEHRERSCHEIN_2: 2, WEITERBILDUNG_FUEHRERSCHEIN_3: 3,
   WEITERBILDUNG_CRYPTO_1: 1, WEITERBILDUNG_CRYPTO_2: 2, WEITERBILDUNG_CRYPTO_3: 3,
   WEITERBILDUNG_BUCHHALTUNG_1: 1, WEITERBILDUNG_BUCHHALTUNG_2: 2, WEITERBILDUNG_BUCHHALTUNG_3: 3,
-  WEITERBILDUNG_IMMOBILIEN_1: 2, WEITERBILDUNG_IMMOBILIEN_2: 3, WEITERBILDUNG_IMMOBILIEN_3: 4,
+  WEITERBILDUNG_IMMOBILIEN_1: 2, WEITERBILDUNG_IMMOBILIEN_2: 3, WEITERBILDUNG_IMMOBILIEN_3: 4, WEITERBILDUNG_IMMOBILIEN_4: 3,
   WEITERBILDUNG_PROJEKTMANAGEMENT_1: 2, WEITERBILDUNG_PROJEKTMANAGEMENT_2: 3, WEITERBILDUNG_PROJEKTMANAGEMENT_3: 4,
   WEITERBILDUNG_STEUERN_1: 2, WEITERBILDUNG_STEUERN_2: 3, WEITERBILDUNG_STEUERN_3: 4,
+  WEITERBILDUNG_STEUERHINTERZIEHUNG_1: 2, WEITERBILDUNG_STEUERHINTERZIEHUNG_2: 3, WEITERBILDUNG_STEUERHINTERZIEHUNG_3: 4,
   WEITERBILDUNG_HACKER_1: 2, WEITERBILDUNG_HACKER_2: 3, WEITERBILDUNG_HACKER_3: 4,
-  WEITERBILDUNG_IMMOBILIEN_4: 3,
   WEITERBILDUNG_OLDTIMER_1: 1, WEITERBILDUNG_OLDTIMER_2: 2, WEITERBILDUNG_OLDTIMER_3: 2,
   WEITERBILDUNG_ARCHAEOLOGIE_1: 1, WEITERBILDUNG_ARCHAEOLOGIE_2: 2,
   WEITERBILDUNG_WEINKENNER_1: 1, WEITERBILDUNG_WEINKENNER_2: 2, WEITERBILDUNG_WEINKENNER_3: 3,
@@ -257,245 +300,30 @@ const CERT_DURATIONS: Record<string, number> = {
 }
 
 const SIDE_CERT_LABELS: Record<string, string> = {
-  WEITERBILDUNG_BARKEEPER_1: 'Barkeeper-Grundkurs',
-  WEITERBILDUNG_BARKEEPER_2: 'Barkeeper-Aufbaukurs',
-  WEITERBILDUNG_BARKEEPER_3: 'Barkeeper-Meister',
-  WEITERBILDUNG_FITNESSTRAINER_1: 'Fitnesstrainer B-Lizenz',
-  WEITERBILDUNG_FITNESSTRAINER_2: 'Fitnesstrainer A-Lizenz',
-  WEITERBILDUNG_FITNESSTRAINER_3: 'Personal Trainer Zertifikat',
-  WEITERBILDUNG_SOCIAL_MEDIA_1: 'Social-Media-Marketing (Grundkurs)',
-  WEITERBILDUNG_SOCIAL_MEDIA_2: 'Social-Media-Marketing (Aufbaukurs)',
-  WEITERBILDUNG_SOCIAL_MEDIA_3: 'Social-Media-Marketing (Expertenzertifikat)',
-  WEITERBILDUNG_EXCEL_1: 'Excel-Grundlagen',
-  WEITERBILDUNG_EXCEL_2: 'Excel & Datenanalyse',
-  WEITERBILDUNG_EXCEL_3: 'Excel VBA & Power BI',
-  WEITERBILDUNG_FUEHRERSCHEIN_1: 'Führerschein Klasse B',
-  WEITERBILDUNG_FUEHRERSCHEIN_2: 'Führerschein Klasse BE (Anhänger)',
-  WEITERBILDUNG_FUEHRERSCHEIN_3: 'Führerschein Klasse C (LKW)',
-  WEITERBILDUNG_CRYPTO_1: 'Krypto-Trading Zertifikat (Grundlagen)',
-  WEITERBILDUNG_CRYPTO_2: 'DeFi & Blockchain Zertifikat',
-  WEITERBILDUNG_CRYPTO_3: 'Certified Crypto Analyst (CCA)',
-  WEITERBILDUNG_BUCHHALTUNG_1: 'Buchhaltung & DATEV (Grundkurs)',
-  WEITERBILDUNG_BUCHHALTUNG_2: 'Bilanzbuchhaltung (IHK)',
-  WEITERBILDUNG_BUCHHALTUNG_3: 'Steuerrecht & Konzernbilanzierung',
-  WEITERBILDUNG_IMMOBILIEN_1: 'Immobilien-Grundlagen (IHK)',
-  WEITERBILDUNG_IMMOBILIEN_2: 'Immobilienmakler-Lizenz',
-  WEITERBILDUNG_IMMOBILIEN_3: 'Immobilien-Investor Masterclass',
-  WEITERBILDUNG_PROJEKTMANAGEMENT_1: 'Projektmanagement (PRINCE2 Foundation)',
-  WEITERBILDUNG_PROJEKTMANAGEMENT_2: 'Projektmanagement (PRINCE2 Practitioner)',
-  WEITERBILDUNG_PROJEKTMANAGEMENT_3: 'Agile Coach Zertifikat (SAFe)',
-  WEITERBILDUNG_STEUERN_1: 'Steuerberater-Grundkurs',
-  WEITERBILDUNG_STEUERN_2: 'Steuerberater-Aufbaukurs',
-  WEITERBILDUNG_STEUERN_3: 'Steuerberater-Examen (StBExPrV)',
-  WEITERBILDUNG_HACKER_1: 'Ethical Hacking Zertifikat (CEH Foundation)',
-  WEITERBILDUNG_HACKER_2: 'Certified Ethical Hacker (CEH)',
-  WEITERBILDUNG_HACKER_3: 'Offensive Security Expert (OSCP)',
-  WEITERBILDUNG_IMMOBILIEN_4: 'Immobilien-Portfolio Manager',
-  WEITERBILDUNG_OLDTIMER_1: 'Oldtimer-Kurs Grundlagen',
-  WEITERBILDUNG_OLDTIMER_2: 'Classic-Car Experte',
-  WEITERBILDUNG_OLDTIMER_3: 'Oldtimer-Auktionator Zertifikat',
-  WEITERBILDUNG_ARCHAEOLOGIE_1: 'Archäologen-Hobbykurs',
-  WEITERBILDUNG_ARCHAEOLOGIE_2: 'Antiquitäten-Experte',
-  WEITERBILDUNG_WEINKENNER_1: 'Weinkenner Grundkurs',
-  WEITERBILDUNG_WEINKENNER_2: 'Wine & Spirit Education (WSET)',
-  WEITERBILDUNG_WEINKENNER_3: 'Master Sommelier',
-  WEITERBILDUNG_KUNSTKENNER_1: 'Kunstgeschichte Einführung',
-  WEITERBILDUNG_KUNSTKENNER_2: 'Kunstmarkt-Experte',
-  WEITERBILDUNG_KUNSTKENNER_3: 'Art Advisor Zertifikat',
-  WEITERBILDUNG_UHRMACHER_1: 'Uhrmacher-Grundkurs',
-  WEITERBILDUNG_UHRMACHER_2: 'Zertifizierter Uhrenexperte',
-  WEITERBILDUNG_UHRMACHER_3: 'Horologie Diplom',
-  WEITERBILDUNG_NUMISMATIK_1: 'Münzkunde Grundkurs',
-  WEITERBILDUNG_NUMISMATIK_2: 'Professioneller Numismatiker',
-  WEITERBILDUNG_PHILATELIE_1: 'Briefmarken-Sammler Kurs',
-  WEITERBILDUNG_PHILATELIE_2: 'Philatelie-Experte',
-  WEITERBILDUNG_MINERALIEN_1: 'Gemmologie Grundkurs',
-  WEITERBILDUNG_MINERALIEN_2: 'Zertifizierter Gemmologe (FGA)',
-  WEITERBILDUNG_MINERALIEN_3: 'Diamond Grading Expert',
-  WEITERBILDUNG_SPORTSAMMLER_1: 'Sport-Memorabilia Grundkurs',
-  WEITERBILDUNG_SPORTSAMMLER_2: 'Sportartefakt-Authentifizierer',
-  WEITERBILDUNG_WHISKY_1: 'Whisky & Spirituosen Grundkurs',
-  WEITERBILDUNG_WHISKY_2: 'Master Distiller Zertifikat',
+  WEITERBILDUNG_BARKEEPER_1: 'Barkeeper-Grundkurs', WEITERBILDUNG_BARKEEPER_2: 'Barkeeper-Aufbaukurs', WEITERBILDUNG_BARKEEPER_3: 'Barkeeper-Meister',
+  WEITERBILDUNG_FITNESSTRAINER_1: 'Fitnesstrainer B-Lizenz', WEITERBILDUNG_FITNESSTRAINER_2: 'Fitnesstrainer A-Lizenz', WEITERBILDUNG_FITNESSTRAINER_3: 'Personal Trainer Zertifikat',
+  WEITERBILDUNG_SOCIAL_MEDIA_1: 'Social-Media-Marketing (Grundkurs)', WEITERBILDUNG_SOCIAL_MEDIA_2: 'Social-Media-Marketing (Aufbaukurs)', WEITERBILDUNG_SOCIAL_MEDIA_3: 'Social-Media-Marketing (Expertenzertifikat)',
+  WEITERBILDUNG_EXCEL_1: 'Excel-Grundlagen', WEITERBILDUNG_EXCEL_2: 'Excel & Datenanalyse', WEITERBILDUNG_EXCEL_3: 'Excel VBA & Power BI',
+  WEITERBILDUNG_FUEHRERSCHEIN_1: 'Führerschein Klasse B', WEITERBILDUNG_FUEHRERSCHEIN_2: 'Führerschein Klasse BE', WEITERBILDUNG_FUEHRERSCHEIN_3: 'Führerschein Klasse C (LKW)',
+  WEITERBILDUNG_CRYPTO_1: 'Krypto-Trading (Grundlagen)', WEITERBILDUNG_CRYPTO_2: 'DeFi & Blockchain', WEITERBILDUNG_CRYPTO_3: 'Certified Crypto Analyst',
+  WEITERBILDUNG_BUCHHALTUNG_1: 'Buchhaltung & DATEV', WEITERBILDUNG_BUCHHALTUNG_2: 'Bilanzbuchhaltung (IHK)', WEITERBILDUNG_BUCHHALTUNG_3: 'Steuerrecht & Konzernbilanzierung',
+  WEITERBILDUNG_IMMOBILIEN_1: 'Immobilien-Grundlagen (IHK)', WEITERBILDUNG_IMMOBILIEN_2: 'Immobilienmakler-Lizenz', WEITERBILDUNG_IMMOBILIEN_3: 'Immobilien-Investor Masterclass', WEITERBILDUNG_IMMOBILIEN_4: 'Immobilien-Portfolio Manager',
+  WEITERBILDUNG_PROJEKTMANAGEMENT_1: 'PRINCE2 Foundation', WEITERBILDUNG_PROJEKTMANAGEMENT_2: 'PRINCE2 Practitioner', WEITERBILDUNG_PROJEKTMANAGEMENT_3: 'Agile Coach (SAFe)',
+  WEITERBILDUNG_STEUERN_1: 'Steuerberater-Grundkurs', WEITERBILDUNG_STEUERN_2: 'Steuerberater-Aufbaukurs', WEITERBILDUNG_STEUERN_3: 'Steuerberater-Examen',
+  WEITERBILDUNG_STEUERHINTERZIEHUNG_1: 'Bargeldzahlungen (Stufe 1)', WEITERBILDUNG_STEUERHINTERZIEHUNG_2: 'Briefkastenfirma (Stufe 2)', WEITERBILDUNG_STEUERHINTERZIEHUNG_3: 'Offshore-Konten (Stufe 3)',
+  WEITERBILDUNG_HACKER_1: 'Ethical Hacking (CEH Foundation)', WEITERBILDUNG_HACKER_2: 'Certified Ethical Hacker', WEITERBILDUNG_HACKER_3: 'Offensive Security Expert (OSCP)',
+  WEITERBILDUNG_OLDTIMER_1: 'Oldtimer-Grundkurs', WEITERBILDUNG_OLDTIMER_2: 'Classic-Car Experte', WEITERBILDUNG_OLDTIMER_3: 'Oldtimer-Auktionator',
+  WEITERBILDUNG_ARCHAEOLOGIE_1: 'Archäologen-Hobbykurs', WEITERBILDUNG_ARCHAEOLOGIE_2: 'Antiquitäten-Experte',
+  WEITERBILDUNG_WEINKENNER_1: 'Weinkenner Grundkurs', WEITERBILDUNG_WEINKENNER_2: 'Wine & Spirit Education (WSET)', WEITERBILDUNG_WEINKENNER_3: 'Master Sommelier',
+  WEITERBILDUNG_KUNSTKENNER_1: 'Kunstgeschichte Einführung', WEITERBILDUNG_KUNSTKENNER_2: 'Kunstmarkt-Experte', WEITERBILDUNG_KUNSTKENNER_3: 'Art Advisor Zertifikat',
+  WEITERBILDUNG_UHRMACHER_1: 'Uhrmacher-Grundkurs', WEITERBILDUNG_UHRMACHER_2: 'Zertifizierter Uhrenexperte', WEITERBILDUNG_UHRMACHER_3: 'Horologie Diplom',
+  WEITERBILDUNG_NUMISMATIK_1: 'Münzkunde Grundkurs', WEITERBILDUNG_NUMISMATIK_2: 'Professioneller Numismatiker',
+  WEITERBILDUNG_PHILATELIE_1: 'Briefmarken-Sammler Kurs', WEITERBILDUNG_PHILATELIE_2: 'Philatelie-Experte',
+  WEITERBILDUNG_MINERALIEN_1: 'Gemmologie Grundkurs', WEITERBILDUNG_MINERALIEN_2: 'Zertifizierter Gemmologe (FGA)', WEITERBILDUNG_MINERALIEN_3: 'Diamond Grading Expert',
+  WEITERBILDUNG_SPORTSAMMLER_1: 'Sport-Memorabilia Grundkurs', WEITERBILDUNG_SPORTSAMMLER_2: 'Sportartefakt-Authentifizierer',
+  WEITERBILDUNG_WHISKY_1: 'Whisky & Spirituosen Grundkurs', WEITERBILDUNG_WHISKY_2: 'Master Distiller Zertifikat',
 }
 
-const route = useRoute()
-const progress = ref<Progress | null>(null)
-const loading = ref(true)
-const enrollingSide = ref<string | null>(null)
-const highlightCert = computed(() => route.query.highlight as string | undefined)
-
-const mainTree = computed(() => TREE)
-
-const mainStageLabel = computed(() => {
-  if (!progress.value) return ''
-  const p = progress.value
-  const field = p.mainStageField ? ': ' + fieldLabel(p.mainStageField) : ''
-  return stageLabel(p.mainStage) + field
-})
-
-const sideCertDisplayLabel = computed(() =>
-  formatSideCertKey(progress.value?.sideCert ?? ''),
-)
-
-const completedSideCerts = computed(() =>
-  (progress.value?.completedStages ?? []).filter(s => s.startsWith('WEITERBILDUNG_')),
-)
-
-// Cert family definitions for the level-chain display
-const CERT_FAMILY_DEFS = [
-  { name: 'BARKEEPER', label: 'Barkeeper', levels: ['WEITERBILDUNG_BARKEEPER_1','WEITERBILDUNG_BARKEEPER_2','WEITERBILDUNG_BARKEEPER_3'] },
-  { name: 'FITNESSTRAINER', label: 'Fitnesstrainer', levels: ['WEITERBILDUNG_FITNESSTRAINER_1','WEITERBILDUNG_FITNESSTRAINER_2','WEITERBILDUNG_FITNESSTRAINER_3'] },
-  { name: 'SOCIAL_MEDIA', label: 'Social-Media', levels: ['WEITERBILDUNG_SOCIAL_MEDIA_1','WEITERBILDUNG_SOCIAL_MEDIA_2','WEITERBILDUNG_SOCIAL_MEDIA_3'] },
-  { name: 'EXCEL', label: 'Excel', levels: ['WEITERBILDUNG_EXCEL_1','WEITERBILDUNG_EXCEL_2','WEITERBILDUNG_EXCEL_3'] },
-  { name: 'FUEHRERSCHEIN', label: 'Führerschein', levels: ['WEITERBILDUNG_FUEHRERSCHEIN_1','WEITERBILDUNG_FUEHRERSCHEIN_2','WEITERBILDUNG_FUEHRERSCHEIN_3'] },
-  { name: 'CRYPTO', label: 'Krypto-Trading', levels: ['WEITERBILDUNG_CRYPTO_1','WEITERBILDUNG_CRYPTO_2','WEITERBILDUNG_CRYPTO_3'] },
-  { name: 'BUCHHALTUNG', label: 'Buchhaltung', levels: ['WEITERBILDUNG_BUCHHALTUNG_1','WEITERBILDUNG_BUCHHALTUNG_2','WEITERBILDUNG_BUCHHALTUNG_3'] },
-  { name: 'IMMOBILIEN', label: 'Immobilien', levels: ['WEITERBILDUNG_IMMOBILIEN_1','WEITERBILDUNG_IMMOBILIEN_2','WEITERBILDUNG_IMMOBILIEN_3','WEITERBILDUNG_IMMOBILIEN_4'] },
-  { name: 'PROJEKTMANAGEMENT', label: 'Projektmanagement', levels: ['WEITERBILDUNG_PROJEKTMANAGEMENT_1','WEITERBILDUNG_PROJEKTMANAGEMENT_2','WEITERBILDUNG_PROJEKTMANAGEMENT_3'] },
-  { name: 'STEUERN', label: 'Steuern', levels: ['WEITERBILDUNG_STEUERN_1','WEITERBILDUNG_STEUERN_2','WEITERBILDUNG_STEUERN_3'] },
-  { name: 'HACKER', label: 'Ethical Hacking', levels: ['WEITERBILDUNG_HACKER_1','WEITERBILDUNG_HACKER_2','WEITERBILDUNG_HACKER_3'] },
-  // Sammler-Weiterbildungen
-  { name: 'OLDTIMER', label: 'Oldtimer', levels: ['WEITERBILDUNG_OLDTIMER_1','WEITERBILDUNG_OLDTIMER_2','WEITERBILDUNG_OLDTIMER_3'] },
-  { name: 'ARCHAEOLOGIE', label: 'Archäologie', levels: ['WEITERBILDUNG_ARCHAEOLOGIE_1','WEITERBILDUNG_ARCHAEOLOGIE_2'] },
-  { name: 'WEINKENNER', label: 'Weinkenner', levels: ['WEITERBILDUNG_WEINKENNER_1','WEITERBILDUNG_WEINKENNER_2','WEITERBILDUNG_WEINKENNER_3'] },
-  { name: 'KUNSTKENNER', label: 'Kunstkenner', levels: ['WEITERBILDUNG_KUNSTKENNER_1','WEITERBILDUNG_KUNSTKENNER_2','WEITERBILDUNG_KUNSTKENNER_3'] },
-  { name: 'UHRMACHER', label: 'Uhrmacher', levels: ['WEITERBILDUNG_UHRMACHER_1','WEITERBILDUNG_UHRMACHER_2','WEITERBILDUNG_UHRMACHER_3'] },
-  { name: 'NUMISMATIK', label: 'Numismatik', levels: ['WEITERBILDUNG_NUMISMATIK_1','WEITERBILDUNG_NUMISMATIK_2'] },
-  { name: 'PHILATELIE', label: 'Philatelie', levels: ['WEITERBILDUNG_PHILATELIE_1','WEITERBILDUNG_PHILATELIE_2'] },
-  { name: 'MINERALIEN', label: 'Gemmologie', levels: ['WEITERBILDUNG_MINERALIEN_1','WEITERBILDUNG_MINERALIEN_2','WEITERBILDUNG_MINERALIEN_3'] },
-  { name: 'SPORTSAMMLER', label: 'Sportsammler', levels: ['WEITERBILDUNG_SPORTSAMMLER_1','WEITERBILDUNG_SPORTSAMMLER_2'] },
-  { name: 'WHISKY', label: 'Whisky & Spirituosen', levels: ['WEITERBILDUNG_WHISKY_1','WEITERBILDUNG_WHISKY_2'] },
-]
-
-interface CertLevelInfo {
-  key: string
-  label: string
-  durationMonths: number
-  cost: number
-  state: 'done' | 'active' | 'available' | 'locked'
-}
-
-const certFamilies = computed(() => {
-  const p = progress.value
-  if (!p) return []
-  const completed = new Set(p.completedStages)
-  const inProgressKey = p.sideCert
-  const availableKeys = new Set(p.availableSideCerts.map(c => c.certKey))
-  const availableMap = new Map(p.availableSideCerts.map(c => [c.certKey, c]))
-
-  return CERT_FAMILY_DEFS.map(fam => {
-    const levels: CertLevelInfo[] = fam.levels.map(key => {
-      const available = availableMap.get(key)
-      let state: CertLevelInfo['state']
-      if (completed.has(key)) state = 'done'
-      else if (key === inProgressKey) state = 'active'
-      else if (availableKeys.has(key)) state = 'available'
-      else state = 'locked'
-
-      return {
-        key,
-        label: SIDE_CERT_LABELS[key] ?? key,
-        durationMonths: available?.durationMonths ?? CERT_DURATIONS[key] ?? 1,
-        cost: available?.cost ?? 0,
-        state,
-      }
-    })
-    return { name: fam.name, label: fam.label, levels }
-  })
-})
-
-provide('educationProgress', computed(() => progress.value
-  ? { completedStages: progress.value.completedStages,
-      mainStage: progress.value.mainStage,
-      mainStageMonthsRemaining: progress.value.mainStageMonthsRemaining }
-  : null,
-))
-
-const mainProgress = computed(() => {
-  const p = progress.value
-  if (!p || p.mainStageMonthsRemaining === 0) return 100
-  const key = p.mainStageField ? `${p.mainStage}_${p.mainStageField}` : p.mainStage
-  const total = STAGE_DURATIONS[key] ?? STAGE_DURATIONS[p.mainStage] ?? 1
-  return Math.round(((total - p.mainStageMonthsRemaining) / total) * 100)
-})
-
-const sideProgress = computed(() => {
-  const p = progress.value
-  if (!p || p.sideCertMonthsRemaining === 0) return 100
-  const total = CERT_DURATIONS[p.sideCert ?? ''] ?? 1
-  return Math.round(((total - p.sideCertMonthsRemaining) / total) * 100)
-})
-
-async function loadProgress() {
-  loading.value = true
-  try {
-    progress.value = await api.get<Progress>('/api/education')
-  } finally {
-    loading.value = false
-    // After load, scroll to highlighted cert if requested
-    if (highlightCert.value) {
-      await nextTick()
-      const el = document.getElementById(`cert-family-${highlightCert.value.replace('WEITERBILDUNG_', '').replace(/_\d+$/, '')}`)
-      el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
-  }
-}
-
-async function enrollMain(stage: string, field: string | null) {
-  try {
-    progress.value = await api.post<Progress>('/api/education/main', { stage, field })
-    toast.success('Einschreibung erfolgreich!', 'Ausbildung gestartet')
-  } catch (e: any) {
-    toast.error(e?.data?.message ?? 'Einschreibung fehlgeschlagen.')
-  }
-}
-
-async function enrollSide(certKey: string) {
-  enrollingSide.value = certKey
-  try {
-    progress.value = await api.post<Progress>('/api/education/side', { cert: certKey })
-    toast.success('Weiterbildung gestartet!', 'Eingeschrieben')
-  } catch (e: any) {
-    toast.error(e?.data?.message ?? 'Einschreibung fehlgeschlagen.')
-  } finally {
-    enrollingSide.value = null
-  }
-}
-
-function stageLabel(key: string) {
-  const map: Record<string, string> = {
-    GRUNDSCHULE: 'Grundschule', REALSCHULABSCHLUSS: 'Realschulabschluss',
-    ABITUR: 'Abitur', AUSBILDUNG: 'Ausbildung', BACHELOR: 'Bachelor', MASTER: 'Master',
-  }
-  return map[key] ?? key
-}
-
-function fieldLabel(field: string) {
-  const map: Record<string, string> = {
-    INFORMATIK: 'Informatik', BWL: 'Betriebswirtschaft', MEDIZIN: 'Medizin',
-    JURA: 'Rechtswissenschaften', INGENIEURWESEN: 'Ingenieurwesen', PSYCHOLOGIE: 'Psychologie',
-    FACHINFORMATIKER: 'Fachinformatiker/-in', EINZELHANDEL: 'Einzelhandelskaufmann/-frau',
-    KFZTECH: 'KFZ-Mechatronik', PFLEGE: 'Pflegefachkraft', KOCH: 'Koch/Köchin',
-    ELEKTRIKER: 'Elektriker/-in',
-  }
-  return map[field] ?? field
-}
-
-function formatSideCertKey(key: string) {
-  return SIDE_CERT_LABELS[key] ?? key
-}
-
-function formatCost(cost: number) {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(cost)
-}
-
-function isFamilyHighlighted(family: { name: string; levels: string[] }): boolean {
-  const h = highlightCert.value
-  if (!h) return false
-  return family.levels.some(key => key === h || key.startsWith(h + '_'))
-}
-
-// What each cert level unlocks — shown as chip in the level node tooltip/detail
 const CERT_UNLOCKS: Record<string, string> = {
   WEITERBILDUNG_BUCHHALTUNG_1: 'ETF-Aktien',
   WEITERBILDUNG_BUCHHALTUNG_2: 'Dividenden-Aktien',
@@ -524,5 +352,294 @@ const CERT_UNLOCKS: Record<string, string> = {
   WEITERBILDUNG_WHISKY_1: 'Whisky-Sammlung',
 }
 
+const STAGE_LABELS: Record<string, string> = {
+  GRUNDSCHULE: 'Grundschule', REALSCHULABSCHLUSS: 'Realschulabschluss',
+  ABITUR: 'Abitur', AUSBILDUNG: 'Ausbildung', BACHELOR: 'Bachelor-Studium', MASTER: 'Master-Studium',
+}
+const STATE_LABELS: Record<string, string> = {
+  done: '✓ Abgeschlossen', active: '▶ In Bearbeitung', available: 'Verfügbar', locked: '🔒 Gesperrt',
+}
+const STAGE_DURATIONS: Record<string, number> = {
+  REALSCHULABSCHLUSS: 2, ABITUR: 3, AUSBILDUNG: 4, BACHELOR: 6, MASTER: 4,
+  BACHELOR_MEDIZIN: 8, BACHELOR_JURA: 7,
+}
+const FIELD_LABELS: Record<string, string> = {
+  INFORMATIK: 'Informatik', BWL: 'BWL', MEDIZIN: 'Medizin', JURA: 'Rechtswiss.',
+  INGENIEURWESEN: 'Ingenieurwesen', PSYCHOLOGIE: 'Psychologie',
+  FACHINFORMATIKER: 'Fachinformatiker/-in', EINZELHANDEL: 'Einzelhandel',
+  KFZTECH: 'KFZ-Mechatronik', PFLEGE: 'Pflegefachkraft', KOCH: 'Koch/Köchin', ELEKTRIKER: 'Elektriker/-in',
+}
+const MAIN_IDS = new Set(['GRUNDSCHULE', 'REALSCHULABSCHLUSS', 'ABITUR', 'AUSBILDUNG', 'BACHELOR', 'MASTER'])
+
+// ── Reactive state ────────────────────────────────────────────────────────────
+const api = useApi()
+const toast = useToastStore()
+const route = useRoute()
+
+const progress = ref<Progress | null>(null)
+const loading = ref(true)
+const enrollingSide = ref<string | null>(null)
+
+const panX = ref(0), panY = ref(0), zoom = ref(0.8)
+const isDragging = ref(false), hasDragged = ref(false)
+let lastMX = 0, lastMY = 0
+
+const selectedNodeKey = ref<string | null>(null)
+const selectedField = ref('')
+const viewportEl = ref<HTMLElement | null>(null)
+
+const highlightCert = computed(() => route.query.highlight as string | undefined)
+
+// ── Node state ────────────────────────────────────────────────────────────────
+function getState(id: string): TreeNode['state'] {
+  const p = progress.value
+  if (!p) return id === 'GRUNDSCHULE' ? 'done' : 'locked'
+  if (p.completedStages.includes(id)) return 'done'
+  if (MAIN_IDS.has(id)) {
+    if (p.mainStage === id && p.mainStageMonthsRemaining > 0) return 'active'
+    return p.availableMainStages.some(s => s.stageKey === id) ? 'available' : 'locked'
+  }
+  if (p.sideCert === id) return 'active'
+  return p.availableSideCerts.some(c => c.certKey === id) ? 'available' : 'locked'
+}
+
+const allNodes = computed((): TreeNode[] =>
+  Object.values(STATIC).map(n => ({ ...n, state: getState(n.id) }))
+)
+
+const nodeMap = computed(() => {
+  const m: Record<string, TreeNode> = {}
+  for (const n of allNodes.value) m[n.id] = n
+  return m
+})
+
+// ── Edges ─────────────────────────────────────────────────────────────────────
+function edgeColor(a: string, b: string): string {
+  if (a === 'done' && b === 'done') return 'rgba(34,197,94,0.28)'
+  if (a === 'done' && b === 'available') return 'rgba(99,102,241,0.55)'
+  if (a === 'done' && b === 'active') return 'rgba(168,85,247,0.5)'
+  return 'rgba(255,255,255,0.07)'
+}
+
+function spath(x1: number, y1: number, x2: number, y2: number): string {
+  if (Math.abs(y2 - y1) < 5 || Math.abs(x2 - x1) < 5) return `M${x1} ${y1}L${x2} ${y2}`
+  const mx = (x1 + x2) / 2
+  return `M${x1} ${y1}C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`
+}
+
+const allEdges = computed(() => {
+  const edges: { id: string; d: string; color: string }[] = []
+  const nm = nodeMap.value
+
+  // Main vertical chain
+  const mainChain = ['GRUNDSCHULE', 'REALSCHULABSCHLUSS', 'ABITUR', 'BACHELOR', 'MASTER']
+  for (let i = 0; i < mainChain.length - 1; i++) {
+    const a = nm[mainChain[i]], b = nm[mainChain[i + 1]]
+    if (a && b) edges.push({ id: `m${i}`, d: spath(a.x, a.y + MAIN_H / 2, b.x, b.y - MAIN_H / 2), color: edgeColor(a.state, b.state) })
+  }
+
+  // Alt branch: REALSCHULABSCHLUSS → AUSBILDUNG
+  const r = nm['REALSCHULABSCHLUSS'], aus = nm['AUSBILDUNG']
+  if (r && aus) edges.push({ id: 'aus', d: spath(r.x - MAIN_W / 2, r.y, aus.x + MAIN_W / 2, aus.y), color: edgeColor(r.state, aus.state) })
+
+  // Family anchor + level chains
+  for (const fam of FAM_DEF) {
+    const anch = nm[fam.anchor]
+    const fnodes = fam.levels.map(id => nm[id]).filter((n): n is TreeNode => !!n)
+    if (!anch || !fnodes.length) continue
+    const first = fnodes[0]
+    const anchor_d = fam.dir > 0
+      ? spath(anch.x + MAIN_W / 2, anch.y, first.x - SIDE_W / 2, first.y)
+      : spath(anch.x - MAIN_W / 2, anch.y, first.x + SIDE_W / 2, first.y)
+    edges.push({ id: `a_${fam.name}`, d: anchor_d, color: edgeColor(anch.state, first.state) })
+    for (let i = 0; i < fnodes.length - 1; i++) {
+      const a = fnodes[i], b = fnodes[i + 1]
+      const d = fam.dir > 0
+        ? spath(a.x + SIDE_W / 2, a.y, b.x - SIDE_W / 2, b.y)
+        : spath(a.x - SIDE_W / 2, a.y, b.x + SIDE_W / 2, b.y)
+      edges.push({ id: `${a.id}_${b.id}`, d, color: edgeColor(a.state, b.state) })
+    }
+  }
+  return edges
+})
+
+// ── Family labels ─────────────────────────────────────────────────────────────
+const familyLabels = computed(() =>
+  FAM_DEF.map(fam => {
+    const ns = fam.levels.map(id => nodeMap.value[id]).filter(Boolean)
+    if (!ns.length) return null
+    const cx = (ns[0].x + ns[ns.length - 1].x) / 2
+    return { id: fam.name, text: fam.label, x: cx, y: ns[0].y - SIDE_H / 2 - 18 }
+  }).filter((x): x is NonNullable<typeof x> => x !== null)
+)
+
+// ── Selected detail ───────────────────────────────────────────────────────────
+const selectedDetail = computed((): SelectedDetail | null => {
+  const key = selectedNodeKey.value
+  if (!key) return null
+  const p = progress.value
+  const state = getState(key)
+  if (MAIN_IDS.has(key)) {
+    return { id: key, label: STAGE_LABELS[key] ?? key, state, type: 'main', availableStage: p?.availableMainStages.find(s => s.stageKey === key) }
+  }
+  const avail = p?.availableSideCerts.find(c => c.certKey === key)
+  return {
+    id: key, label: SIDE_CERT_LABELS[key] ?? key,
+    familyLabel: STATIC[key]?.familyLabel,
+    state, type: 'side',
+    durationMonths: avail?.durationMonths ?? CERT_DURATIONS[key],
+    cost: avail?.cost,
+    certUnlocks: CERT_UNLOCKS[key],
+  }
+})
+
+// ── Progress helpers ──────────────────────────────────────────────────────────
+const hasActiveProgress = computed(() => !!(progress.value?.mainStageMonthsRemaining || progress.value?.sideCertMonthsRemaining))
+
+const mainStageLabel = computed(() => {
+  const p = progress.value
+  if (!p) return ''
+  return (STAGE_LABELS[p.mainStage] ?? p.mainStage) + (p.mainStageField ? ': ' + (FIELD_LABELS[p.mainStageField] ?? p.mainStageField) : '')
+})
+
+const sideCertDisplayLabel = computed(() => SIDE_CERT_LABELS[progress.value?.sideCert ?? ''] ?? progress.value?.sideCert ?? '')
+
+const mainProgress = computed(() => {
+  const p = progress.value
+  if (!p || !p.mainStageMonthsRemaining) return 100
+  const key = p.mainStageField ? `${p.mainStage}_${p.mainStageField}` : p.mainStage
+  const total = STAGE_DURATIONS[key] ?? STAGE_DURATIONS[p.mainStage] ?? 1
+  return Math.round(((total - p.mainStageMonthsRemaining) / total) * 100)
+})
+
+const sideProgress = computed(() => {
+  const p = progress.value
+  if (!p || !p.sideCertMonthsRemaining) return 100
+  const total = CERT_DURATIONS[p.sideCert ?? ''] ?? 1
+  return Math.round(((total - p.sideCertMonthsRemaining) / total) * 100)
+})
+
+// ── Node render helpers ───────────────────────────────────────────────────────
+function nodeClasses(node: TreeNode) {
+  const sel = selectedNodeKey.value === node.id
+  return [
+    node.state === 'done'      ? 'bg-green-500/15 border-green-500/30 text-green-400' :
+    node.state === 'active'    ? 'bg-purple-500/15 border-purple-500/30 text-purple-300' :
+    node.state === 'available' ? 'bg-accent/10 border-accent/35 text-accent hover:bg-accent/20 cursor-pointer node-pulse' :
+                                 'bg-surface-700 border-white/5 text-gray-600',
+    sel ? 'ring-2 ring-white/30' : '',
+    node.state !== 'locked' && node.state !== 'done' ? 'cursor-pointer' : '',
+  ]
+}
+
+function nodeStyle(node: StaticNode) {
+  const w = node.type === 'main' ? MAIN_W : SIDE_W
+  const h = node.type === 'main' ? MAIN_H : SIDE_H
+  return { left: `${node.x - w / 2}px`, top: `${node.y - h / 2}px`, width: `${w}px`, height: `${h}px` }
+}
+
+// ── Pan / zoom ────────────────────────────────────────────────────────────────
+function startPan(e: MouseEvent) {
+  isDragging.value = true; hasDragged.value = false
+  lastMX = e.clientX; lastMY = e.clientY
+}
+
+function doPan(e: MouseEvent) {
+  if (!isDragging.value) return
+  const dx = e.clientX - lastMX, dy = e.clientY - lastMY
+  if (Math.abs(dx) > 4 || Math.abs(dy) > 4) hasDragged.value = true
+  panX.value += dx; panY.value += dy
+  lastMX = e.clientX; lastMY = e.clientY
+}
+
+function stopPan() { isDragging.value = false }
+
+function doZoom(e: WheelEvent) {
+  const delta = e.deltaY > 0 ? -0.07 : 0.07
+  const newZoom = Math.max(0.2, Math.min(2.5, zoom.value + delta))
+  const el = viewportEl.value
+  if (!el) { zoom.value = newZoom; return }
+  const rect = el.getBoundingClientRect()
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top
+  const ratio = newZoom / zoom.value
+  panX.value = mx - ratio * (mx - panX.value)
+  panY.value = my - ratio * (my - panY.value)
+  zoom.value = newZoom
+}
+
+function handleNodeClick(id: string) {
+  if (hasDragged.value) return
+  selectedNodeKey.value = selectedNodeKey.value === id ? null : id
+  selectedField.value = ''
+}
+
+function centerOn(x: number, y: number) {
+  const el = viewportEl.value
+  if (!el) return
+  panX.value = el.clientWidth / 2 - x * zoom.value
+  panY.value = el.clientHeight / 2 - y * zoom.value
+}
+
+function resetView() {
+  zoom.value = 0.8
+  const el = viewportEl.value
+  if (!el) return
+  panX.value = el.clientWidth / 2 - CX * zoom.value
+  panY.value = 80 - CY * zoom.value
+}
+
+// ── API actions ───────────────────────────────────────────────────────────────
+async function loadProgress() {
+  loading.value = true
+  try {
+    progress.value = await api.get<Progress>('/api/education')
+  } finally {
+    loading.value = false
+    await nextTick()
+    if (highlightCert.value && STATIC[highlightCert.value]) {
+      zoom.value = 1.1
+      centerOn(STATIC[highlightCert.value].x, STATIC[highlightCert.value].y)
+      selectedNodeKey.value = highlightCert.value
+    } else {
+      resetView()
+    }
+  }
+}
+
+async function doEnrollMain(stage: string, field: string | null) {
+  try {
+    progress.value = await api.post<Progress>('/api/education/main', { stage, field })
+    toast.success('Einschreibung erfolgreich!', 'Ausbildung gestartet')
+    selectedNodeKey.value = null
+  } catch (e: any) {
+    toast.error(e?.data?.message ?? 'Einschreibung fehlgeschlagen.')
+  }
+}
+
+async function doEnrollSide(certKey: string) {
+  enrollingSide.value = certKey
+  try {
+    progress.value = await api.post<Progress>('/api/education/side', { cert: certKey })
+    toast.success('Weiterbildung gestartet!', 'Eingeschrieben')
+    selectedNodeKey.value = null
+  } catch (e: any) {
+    toast.error(e?.data?.message ?? 'Einschreibung fehlgeschlagen.')
+  } finally {
+    enrollingSide.value = null
+  }
+}
+
+function formatCost(cost: number) {
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(cost)
+}
+
 onMounted(loadProgress)
 </script>
+
+<style scoped>
+@keyframes node-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.35); }
+  50%       { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+}
+.node-pulse { animation: node-glow 2.2s ease-in-out infinite; }
+</style>

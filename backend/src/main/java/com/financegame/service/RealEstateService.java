@@ -1,5 +1,9 @@
 package com.financegame.service;
 
+import com.financegame.domain.GameContext;
+import com.financegame.domain.condition.HasCertCondition;
+import com.financegame.domain.events.PropertyModeChangedEvent;
+import com.financegame.domain.events.PropertyPurchasedEvent;
 import com.financegame.dto.ChangeModeRequest;
 import com.financegame.dto.PlayerRealEstateDto;
 import com.financegame.dto.RealEstateDto;
@@ -9,6 +13,7 @@ import com.financegame.entity.RealEstateCatalog;
 import com.financegame.repository.EducationProgressRepository;
 import com.financegame.repository.PlayerRealEstateRepository;
 import com.financegame.repository.RealEstateCatalogRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,15 +31,18 @@ public class RealEstateService {
     private final PlayerRealEstateRepository playerRealEstateRepository;
     private final CharacterService characterService;
     private final EducationProgressRepository educationProgressRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public RealEstateService(RealEstateCatalogRepository catalogRepository,
                               PlayerRealEstateRepository playerRealEstateRepository,
                               CharacterService characterService,
-                              EducationProgressRepository educationProgressRepository) {
+                              EducationProgressRepository educationProgressRepository,
+                              ApplicationEventPublisher eventPublisher) {
         this.catalogRepository = catalogRepository;
         this.playerRealEstateRepository = playerRealEstateRepository;
         this.characterService = characterService;
         this.educationProgressRepository = educationProgressRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -69,9 +77,10 @@ public class RealEstateService {
         String requiredCert = catalog.getRequiredCert();
         if (requiredCert != null) {
             List<String> completedStages = getCompletedStages(playerId);
-            if (!completedStages.contains(requiredCert)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Weiterbildung erforderlich: " + requiredCert);
+            GameContext ctx = new GameContext(null, completedStages, null, false, 0);
+            HasCertCondition certCheck = new HasCertCondition(requiredCert);
+            if (!certCheck.isMet(ctx)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, certCheck.describe());
             }
         }
 
@@ -87,6 +96,9 @@ public class RealEstateService {
         playerRealEstateRepository.save(pre);
 
         characterService.recalculateNetWorth(playerId);
+
+        eventPublisher.publishEvent(
+            new PropertyPurchasedEvent(playerId, catalog.getId(), catalog.getName(), catalog.getPurchasePrice()));
 
         return PlayerRealEstateDto.from(pre);
     }
@@ -107,6 +119,9 @@ public class RealEstateService {
 
         pre.setMode(mode);
         playerRealEstateRepository.save(pre);
+
+        eventPublisher.publishEvent(new PropertyModeChangedEvent(playerId, propertyId, mode));
+
         return PlayerRealEstateDto.from(pre);
     }
 

@@ -1,14 +1,13 @@
 package com.financegame.service;
 
+import com.financegame.config.GameConfig;
+import com.financegame.domain.effect.collection.CollectionBonusApplier;
+import com.financegame.domain.events.*;
 import com.financegame.dto.CharacterDto;
 import com.financegame.dto.TurnResultDto;
 import com.financegame.entity.*;
 import com.financegame.repository.*;
-import com.financegame.repository.ActiveEventRepository;
-import com.financegame.repository.CollectibleRepository;
-import com.financegame.repository.PlayerLoanRepository;
-import com.financegame.repository.PlayerRealEstateRepository;
-import com.financegame.repository.PlayerTravelRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +16,10 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class TurnService {
@@ -29,7 +31,6 @@ public class TurnService {
     private final MonthlyExpenseRepository monthlyExpenseRepository;
     private final EducationProgressRepository educationProgressRepository;
     private final MonthlySnapshotRepository monthlySnapshotRepository;
-    private final EventLogRepository eventLogRepository;
     private final StockService stockService;
     private final PlayerTravelRepository playerTravelRepository;
     private final ActiveEventRepository activeEventRepository;
@@ -39,6 +40,10 @@ public class TurnService {
     private final PlayerRealEstateRepository playerRealEstateRepository;
     private final PlayerLoanRepository playerLoanRepository;
     private final CollectionService collectionService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final Map<String, CollectionBonusApplier> bonusApplierMap;
+    private final GameConfig gameConfig;
+    private final TaxService taxService;
 
     private final Random random = new Random();
 
@@ -50,7 +55,6 @@ public class TurnService {
         MonthlyExpenseRepository monthlyExpenseRepository,
         EducationProgressRepository educationProgressRepository,
         MonthlySnapshotRepository monthlySnapshotRepository,
-        EventLogRepository eventLogRepository,
         StockService stockService,
         PlayerTravelRepository playerTravelRepository,
         ActiveEventRepository activeEventRepository,
@@ -59,7 +63,11 @@ public class TurnService {
         RelationshipService relationshipService,
         PlayerRealEstateRepository playerRealEstateRepository,
         PlayerLoanRepository playerLoanRepository,
-        CollectionService collectionService
+        CollectionService collectionService,
+        ApplicationEventPublisher eventPublisher,
+        List<CollectionBonusApplier> bonusAppliers,
+        GameConfig gameConfig,
+        TaxService taxService
     ) {
         this.characterService = characterService;
         this.characterRepository = characterRepository;
@@ -68,7 +76,6 @@ public class TurnService {
         this.monthlyExpenseRepository = monthlyExpenseRepository;
         this.educationProgressRepository = educationProgressRepository;
         this.monthlySnapshotRepository = monthlySnapshotRepository;
-        this.eventLogRepository = eventLogRepository;
         this.stockService = stockService;
         this.playerTravelRepository = playerTravelRepository;
         this.activeEventRepository = activeEventRepository;
@@ -78,6 +85,11 @@ public class TurnService {
         this.playerRealEstateRepository = playerRealEstateRepository;
         this.playerLoanRepository = playerLoanRepository;
         this.collectionService = collectionService;
+        this.eventPublisher = eventPublisher;
+        this.bonusApplierMap = bonusAppliers.stream()
+            .collect(Collectors.toMap(CollectionBonusApplier::getBonusType, Function.identity()));
+        this.gameConfig = gameConfig;
+        this.taxService = taxService;
     }
 
     @Transactional
@@ -89,19 +101,40 @@ public class TurnService {
         List<TurnResultDto.LineItem> incomeBreakdown = new ArrayList<>();
         List<TurnResultDto.LineItem> expenseBreakdown = new ArrayList<>();
 
+        // --- 0. Jail / Exile ticks ---
+        boolean inJail = character.getJailMonthsRemaining() > 0;
+        if (inJail) {
+            character.setJailMonthsRemaining(character.getJailMonthsRemaining() - 1);
+            character.setStress(Math.min(100, character.getStress() + 15));
+            character.setHappiness(Math.max(0, character.getHappiness() - 10));
+            events.add("🔒 Du sitzt in Haft. " + character.getJailMonthsRemaining() + " Monate verbleiben.");
+            if (character.getJailMonthsRemaining() == 0) {
+                events.add("🔓 Du wurdest aus der Haft entlassen!");
+            }
+        }
+        if (character.getExileMonthsRemaining() > 0) {
+            character.setExileMonthsRemaining(character.getExileMonthsRemaining() - 1);
+            events.add("✈️ Du lebst im Exil. " + character.getExileMonthsRemaining() + " Monate Mindestaufenthalt verbleiben.");
+            if (character.getExileMonthsRemaining() == 0) {
+                events.add("🏠 Dein Exil ist beendet. Du kannst zurückkehren.");
+            }
+        }
+
         // --- 1. Resolve job applications from last month ---
         resolveApplications(playerId, currentTurn, events);
 
         // --- 2. Calculate salary income ---
-        BigDecimal grossIncome = calculateSalaries(playerId, currentTurn, incomeBreakdown, events);
+        BigDecimal grossIncome = inJail ? BigDecimal.ZERO
+            : calculateSalaries(playerId, currentTurn, incomeBreakdown, events);
+        if (inJail) events.add("Kein Gehalt — du befindest dich in Haft.");
 
-        // --- 2a. Collection bonuses: SALARY_MULTIPLIER ---
+        // --- 2a. Collection bonuses: income phase (SALARY_MULTIPLIER, MONTHLY_INCOME_BONUS) ---
         List<CollectionService.ActiveBonus> collectionBonuses =
             collectionService.getActiveCollectionBonuses(playerId);
         for (CollectionService.ActiveBonus bonus : collectionBonuses) {
-            if ("SALARY_MULTIPLIER".equals(bonus.bonusType())) {
-                BigDecimal factor = BigDecimal.ONE.add(bonus.bonusValue());
-                grossIncome = grossIncome.multiply(factor).setScale(2, RoundingMode.HALF_UP);
+            CollectionBonusApplier applier = bonusApplierMap.get(bonus.bonusType());
+            if (applier != null) {
+                grossIncome = applier.modifyIncome(grossIncome, bonus.bonusValue(), incomeBreakdown);
             }
         }
 
@@ -109,16 +142,29 @@ public class TurnService {
         BigDecimal rentalIncome = calculateRentalIncome(playerId, incomeBreakdown);
         grossIncome = grossIncome.add(rentalIncome);
 
-        // --- 2c. Collection bonuses: MONTHLY_INCOME_BONUS ---
-        for (CollectionService.ActiveBonus bonus : collectionBonuses) {
-            if ("MONTHLY_INCOME_BONUS".equals(bonus.bonusType())) {
-                grossIncome = grossIncome.add(bonus.bonusValue());
-                incomeBreakdown.add(new TurnResultDto.LineItem("Sammlungs-Bonus", bonus.bonusValue()));
+        // --- 3. Progressive tax on income ---
+        BigDecimal taxPaid = taxService.calculateTax(grossIncome);
+
+        // --- 3b. Tax evasion ---
+        boolean taxEvasionCaught = false;
+        BigDecimal taxEvasionCaughtAmount = BigDecimal.ZERO;
+        if (character.isTaxEvasionActive() && !inJail) {
+            int evasionLevel = taxEvasionLevel(playerId);
+            if (evasionLevel > 0 && taxPaid.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal evaded = taxPaid.multiply(BigDecimal.valueOf(evasionRate(evasionLevel)))
+                    .setScale(2, RoundingMode.HALF_UP);
+                taxPaid = taxPaid.subtract(evaded);
+                character.setCumulativeEvadedTaxes(character.getCumulativeEvadedTaxes().add(evaded));
+                if (random.nextDouble() < detectionChance(evasionLevel)) {
+                    taxEvasionCaught = true;
+                    taxEvasionCaughtAmount = character.getCumulativeEvadedTaxes();
+                    character.setTaxEvasionCaughtPending(true);
+                    character.setTaxEvasionActive(false);
+                    events.add("⚠️ Steuerfahndung! Du wurdest bei der Steuerhinterziehung erwischt!");
+                    eventPublisher.publishEvent(new TaxEvasionCaughtEvent(playerId, taxEvasionCaughtAmount));
+                }
             }
         }
-
-        // --- 3. Progressive tax on income ---
-        BigDecimal taxPaid = calculateTax(grossIncome);
         if (taxPaid.compareTo(BigDecimal.ZERO) > 0) {
             expenseBreakdown.add(new TurnResultDto.LineItem("Einkommensteuer", taxPaid));
         }
@@ -126,11 +172,11 @@ public class TurnService {
         // --- 4. Monthly expenses ---
         BigDecimal totalExpenses = deductExpenses(playerId, expenseBreakdown);
 
-        // --- 4a. Collection bonuses: EXPENSE_REDUCTION ---
+        // --- 4a. Collection bonuses: expense phase (EXPENSE_REDUCTION) ---
         for (CollectionService.ActiveBonus bonus : collectionBonuses) {
-            if ("EXPENSE_REDUCTION".equals(bonus.bonusType())) {
-                BigDecimal factor = BigDecimal.ONE.subtract(bonus.bonusValue());
-                totalExpenses = totalExpenses.multiply(factor).setScale(2, RoundingMode.HALF_UP);
+            CollectionBonusApplier applier = bonusApplierMap.get(bonus.bonusType());
+            if (applier != null) {
+                totalExpenses = applier.modifyExpenses(totalExpenses, bonus.bonusValue());
             }
         }
 
@@ -151,25 +197,26 @@ public class TurnService {
         BigDecimal netChange = grossIncome.subtract(totalExpenses);
         character.setCash(character.getCash().add(netChange).max(BigDecimal.ZERO));
 
-        // --- 5b. Random events (Step 11) ---
+        // --- 5b. Random events ---
         randomEventService.applyRandomEvents(playerId, character, events);
 
         // --- 6. Needs decay (hunger/energy/happiness) ---
         applyNeedsDecay(character, playerId);
 
-        // --- 6b. Relationship happiness bonus (Step 14) ---
+        // --- 6b. Relationship happiness bonus ---
         int happinessBonus = relationshipService.advanceRelationships(playerId, events);
         character.setHappiness(clamp(character.getHappiness() + happinessBonus));
 
-        // --- 6c. Collection bonuses: HAPPINESS_BONUS + SCHUFA_BONUS ---
+        // --- 6c. Collection bonuses: stat phase (HAPPINESS_BONUS, SCHUFA_BONUS) ---
         for (CollectionService.ActiveBonus bonus : collectionBonuses) {
-            if ("HAPPINESS_BONUS".equals(bonus.bonusType())) {
-                character.setHappiness(clamp(character.getHappiness() + bonus.bonusValue().intValue()));
-            } else if ("SCHUFA_BONUS".equals(bonus.bonusType())) {
-                character.setSchufaScore(LoanService.clampSchufa(
-                    character.getSchufaScore() + bonus.bonusValue().intValue()));
+            CollectionBonusApplier applier = bonusApplierMap.get(bonus.bonusType());
+            if (applier != null) {
+                applier.applyStats(character, bonus.bonusValue());
             }
         }
+
+        // --- 6d. Critical needs events: Burnout & Depression ---
+        applyNeedsCriticalEvents(character, playerId, events);
 
         // --- 7. Stress from active jobs ---
         updateStress(character, playerId);
@@ -188,10 +235,10 @@ public class TurnService {
         character.setCurrentTurn(currentTurn + 1);
         characterRepository.save(character);
 
-        // --- 9b. Simulate stock prices (updates investments in DB) ---
+        // --- 9b. Simulate stock prices ---
         stockService.simulatePrices(currentTurn);
 
-        // --- 9c. Recalculate net worth (cash + investments) and reload ---
+        // --- 9c. Recalculate net worth and reload ---
         characterService.recalculateNetWorth(playerId);
         character = characterService.findOrThrow(playerId);
 
@@ -201,10 +248,8 @@ public class TurnService {
             grossIncome, totalExpenses
         ));
 
-        // --- 11. Log events ---
-        for (String event : events) {
-            eventLogRepository.save(new EventLog(playerId, event, null, "TURN", currentTurn));
-        }
+        // --- 11. Publish TurnEndedEvent — TurnEventListener writes EventLog after commit ---
+        eventPublisher.publishEvent(new TurnEndedEvent(playerId, currentTurn, events));
 
         return new TurnResultDto(
             CharacterDto.from(character),
@@ -215,7 +260,9 @@ public class TurnService {
             netChange,
             incomeBreakdown,
             expenseBreakdown,
-            events
+            events,
+            taxEvasionCaught,
+            taxEvasionCaughtAmount
         );
     }
 
@@ -226,7 +273,7 @@ public class TurnService {
     private void resolveApplications(Long playerId, int currentTurn, List<String> events) {
         List<JobApplication> pending = jobApplicationRepository.findPendingByPlayerId(playerId);
         for (JobApplication app : pending) {
-            if (app.getAppliedAtTurn() >= currentTurn) continue; // not yet a full month
+            if (app.getAppliedAtTurn() >= currentTurn) continue;
 
             boolean accepted = evaluateApplication(playerId, app);
             app.setStatus(accepted ? "ACCEPTED" : "REJECTED");
@@ -234,24 +281,29 @@ public class TurnService {
             jobApplicationRepository.save(app);
 
             if (accepted) {
-                // Create active player_job entry
                 PlayerJob pj = new PlayerJob(playerId, app.getJob(), currentTurn);
                 playerJobRepository.save(pj);
                 events.add("Bewerbung angenommen: " + app.getJob().getName());
             } else {
                 events.add("Bewerbung abgelehnt: " + app.getJob().getName());
             }
+
+            eventPublisher.publishEvent(new JobApplicationResolvedEvent(
+                playerId,
+                app.getJob().getId(),
+                app.getJob().getName(),
+                accepted,
+                app.getJob().getSalary()
+            ));
         }
     }
 
     private boolean evaluateApplication(Long playerId, JobApplication app) {
         Job job = app.getJob();
 
-        // Check education requirement
         boolean meetsEducation = meetsEducationRequirement(playerId,
             job.getRequiredEducationType(), job.getRequiredEducationField());
 
-        // Check experience requirement
         boolean meetsExperience = true;
         if (job.getRequiredMonthsExperience() > 0) {
             int totalMonths = playerJobRepository.findAllByPlayerId(playerId)
@@ -261,7 +313,6 @@ public class TurnService {
             meetsExperience = totalMonths >= job.getRequiredMonthsExperience();
         }
 
-        // Acceptance probability based on qualification
         double probability;
         if (meetsEducation && meetsExperience) {
             probability = 0.80;
@@ -279,7 +330,6 @@ public class TurnService {
         EducationProgress ep = educationProgressRepository.findByPlayerId(playerId).orElse(null);
         if (ep == null) return false;
         List<String> completed = Arrays.asList(ep.getCompletedStages());
-        // Stage key format: "REALSCHULABSCHLUSS", "AUSBILDUNG_FACHINFORMATIKER", "BACHELOR_INFORMATIK", etc.
         String key = requiredField != null ? requiredType + "_" + requiredField : requiredType;
         return completed.contains(key);
     }
@@ -293,7 +343,6 @@ public class TurnService {
             BigDecimal salary = pj.getJob().getSalary();
             total = total.add(salary);
             breakdown.add(new TurnResultDto.LineItem(pj.getJob().getName(), salary));
-            // Increment experience
             pj.setMonthsWorked(pj.getMonthsWorked() + 1);
             playerJobRepository.save(pj);
         }
@@ -305,46 +354,12 @@ public class TurnService {
         return total;
     }
 
-    /**
-     * Progressive monthly income tax:
-     *   0 – 1 000 €:   0 %
-     *   1 001 – 3 000 €: 20 %
-     *   3 001 – 6 000 €: 32 %
-     *   > 6 000 €:       42 %
-     */
-    static BigDecimal calculateTax(BigDecimal income) {
-        if (income.compareTo(BigDecimal.valueOf(1000)) <= 0) return BigDecimal.ZERO;
-
-        BigDecimal tax = BigDecimal.ZERO;
-        BigDecimal remaining = income.subtract(BigDecimal.valueOf(1000));
-
-        // 20 %: 1 001 – 3 000 € (up to 2 000 € taxable)
-        BigDecimal in20 = remaining.min(BigDecimal.valueOf(2000));
-        tax = tax.add(in20.multiply(BigDecimal.valueOf(0.20)));
-        remaining = remaining.subtract(in20);
-
-        // 32 %: 3 001 – 6 000 € (up to 3 000 € taxable)
-        if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal in32 = remaining.min(BigDecimal.valueOf(3000));
-            tax = tax.add(in32.multiply(BigDecimal.valueOf(0.32)));
-            remaining = remaining.subtract(in32);
-        }
-
-        // 42 %: > 6 000 €
-        if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-            tax = tax.add(remaining.multiply(BigDecimal.valueOf(0.42)));
-        }
-
-        return tax.setScale(2, RoundingMode.HALF_UP);
-    }
-
     private BigDecimal deductExpenses(Long playerId, List<TurnResultDto.LineItem> breakdown) {
         boolean hasSelfOccupied = playerRealEstateRepository.findByPlayerId(playerId)
             .stream().anyMatch(pre -> "SELF_OCCUPIED".equals(pre.getMode()));
 
         BigDecimal total = BigDecimal.ZERO;
         for (MonthlyExpense expense : monthlyExpenseRepository.findActiveByPlayerId(playerId)) {
-            // Skip rent if player owns a self-occupied property
             if (hasSelfOccupied && "MIETE".equals(expense.getCategory())) {
                 breakdown.add(new TurnResultDto.LineItem(expense.getLabel() + " (gespart durch Eigenheim)",
                     BigDecimal.ZERO));
@@ -360,15 +375,55 @@ public class TurnService {
         boolean hasFoodExpense = monthlyExpenseRepository.findActiveByPlayerId(playerId)
             .stream().anyMatch(e -> "ESSEN".equals(e.getCategory()));
 
-        character.setHunger(clamp(character.getHunger() - (hasFoodExpense ? 5 : 15)));
-        character.setEnergy(clamp(character.getEnergy() - 8));
-        character.setHappiness(clamp(character.getHappiness() - 5));
+        GameConfig.NeedsConfig needs = gameConfig.getNeeds();
+        int hungerDecay = hasFoodExpense ? needs.getHungerDecayWithFood() : needs.getHungerDecayBase();
+        character.setHunger(clamp(character.getHunger() - hungerDecay));
+        character.setEnergy(clamp(character.getEnergy() - needs.getEnergyDecay()));
+        character.setHappiness(clamp(character.getHappiness() - needs.getHappinessDecay()));
+    }
+
+    private void applyNeedsCriticalEvents(GameCharacter character, Long playerId, List<String> events) {
+        GameConfig.BurnoutConfig bo = gameConfig.getBurnout();
+        GameConfig.DepressionConfig dep = gameConfig.getDepression();
+
+        if (character.getStress() >= bo.getStressTrigger() && !character.isBurnoutActive()) {
+            character.setBurnoutActive(true);
+            character.setStress(bo.getStressReset());
+            playerJobRepository.findActiveByPlayerId(playerId).forEach(pj -> {
+                pj.setActive(false);
+                playerJobRepository.save(pj);
+            });
+            BigDecimal penalty = BigDecimal.valueOf(bo.getHospitalPenalty());
+            if (character.getCash().compareTo(penalty) >= 0) {
+                character.setCash(character.getCash().subtract(penalty));
+            }
+            events.add("BURNOUT: Stress war zu hoch — alle Jobs verloren! Krankenhaus-Kosten: -"
+                + bo.getHospitalPenalty() + "€. Ruhe dich aus.");
+        }
+
+        if (character.getHappiness() <= 0 && character.getDepressionMonthsRemaining() == 0) {
+            character.setDepressionMonthsRemaining(dep.getDurationMonths());
+            events.add("DEPRESSION eingetreten: Glück auf 0. +" + dep.getStressPerMonth()
+                + " Stress/Monat für " + dep.getDurationMonths() + " Monate. Therapie hilft!");
+        }
+
+        if (character.getDepressionMonthsRemaining() > 0) {
+            character.setStress(Math.min(100, character.getStress() + dep.getStressPerMonth()));
+            character.setDepressionMonthsRemaining(character.getDepressionMonthsRemaining() - 1);
+            if (character.getDepressionMonthsRemaining() == 0) {
+                events.add("Depression überwunden! Weiter so.");
+            }
+        }
+
+        if (character.isBurnoutActive() && character.getStress() < bo.getRecoveryThreshold()) {
+            character.setBurnoutActive(false);
+            events.add("Du hast dich vom Burnout erholt. Du kannst wieder arbeiten.");
+        }
     }
 
     private void updateStress(GameCharacter character, Long playerId) {
         List<PlayerJob> activeJobs = playerJobRepository.findActiveByPlayerId(playerId);
         if (activeJobs.isEmpty()) {
-            // Natural stress recovery when unemployed
             character.setStress(clamp(character.getStress() - 10));
         } else {
             int totalStress = activeJobs.stream().mapToInt(pj -> pj.getJob().getStressPerMonth()).sum();
@@ -378,7 +433,6 @@ public class TurnService {
 
     private void advanceEducation(Long playerId, int currentTurn, List<String> events) {
         educationProgressRepository.findByPlayerId(playerId).ifPresent(ep -> {
-            // Main education
             if (ep.getMainStageMonthsRemaining() > 0) {
                 ep.setMainStageMonthsRemaining(ep.getMainStageMonthsRemaining() - 1);
                 if (ep.getMainStageMonthsRemaining() == 0) {
@@ -387,15 +441,16 @@ public class TurnService {
                         : ep.getMainStage();
                     addToCompletedStages(ep, stageKey);
                     events.add("Ausbildung abgeschlossen: " + ep.getMainStage());
+                    eventPublisher.publishEvent(new EducationStageCompletedEvent(playerId, stageKey));
                 }
             }
-            // Side certification
             if (ep.getSideCertMonthsRemaining() > 0) {
                 ep.setSideCertMonthsRemaining(ep.getSideCertMonthsRemaining() - 1);
                 if (ep.getSideCertMonthsRemaining() == 0) {
                     String certKey = ep.getSideCert();
                     addToCompletedStages(ep, certKey);
                     events.add("Weiterbildung abgeschlossen: " + ep.getSideCert());
+                    eventPublisher.publishEvent(new SideCertCompletedEvent(playerId, certKey));
                     ep.setSideCert(null);
                 }
             }
@@ -414,7 +469,6 @@ public class TurnService {
         playerTravelRepository.findByPlayerId(playerId).ifPresent(travel -> {
             if (travel.getArriveAtTurn() != null && travel.getArriveAtTurn() <= currentTurn + 1) {
                 String dest = travel.getDestinationCountry();
-                // Add to visited
                 String[] visited = travel.getVisitedCountries();
                 boolean alreadyVisited = Arrays.asList(visited).contains(dest);
                 if (!alreadyVisited) {
@@ -427,6 +481,7 @@ public class TurnService {
                 travel.setArriveAtTurn(null);
                 playerTravelRepository.save(travel);
                 events.add("Angekommen in " + dest + "! Erkunde lokale Sammlerstücke.");
+                eventPublisher.publishEvent(new TravelArrivedEvent(playerId, dest));
             }
         });
     }
@@ -436,7 +491,6 @@ public class TurnService {
         List<Collectible> all = collectibleRepository.findAll();
         if (all.isEmpty()) return;
         Collectible c = all.get(random.nextInt(all.size()));
-        // Check not already active
         boolean alreadyActive = activeEventRepository.findActiveForPlayer(playerId, currentTurn)
             .stream().anyMatch(e -> c.getId().equals(e.getCollectibleId()));
         if (alreadyActive) return;
@@ -454,7 +508,6 @@ public class TurnService {
 
     /**
      * 10% chance of a random medical bill if no active KRANKENVERSICHERUNG expense.
-     * Bill is between 200 and 2000 €.
      */
     private BigDecimal applyHealthInsuranceRisk(Long playerId, List<String> events) {
         boolean hasKv = monthlyExpenseRepository.findActiveByPlayerId(playerId)
@@ -462,7 +515,7 @@ public class TurnService {
             .anyMatch(e -> "KRANKENVERSICHERUNG".equals(e.getCategory()));
 
         if (!hasKv && random.nextDouble() < 0.10) {
-            int cost = 200 + random.nextInt(1801); // 200–2000
+            int cost = 200 + random.nextInt(1801);
             events.add("Arztrechnung! Ohne Krankenversicherung zahlst du " + cost + " € aus eigener Tasche.");
             return BigDecimal.valueOf(cost);
         }
@@ -499,6 +552,7 @@ public class TurnService {
                     loan.setStatus("PAID_OFF");
                     character.setSchufaScore(LoanService.clampSchufa(character.getSchufaScore() + 5));
                     events.add("Kredit '" + loan.getLabel() + "' vollstaendig zurueckgezahlt! SCHUFA +5");
+                    eventPublisher.publishEvent(new LoanPaidOffEvent(playerId, loan.getId(), loan.getLabel()));
                 } else {
                     character.setSchufaScore(LoanService.clampSchufa(character.getSchufaScore() + 2));
                 }
@@ -507,10 +561,37 @@ public class TurnService {
                 loan.setStatus("DEFAULTED");
                 character.setSchufaScore(LoanService.clampSchufa(character.getSchufaScore() - 50));
                 events.add("Kreditrate nicht bezahlt! SCHUFA -50");
+                eventPublisher.publishEvent(
+                    new LoanDefaultedEvent(playerId, loan.getId(), loan.getLabel(), loan.getAmountRemaining()));
                 playerLoanRepository.save(loan);
             }
         }
         return total;
+    }
+
+    int taxEvasionLevel(Long playerId) {
+        EducationProgress ep = educationProgressRepository.findByPlayerId(playerId).orElse(null);
+        if (ep == null) return 0;
+        List<String> completed = Arrays.asList(ep.getCompletedStages());
+        List<GameConfig.TaxEvasionConfig.TaxEvasionLevel> levels = gameConfig.getTaxEvasion().getLevels();
+        // Iterate in reverse to find the highest matching level
+        for (int i = levels.size() - 1; i >= 0; i--) {
+            String certKey = "WEITERBILDUNG_" + levels.get(i).getCertSuffix();
+            if (completed.contains(certKey)) return i + 1;
+        }
+        return 0;
+    }
+
+    double evasionRate(int level) {
+        List<GameConfig.TaxEvasionConfig.TaxEvasionLevel> levels = gameConfig.getTaxEvasion().getLevels();
+        if (level < 1 || level > levels.size()) return 0.0;
+        return levels.get(level - 1).getEvasionRate();
+    }
+
+    double detectionChance(int level) {
+        List<GameConfig.TaxEvasionConfig.TaxEvasionLevel> levels = gameConfig.getTaxEvasion().getLevels();
+        if (level < 1 || level > levels.size()) return 1.0;
+        return levels.get(level - 1).getDetectionChance();
     }
 
     private static int clamp(int v) { return Math.max(0, Math.min(100, v)); }

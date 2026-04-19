@@ -1,5 +1,6 @@
 package com.financegame.service;
 
+import com.financegame.config.GameConfig;
 import com.financegame.dto.StockDto;
 import com.financegame.entity.Investment;
 import com.financegame.entity.Stock;
@@ -24,16 +25,19 @@ public class StockService {
     private final StockPriceHistoryRepository historyRepository;
     private final InvestmentRepository investmentRepository;
     private final EducationProgressRepository educationProgressRepository;
+    private final GameConfig gameConfig;
     private final Random random = new Random();
 
     public StockService(StockRepository stockRepository,
                         StockPriceHistoryRepository historyRepository,
                         InvestmentRepository investmentRepository,
-                        EducationProgressRepository educationProgressRepository) {
+                        EducationProgressRepository educationProgressRepository,
+                        GameConfig gameConfig) {
         this.stockRepository = stockRepository;
         this.historyRepository = historyRepository;
         this.investmentRepository = investmentRepository;
         this.educationProgressRepository = educationProgressRepository;
+        this.gameConfig = gameConfig;
     }
 
     @Transactional(readOnly = true)
@@ -82,8 +86,9 @@ public class StockService {
     }
 
     private BigDecimal applyPriceMovement(Stock stock) {
-        double maxSwing = "MEME".equals(stock.getType()) ? 0.80 : 0.15;
-        double change = (random.nextDouble() * 2 - 1) * maxSwing; // [-max, +max]
+        double maxSwing = gameConfig.getStockVolatility()
+            .getOrDefault(stock.getType(), 0.15);
+        double change = (random.nextDouble() * 2 - 1) * maxSwing;
         BigDecimal factor = BigDecimal.valueOf(1 + change);
         return stock.getCurrentPrice()
             .multiply(factor)

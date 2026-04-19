@@ -194,6 +194,9 @@ public class EducationService {
         sideCerts.put("WEITERBILDUNG_STEUERN_1",            new SideCertDef("WEITERBILDUNG_STEUERN_1",            "Steuerlehre Grundkurs",                    1, 300,  List.of("REALSCHULABSCHLUSS")));
         sideCerts.put("WEITERBILDUNG_STEUERN_2",            new SideCertDef("WEITERBILDUNG_STEUERN_2",            "Steuerberater-Vorbereitung",               2, 600,  List.of("WEITERBILDUNG_STEUERN_1", "BACHELOR_BWL")));
         sideCerts.put("WEITERBILDUNG_STEUERN_3",            new SideCertDef("WEITERBILDUNG_STEUERN_3",            "Steuerberater-Examen",                     3, 2000, List.of("WEITERBILDUNG_STEUERN_2")));
+        sideCerts.put("WEITERBILDUNG_STEUERHINTERZIEHUNG_1", new SideCertDef("WEITERBILDUNG_STEUERHINTERZIEHUNG_1", "Bargeldzahlungen",                         2, 800,  List.of("WEITERBILDUNG_STEUERN_1")));
+        sideCerts.put("WEITERBILDUNG_STEUERHINTERZIEHUNG_2", new SideCertDef("WEITERBILDUNG_STEUERHINTERZIEHUNG_2", "Briefkastenfirma",                         3, 2500, List.of("WEITERBILDUNG_STEUERHINTERZIEHUNG_1")));
+        sideCerts.put("WEITERBILDUNG_STEUERHINTERZIEHUNG_3", new SideCertDef("WEITERBILDUNG_STEUERHINTERZIEHUNG_3", "Offshore-Konten",                          4, 5000, List.of("WEITERBILDUNG_STEUERHINTERZIEHUNG_2")));
         sideCerts.put("WEITERBILDUNG_HACKER_1",             new SideCertDef("WEITERBILDUNG_HACKER_1",             "IT-Security Grundlagen",                   1, 450,  List.of("REALSCHULABSCHLUSS")));
         sideCerts.put("WEITERBILDUNG_HACKER_2",             new SideCertDef("WEITERBILDUNG_HACKER_2",             "Ethical Hacking Zertifikat (CEH)",         2, 900,  List.of("WEITERBILDUNG_HACKER_1", "BACHELOR_INFORMATIK", "AUSBILDUNG_FACHINFORMATIKER")));
         sideCerts.put("WEITERBILDUNG_HACKER_3",             new SideCertDef("WEITERBILDUNG_HACKER_3",             "OSCP Penetration Testing",                 3, 2200, List.of("WEITERBILDUNG_HACKER_2")));
@@ -230,7 +233,7 @@ public class EducationService {
     // Public label helpers (used by JobService for DTO display names)
     // -------------------------------------------------------------------------
 
-    public static String stageLabel(String stageKey) {
+    public String stageLabel(String stageKey) {
         if (stageKey == null) return "";
         return switch (stageKey) {
             case "GRUNDSCHULE"        -> "Grundschule";
@@ -245,86 +248,13 @@ public class EducationService {
         };
     }
 
-    public static String sideCertLabel(String key) {
+    public String sideCertLabel(String key) {
         if (key == null) return null;
-        return switch (key) {
-            // Legacy single-level keys (backwards compat)
-            case "WEITERBILDUNG_BARKEEPER"          -> "Barkeeper-Kurs";
-            case "WEITERBILDUNG_FITNESSTRAINER"     -> "Fitnesstrainer B-Lizenz";
-            case "WEITERBILDUNG_SOCIAL_MEDIA"       -> "Social-Media-Marketing";
-            case "WEITERBILDUNG_EXCEL"              -> "Excel & Datenanalyse";
-            case "WEITERBILDUNG_FUEHRERSCHEIN"      -> "Führerschein Klasse B";
-            case "WEITERBILDUNG_CRYPTO"             -> "Krypto-Trading Zertifikat";
-            case "WEITERBILDUNG_BUCHHALTUNG"        -> "Buchhaltung & DATEV";
-            case "WEITERBILDUNG_IMMOBILIEN"         -> "Immobilienmakler-Lizenz";
-            case "WEITERBILDUNG_PROJEKTMANAGEMENT"  -> "Projektmanagement (PRINCE2)";
-            case "WEITERBILDUNG_STEUERN"            -> "Steuerberater-Grundkurs";
-            case "WEITERBILDUNG_HACKER"             -> "Ethical Hacking Zertifikat";
-            // Multi-level cert keys
-            case "WEITERBILDUNG_BARKEEPER_1"         -> "Barkeeper-Kurs (Grundlagen)";
-            case "WEITERBILDUNG_BARKEEPER_2"         -> "Barkeeper-Kurs (Fortgeschritten)";
-            case "WEITERBILDUNG_BARKEEPER_3"         -> "Bar-Manager Zertifikat";
-            case "WEITERBILDUNG_FITNESSTRAINER_1"    -> "Fitnesstrainer B-Lizenz";
-            case "WEITERBILDUNG_FITNESSTRAINER_2"    -> "Fitnesstrainer A-Lizenz";
-            case "WEITERBILDUNG_FITNESSTRAINER_3"    -> "Personal Trainer Zertifikat";
-            case "WEITERBILDUNG_SOCIAL_MEDIA_1"      -> "Social-Media-Marketing (Grundkurs)";
-            case "WEITERBILDUNG_SOCIAL_MEDIA_2"      -> "Social-Media-Marketing (Aufbaukurs)";
-            case "WEITERBILDUNG_SOCIAL_MEDIA_3"      -> "Social-Media-Marketing (Expertenzertifikat)";
-            case "WEITERBILDUNG_EXCEL_1"             -> "Excel & Datenanalyse (Grundkurs)";
-            case "WEITERBILDUNG_EXCEL_2"             -> "Excel & Power BI (Aufbaukurs)";
-            case "WEITERBILDUNG_EXCEL_3"             -> "Data Analyst Zertifikat (Microsoft)";
-            case "WEITERBILDUNG_FUEHRERSCHEIN_1"     -> "Führerschein Klasse B";
-            case "WEITERBILDUNG_FUEHRERSCHEIN_2"     -> "Führerschein Klasse BE + Anhänger";
-            case "WEITERBILDUNG_FUEHRERSCHEIN_3"     -> "LKW-Führerschein Klasse C+E";
-            case "WEITERBILDUNG_CRYPTO_1"            -> "Krypto-Trading Zertifikat (Grundlagen)";
-            case "WEITERBILDUNG_CRYPTO_2"            -> "DeFi & Blockchain Zertifikat";
-            case "WEITERBILDUNG_CRYPTO_3"            -> "Certified Crypto Analyst (CCA)";
-            case "WEITERBILDUNG_BUCHHALTUNG_1"       -> "Buchhaltung & DATEV (Grundkurs)";
-            case "WEITERBILDUNG_BUCHHALTUNG_2"       -> "Bilanzbuchhaltung (IHK)";
-            case "WEITERBILDUNG_BUCHHALTUNG_3"       -> "Bilanzbuchhalter Zertifikat";
-            case "WEITERBILDUNG_IMMOBILIEN_1"        -> "Immobilien-Grundlagen (IHK)";
-            case "WEITERBILDUNG_IMMOBILIEN_2"        -> "Immobilienmakler-Lizenz";
-            case "WEITERBILDUNG_IMMOBILIEN_3"        -> "Immobilien-Investor Masterclass";
-            case "WEITERBILDUNG_PROJEKTMANAGEMENT_1" -> "Projektmanagement Grundlagen (PMI)";
-            case "WEITERBILDUNG_PROJEKTMANAGEMENT_2" -> "Projektmanagement (PRINCE2 Foundation)";
-            case "WEITERBILDUNG_PROJEKTMANAGEMENT_3" -> "PMP Zertifizierung";
-            case "WEITERBILDUNG_STEUERN_1"           -> "Steuerlehre Grundkurs";
-            case "WEITERBILDUNG_STEUERN_2"           -> "Steuerberater-Vorbereitung";
-            case "WEITERBILDUNG_STEUERN_3"           -> "Steuerberater-Examen";
-            case "WEITERBILDUNG_HACKER_1"            -> "IT-Security Grundlagen";
-            case "WEITERBILDUNG_HACKER_2"            -> "Ethical Hacking Zertifikat (CEH)";
-            case "WEITERBILDUNG_HACKER_3"            -> "OSCP Penetration Testing";
-            case "WEITERBILDUNG_IMMOBILIEN_4"        -> "Immobilien-Portfolio Manager";
-            case "WEITERBILDUNG_OLDTIMER_1"          -> "Oldtimer-Kurs Grundlagen";
-            case "WEITERBILDUNG_OLDTIMER_2"          -> "Classic-Car Experte";
-            case "WEITERBILDUNG_OLDTIMER_3"          -> "Oldtimer-Auktionator Zertifikat";
-            case "WEITERBILDUNG_ARCHAEOLOGIE_1"      -> "Archäologen-Hobbykurs";
-            case "WEITERBILDUNG_ARCHAEOLOGIE_2"      -> "Antiquitäten-Experte";
-            case "WEITERBILDUNG_WEINKENNER_1"        -> "Weinkenner Grundkurs";
-            case "WEITERBILDUNG_WEINKENNER_2"        -> "Wine & Spirit Education (WSET)";
-            case "WEITERBILDUNG_WEINKENNER_3"        -> "Master Sommelier";
-            case "WEITERBILDUNG_KUNSTKENNER_1"       -> "Kunstgeschichte Einführung";
-            case "WEITERBILDUNG_KUNSTKENNER_2"       -> "Kunstmarkt-Experte";
-            case "WEITERBILDUNG_KUNSTKENNER_3"       -> "Art Advisor Zertifikat";
-            case "WEITERBILDUNG_UHRMACHER_1"         -> "Uhrmacher-Grundkurs";
-            case "WEITERBILDUNG_UHRMACHER_2"         -> "Zertifizierter Uhrenexperte";
-            case "WEITERBILDUNG_UHRMACHER_3"         -> "Horologie Diplom";
-            case "WEITERBILDUNG_NUMISMATIK_1"        -> "Münzkunde Grundkurs";
-            case "WEITERBILDUNG_NUMISMATIK_2"        -> "Professioneller Numismatiker";
-            case "WEITERBILDUNG_PHILATELIE_1"        -> "Briefmarken-Sammler Kurs";
-            case "WEITERBILDUNG_PHILATELIE_2"        -> "Philatelie-Experte";
-            case "WEITERBILDUNG_MINERALIEN_1"        -> "Gemmologie Grundkurs";
-            case "WEITERBILDUNG_MINERALIEN_2"        -> "Zertifizierter Gemmologe (FGA)";
-            case "WEITERBILDUNG_MINERALIEN_3"        -> "Diamond Grading Expert";
-            case "WEITERBILDUNG_SPORTSAMMLER_1"      -> "Sport-Memorabilia Grundkurs";
-            case "WEITERBILDUNG_SPORTSAMMLER_2"      -> "Sportartefakt-Authentifizierer";
-            case "WEITERBILDUNG_WHISKY_1"            -> "Whisky & Spirituosen Grundkurs";
-            case "WEITERBILDUNG_WHISKY_2"            -> "Master Distiller Zertifikat";
-            default -> key;
-        };
+        SideCertDef def = sideCerts.get(key);
+        return def != null ? def.label() : key;
     }
 
-    private static String fieldLabel(String field) {
+    private String fieldLabel(String field) {
         return switch (field) {
             case "INFORMATIK"       -> "Informatik";
             case "BWL"              -> "Betriebswirtschaft";
@@ -454,7 +384,7 @@ public class EducationService {
                 String needed = cert.requiresAny().size() == 1
                     ? stageLabel(cert.requiresAny().get(0))
                     : "eines der folgenden: " + String.join(", ",
-                        cert.requiresAny().stream().map(EducationService::stageLabel).toList());
+                        cert.requiresAny().stream().map(this::stageLabel).toList());
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Voraussetzung nicht erfuellt: " + needed);
             }

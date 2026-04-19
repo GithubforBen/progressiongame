@@ -490,3 +490,28 @@ sideCertFamilies:
         durationMonths: 2
         cost: 900
         requiresAny: ["WEITERBILDUNG_WHISKY_1"]
+
+
+  - family: "STEUERHINTERZIEHUNG"
+    levels:
+      - level: 1
+        certKey: "WEITERBILDUNG_STEUERHINTERZIEHUNG_1"
+        label: "Bargeldzahlungen"
+        description: "Einkünfte als Bargeld verschleiern (20% Ersparnis, 15% Entdeckungsrisiko)"
+        durationMonths: 2
+        cost: 800
+        requiresAny: ["WEITERBILDUNG_STEUERN_1"]
+      - level: 2
+        certKey: "WEITERBILDUNG_STEUERHINTERZIEHUNG_2"
+        label: "Briefkastenfirma"
+        description: "Gewinne über Scheinfirmen umleiten (40% Ersparnis, 8% Entdeckungsrisiko)"
+        durationMonths: 3
+        cost: 2500
+        requiresAny: ["WEITERBILDUNG_STEUERHINTERZIEHUNG_1"]
+      - level: 3
+        certKey: "WEITERBILDUNG_STEUERHINTERZIEHUNG_3"
+        label: "Offshore-Konten"
+        description: "Vermögen in Steueroasen verbergen (60% Ersparnis, 3% Entdeckungsrisiko)"
+        durationMonths: 4
+        cost: 5000
+        requiresAny: ["WEITERBILDUNG_STEUERHINTERZIEHUNG_2"]

@@ -1,0 +1,791 @@
+stocks:
+
+  # ── NORMAL / MEME (kein Zertifikat) ─────────────────────────────────────────
+
+  - ticker: "TECH"
+    name: "TechCorp AG"
+    type: "NORMAL"
+    currentPrice: 120.00
+    requiredCert: null
+
+  - ticker: "GBNK"
+    name: "GlobalBank"
+    type: "NORMAL"
+    currentPrice: 45.00
+    requiredCert: null
+
+  - ticker: "ENRG"
+    name: "EnergyPlus"
+    type: "NORMAL"
+    currentPrice: 78.00
+    requiredCert: null
+
+  - ticker: "MOON"
+    name: "MoonToken"
+    type: "MEME"
+    currentPrice: 0.50
+    requiredCert: null
+
+  - ticker: "DIAM"
+    name: "DiamondHandsCoin"
+    type: "MEME"
+    currentPrice: 420.00
+    requiredCert: null
+
+  - ticker: "BMWG"
+    name: "BMW Group"
+    type: "NORMAL"
+    currentPrice: 85.00
+    requiredCert: null
+
+  - ticker: "VOWG"
+    name: "Volkswagen AG"
+    type: "NORMAL"
+    currentPrice: 110.00
+    requiredCert: null
+
+  - ticker: "MBGX"
+    name: "Mercedes-Benz"
+    type: "NORMAL"
+    currentPrice: 70.00
+    requiredCert: null
+
+  - ticker: "SAPG"
+    name: "SAP SE"
+    type: "NORMAL"
+    currentPrice: 180.00
+    requiredCert: null
+
+  - ticker: "SIEG"
+    name: "Siemens AG"
+    type: "NORMAL"
+    currentPrice: 160.00
+    requiredCert: null
+
+  - ticker: "BASG"
+    name: "BASF SE"
+    type: "NORMAL"
+    currentPrice: 48.00
+    requiredCert: null
+
+  - ticker: "DBKG"
+    name: "Deutsche Bank"
+    type: "NORMAL"
+    currentPrice: 12.00
+    requiredCert: null
+
+  - ticker: "BAYG"
+    name: "Bayer AG"
+    type: "NORMAL"
+    currentPrice: 35.00
+    requiredCert: null
+
+  - ticker: "ADSG"
+    name: "Adidas AG"
+    type: "NORMAL"
+    currentPrice: 210.00
+    requiredCert: null
+
+  - ticker: "LHAG"
+    name: "Lufthansa AG"
+    type: "NORMAL"
+    currentPrice: 8.50
+    requiredCert: null
+
+  - ticker: "AIRB"
+    name: "Airbus SE"
+    type: "NORMAL"
+    currentPrice: 160.00
+    requiredCert: null
+
+  - ticker: "HENK"
+    name: "Henkel AG"
+    type: "NORMAL"
+    currentPrice: 75.00
+    requiredCert: null
+
+  - ticker: "MERX"
+    name: "Merck KGaA"
+    type: "NORMAL"
+    currentPrice: 170.00
+    requiredCert: null
+
+  - ticker: "FREP"
+    name: "Fresenius SE"
+    type: "NORMAL"
+    currentPrice: 28.00
+    requiredCert: null
+
+  - ticker: "TSLA"
+    name: "Tesla Inc"
+    type: "NORMAL"
+    currentPrice: 220.00
+    requiredCert: null
+
+  - ticker: "MEME"
+    name: "MemeStock Corp"
+    type: "MEME"
+    currentPrice: 0.99
+    requiredCert: null
+
+  - ticker: "PEPE"
+    name: "Pepe Coin"
+    type: "MEME"
+    currentPrice: 0.01
+    requiredCert: null
+
+  - ticker: "WLLG"
+    name: "WallStreetBets AG"
+    type: "MEME"
+    currentPrice: 4.20
+    requiredCert: null
+
+  - ticker: "ELNG"
+    name: "ElonMoon Corp"
+    type: "MEME"
+    currentPrice: 69.00
+    requiredCert: null
+
+  - ticker: "APES"
+    name: "APE Community Token"
+    type: "MEME"
+    currentPrice: 2.50
+    requiredCert: null
+
+  # ── ETF (WEITERBILDUNG_BUCHHALTUNG_1) ────────────────────────────────────────
+
+  - ticker: "MSCI"
+    name: "iShares MSCI World ETF"
+    type: "ETF"
+    currentPrice: 85.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_1"
+
+  - ticker: "VWRL"
+    name: "Vanguard FTSE All-World"
+    type: "ETF"
+    currentPrice: 110.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_1"
+
+  - ticker: "SP5E"
+    name: "iShares Core S&P 500"
+    type: "ETF"
+    currentPrice: 95.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_1"
+
+  - ticker: "NDAQ"
+    name: "Invesco NASDAQ-100"
+    type: "ETF"
+    currentPrice: 420.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_1"
+
+  - ticker: "DAXE"
+    name: "iShares Core DAX"
+    type: "ETF"
+    currentPrice: 130.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_1"
+
+  - ticker: "WTEM"
+    name: "Xtrackers MSCI Emerging Markets"
+    type: "ETF"
+    currentPrice: 24.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_1"
+
+  - ticker: "EUSD"
+    name: "iShares Euro Dividend"
+    type: "ETF"
+    currentPrice: 18.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_1"
+
+  - ticker: "DIVI"
+    name: "SPDR Global Dividend ETF"
+    type: "ETF"
+    currentPrice: 32.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_1"
+
+  - ticker: "VALE"
+    name: "iShares Value Factor ETF"
+    type: "ETF"
+    currentPrice: 28.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_1"
+
+  - ticker: "SMAL"
+    name: "Xtrackers MSCI Small Cap"
+    type: "ETF"
+    currentPrice: 45.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_1"
+
+  # ── DIVIDEND_STOCK (WEITERBILDUNG_BUCHHALTUNG_2) ──────────────────────────────
+
+  - ticker: "ALVN"
+    name: "Allianz AG"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 240.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "DTLK"
+    name: "Deutsche Telekom"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 22.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "MCDO"
+    name: "McDonald's Corp"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 290.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "JNJX"
+    name: "Johnson & Johnson"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 160.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "PGXX"
+    name: "Procter & Gamble"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 145.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "EONX"
+    name: "E.ON SE"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 12.50
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "RWEG"
+    name: "RWE AG"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 32.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "MUXG"
+    name: "Munich Re"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 380.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "INGA"
+    name: "ING Group"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 14.50
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "UNVX"
+    name: "Unilever PLC"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 42.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "NESN"
+    name: "Nestlé SA"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 98.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "NOVO"
+    name: "Novo Nordisk"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 840.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "ROYA"
+    name: "Shell PLC"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 28.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "KOKX"
+    name: "Coca-Cola Co"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 62.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  - ticker: "ASML"
+    name: "ASML Holding"
+    type: "DIVIDEND_STOCK"
+    currentPrice: 720.00
+    requiredCert: "WEITERBILDUNG_BUCHHALTUNG_2"
+
+  # ── BOND (WEITERBILDUNG_IMMOBILIEN_1) ─────────────────────────────────────────
+
+  - ticker: "BUND"
+    name: "Bundesanleihe 10J"
+    type: "BOND"
+    currentPrice: 98.50
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  - ticker: "CORP"
+    name: "Unternehmensanleihe A"
+    type: "BOND"
+    currentPrice: 102.00
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  - ticker: "EUBD"
+    name: "EU Recovery Bond"
+    type: "BOND"
+    currentPrice: 97.50
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  - ticker: "USAB"
+    name: "US Treasury 10J"
+    type: "BOND"
+    currentPrice: 96.00
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  - ticker: "COBD"
+    name: "SAP Corporate Bond"
+    type: "BOND"
+    currentPrice: 103.50
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  - ticker: "GRBD"
+    name: "Green Bond Deutschland"
+    type: "BOND"
+    currentPrice: 100.50
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  # ── REIT (WEITERBILDUNG_IMMOBILIEN_1) ─────────────────────────────────────────
+
+  - ticker: "DICA"
+    name: "DIC Asset AG"
+    type: "REIT"
+    currentPrice: 9.50
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  - ticker: "HMBR"
+    name: "Hamborner REIT"
+    type: "REIT"
+    currentPrice: 8.20
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  - ticker: "LXGE"
+    name: "LEG Immobilien SE"
+    type: "REIT"
+    currentPrice: 75.00
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  - ticker: "VNOV"
+    name: "Vonovia SE"
+    type: "REIT"
+    currentPrice: 28.00
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  - ticker: "TAGR"
+    name: "TAG Immobilien AG"
+    type: "REIT"
+    currentPrice: 11.50
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  - ticker: "ARND"
+    name: "Aroundtown SA"
+    type: "REIT"
+    currentPrice: 3.50
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  - ticker: "WDRG"
+    name: "Warehousing REIT AG"
+    type: "REIT"
+    currentPrice: 22.00
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  - ticker: "PKGR"
+    name: "Patrizia AG"
+    type: "REIT"
+    currentPrice: 14.00
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_1"
+
+  # ── REIT Spezialisten (WEITERBILDUNG_IMMOBILIEN_2) ────────────────────────────
+
+  - ticker: "SPAR"
+    name: "Segro PLC"
+    type: "REIT"
+    currentPrice: 85.00
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_2"
+
+  - ticker: "HSLT"
+    name: "Healthpeak Properties"
+    type: "REIT"
+    currentPrice: 18.50
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_2"
+
+  - ticker: "DTRE"
+    name: "Digital Realty Trust"
+    type: "REIT"
+    currentPrice: 140.00
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_2"
+
+  - ticker: "LOGX"
+    name: "LogiReit AG"
+    type: "REIT"
+    currentPrice: 38.00
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_2"
+
+  - ticker: "INFD"
+    name: "Infrastruktur REIT AG"
+    type: "REIT"
+    currentPrice: 35.00
+    requiredCert: "WEITERBILDUNG_IMMOBILIEN_2"
+
+  # ── CRYPTO (WEITERBILDUNG_CRYPTO_1) ──────────────────────────────────────────
+
+  - ticker: "BTC"
+    name: "Bitcoin"
+    type: "CRYPTO"
+    currentPrice: 42000.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_1"
+
+  - ticker: "ETH"
+    name: "Ethereum"
+    type: "CRYPTO"
+    currentPrice: 2800.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_1"
+
+  - ticker: "SOL1"
+    name: "Solana"
+    type: "CRYPTO"
+    currentPrice: 110.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_1"
+
+  - ticker: "AVAX"
+    name: "Avalanche"
+    type: "CRYPTO"
+    currentPrice: 42.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_1"
+
+  - ticker: "ADAX"
+    name: "Cardano"
+    type: "CRYPTO"
+    currentPrice: 0.55
+    requiredCert: "WEITERBILDUNG_CRYPTO_1"
+
+  - ticker: "POLX"
+    name: "Polygon"
+    type: "CRYPTO"
+    currentPrice: 0.90
+    requiredCert: "WEITERBILDUNG_CRYPTO_1"
+
+  - ticker: "DOTX"
+    name: "Polkadot"
+    type: "CRYPTO"
+    currentPrice: 8.50
+    requiredCert: "WEITERBILDUNG_CRYPTO_1"
+
+  - ticker: "LNKX"
+    name: "Chainlink"
+    type: "CRYPTO"
+    currentPrice: 18.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_1"
+
+  - ticker: "BNBX"
+    name: "BNB Chain"
+    type: "CRYPTO"
+    currentPrice: 380.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_1"
+
+  - ticker: "XRPX"
+    name: "XRP"
+    type: "CRYPTO"
+    currentPrice: 0.65
+    requiredCert: "WEITERBILDUNG_CRYPTO_1"
+
+  # ── LEVERAGE (WEITERBILDUNG_CRYPTO_2) ────────────────────────────────────────
+
+  - ticker: "TCH2"
+    name: "2x Tech Hebel"
+    type: "LEVERAGE"
+    currentPrice: 35.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "DAX3"
+    name: "3x DAX Bull"
+    type: "LEVERAGE"
+    currentPrice: 18.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "NASQ"
+    name: "2x NASDAQ Hebel"
+    type: "LEVERAGE"
+    currentPrice: 52.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "SP5L"
+    name: "3x S&P 500 Bull"
+    type: "LEVERAGE"
+    currentPrice: 28.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "EURB"
+    name: "2x Euro STOXX Bull"
+    type: "LEVERAGE"
+    currentPrice: 19.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "ENRL"
+    name: "3x Energie Bull"
+    type: "LEVERAGE"
+    currentPrice: 14.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "GOLB"
+    name: "2x Gold Bull"
+    type: "LEVERAGE"
+    currentPrice: 38.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "BMWL"
+    name: "5x BMW Long"
+    type: "LEVERAGE"
+    currentPrice: 8.50
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  # ── WARRANT (WEITERBILDUNG_CRYPTO_2) ──────────────────────────────────────────
+
+  - ticker: "CDAX"
+    name: "Call Option DAX"
+    type: "WARRANT"
+    currentPrice: 4.20
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "PTCH"
+    name: "Put Option TechCorp"
+    type: "WARRANT"
+    currentPrice: 2.80
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "CSAP"
+    name: "Call SAP"
+    type: "WARRANT"
+    currentPrice: 3.80
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "PVWG"
+    name: "Put VW"
+    type: "WARRANT"
+    currentPrice: 2.20
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "CBAY"
+    name: "Call Bayer"
+    type: "WARRANT"
+    currentPrice: 1.90
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "PSIE"
+    name: "Put Siemens"
+    type: "WARRANT"
+    currentPrice: 2.80
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "CBTC"
+    name: "Call Bitcoin"
+    type: "WARRANT"
+    currentPrice: 6.50
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  - ticker: "PETH"
+    name: "Put Ethereum"
+    type: "WARRANT"
+    currentPrice: 4.20
+    requiredCert: "WEITERBILDUNG_CRYPTO_2"
+
+  # ── SHORT (WEITERBILDUNG_CRYPTO_3) ────────────────────────────────────────────
+
+  - ticker: "SMSC"
+    name: "Short MSCI World"
+    type: "SHORT"
+    currentPrice: 52.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "BDAX"
+    name: "Bear DAX"
+    type: "SHORT"
+    currentPrice: 28.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "SDAX"
+    name: "Short DAX 2x"
+    type: "SHORT"
+    currentPrice: 35.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "SSAP"
+    name: "Short S&P 500"
+    type: "SHORT"
+    currentPrice: 48.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "SNAS"
+    name: "Short NASDAQ 2x"
+    type: "SHORT"
+    currentPrice: 52.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "SBTC"
+    name: "Short Bitcoin 3x"
+    type: "SHORT"
+    currentPrice: 18.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "SENG"
+    name: "Short Energie Sektor"
+    type: "SHORT"
+    currentPrice: 22.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "SFIN"
+    name: "Short Finanzsektor"
+    type: "SHORT"
+    currentPrice: 16.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  # ── FUTURES (WEITERBILDUNG_CRYPTO_3) ──────────────────────────────────────────
+
+  - ticker: "GOLDF"
+    name: "Gold Future"
+    type: "FUTURES"
+    currentPrice: 1950.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "OILF"
+    name: "Öl Future"
+    type: "FUTURES"
+    currentPrice: 82.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "SILF"
+    name: "Silber Future"
+    type: "FUTURES"
+    currentPrice: 25.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "COPF"
+    name: "Kupfer Future"
+    type: "FUTURES"
+    currentPrice: 4.20
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "NGAX"
+    name: "Erdgas Future"
+    type: "FUTURES"
+    currentPrice: 2.80
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "CORF"
+    name: "Corn Future"
+    type: "FUTURES"
+    currentPrice: 5.60
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "WHEF"
+    name: "Weizen Future"
+    type: "FUTURES"
+    currentPrice: 6.80
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  - ticker: "COFE"
+    name: "Kaffee Future"
+    type: "FUTURES"
+    currentPrice: 182.00
+    requiredCert: "WEITERBILDUNG_CRYPTO_3"
+
+  # ── Internationale Anleihen (WEITERBILDUNG_STEUERN_1) ─────────────────────────
+
+  - ticker: "JPBD"
+    name: "Japan Staatsanleihe 10J"
+    type: "BOND"
+    currentPrice: 98.00
+    requiredCert: "WEITERBILDUNG_STEUERN_1"
+
+  - ticker: "CNBD"
+    name: "China Staatsanleihe 5J"
+    type: "BOND"
+    currentPrice: 99.50
+    requiredCert: "WEITERBILDUNG_STEUERN_1"
+
+  - ticker: "EMBD"
+    name: "EM High-Yield Bond"
+    type: "BOND"
+    currentPrice: 88.00
+    requiredCert: "WEITERBILDUNG_STEUERN_1"
+
+  - ticker: "ITBD"
+    name: "Italien Staatsanleihe 10J"
+    type: "BOND"
+    currentPrice: 95.00
+    requiredCert: "WEITERBILDUNG_STEUERN_1"
+
+  # ── Tech-Aktien (WEITERBILDUNG_HACKER_1) ──────────────────────────────────────
+
+  - ticker: "NVDA"
+    name: "NVIDIA Corp"
+    type: "NORMAL"
+    currentPrice: 650.00
+    requiredCert: "WEITERBILDUNG_HACKER_1"
+
+  - ticker: "AMDC"
+    name: "AMD Inc"
+    type: "NORMAL"
+    currentPrice: 180.00
+    requiredCert: "WEITERBILDUNG_HACKER_1"
+
+  - ticker: "INTC"
+    name: "Intel Corp"
+    type: "NORMAL"
+    currentPrice: 38.00
+    requiredCert: "WEITERBILDUNG_HACKER_1"
+
+  - ticker: "CSCX"
+    name: "Cisco Systems"
+    type: "NORMAL"
+    currentPrice: 52.00
+    requiredCert: "WEITERBILDUNG_HACKER_1"
+
+  - ticker: "PALO"
+    name: "Palo Alto Networks"
+    type: "NORMAL"
+    currentPrice: 320.00
+    requiredCert: "WEITERBILDUNG_HACKER_1"
+
+  - ticker: "GONX"
+    name: "Alphabet Inc (Google)"
+    type: "NORMAL"
+    currentPrice: 175.00
+    requiredCert: "WEITERBILDUNG_HACKER_1"
+
+  - ticker: "MSFX"
+    name: "Microsoft Corp"
+    type: "NORMAL"
+    currentPrice: 380.00
+    requiredCert: "WEITERBILDUNG_HACKER_1"
+
+  - ticker: "AMZN"
+    name: "Amazon.com Inc"
+    type: "NORMAL"
+    currentPrice: 190.00
+    requiredCert: "WEITERBILDUNG_HACKER_1"
+
+  # ── Management-Software (WEITERBILDUNG_PROJEKTMANAGEMENT_1) ───────────────────
+
+  - ticker: "SFRC"
+    name: "Salesforce Inc"
+    type: "NORMAL"
+    currentPrice: 285.00
+    requiredCert: "WEITERBILDUNG_PROJEKTMANAGEMENT_1"
+
+  - ticker: "SERV"
+    name: "ServiceNow Inc"
+    type: "NORMAL"
+    currentPrice: 750.00
+    requiredCert: "WEITERBILDUNG_PROJEKTMANAGEMENT_1"
+
+  - ticker: "WORK"
+    name: "Atlassian Corp"
+    type: "NORMAL"
+    currentPrice: 210.00
+    requiredCert: "WEITERBILDUNG_PROJEKTMANAGEMENT_1"
+
+  - ticker: "ZOHX"
+    name: "Zoho Corp"
+    type: "NORMAL"
+    currentPrice: 95.00
+    requiredCert: "WEITERBILDUNG_PROJEKTMANAGEMENT_1"

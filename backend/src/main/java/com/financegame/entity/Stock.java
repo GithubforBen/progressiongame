@@ -17,8 +17,8 @@ public class Stock {
     @Column(name = "ticker", nullable = false, unique = true, length = 10)
     private String ticker;
 
-    @Column(name = "type", nullable = false, length = 10)
-    private String type; // NORMAL or MEME
+    @Column(name = "type", nullable = false, length = 20)
+    private String type; // NORMAL, MEME, ETF, DIVIDEND_STOCK, BOND, REIT, CRYPTO, LEVERAGE, WARRANT, SHORT, FUTURES
 
     @Column(name = "current_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal currentPrice;

@@ -1,11 +1,13 @@
 package com.financegame.service;
 
+import com.financegame.domain.events.CollectiblePurchasedEvent;
 import com.financegame.dto.ActiveEventDto;
 import com.financegame.dto.CollectibleDto;
 import com.financegame.dto.CollectionProgressDto;
 import com.financegame.dto.PlayerCollectibleDto;
 import com.financegame.entity.*;
 import com.financegame.repository.*;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,17 +28,20 @@ public class CollectibleService {
     private final ActiveEventRepository activeEventRepository;
     private final PlayerTravelRepository playerTravelRepository;
     private final CharacterService characterService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public CollectibleService(CollectibleRepository collectibleRepository,
                                PlayerCollectibleRepository playerCollectibleRepository,
                                ActiveEventRepository activeEventRepository,
                                PlayerTravelRepository playerTravelRepository,
-                               CharacterService characterService) {
+                               CharacterService characterService,
+                               ApplicationEventPublisher eventPublisher) {
         this.collectibleRepository = collectibleRepository;
         this.playerCollectibleRepository = playerCollectibleRepository;
         this.activeEventRepository = activeEventRepository;
         this.playerTravelRepository = playerTravelRepository;
         this.characterService = characterService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -144,6 +149,9 @@ public class CollectibleService {
 
         PlayerCollectible pc = new PlayerCollectible(playerId, collectibleId, character.getCurrentTurn(), price);
         playerCollectibleRepository.save(pc);
+
+        eventPublisher.publishEvent(new CollectiblePurchasedEvent(
+            playerId, collectibleId, c.getName(), c.getCollectionName(), price));
 
         return PlayerCollectibleDto.from(pc, c);
     }

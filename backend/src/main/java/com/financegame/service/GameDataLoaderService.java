@@ -30,8 +30,10 @@ public class GameDataLoaderService implements ApplicationRunner {
         int jobs = loadJobs();
         int collectibles = loadCollectibles();
         int properties = loadRealEstate();
-        log.info("DataLoader: {} Collections, {} Jobs, {} Collectibles, {} Immobilien geladen",
-            collections, jobs, collectibles, properties);
+        int needsItems = loadNeedsItems();
+        int stocks = loadStocks();
+        log.info("DataLoader: {} Collections, {} Jobs, {} Collectibles, {} Immobilien, {} NeedsItems, {} Stocks geladen",
+            collections, jobs, collectibles, properties, needsItems, stocks);
     }
 
     @SuppressWarnings("unchecked")
@@ -222,6 +224,72 @@ public class GameDataLoaderService implements ApplicationRunner {
                 .executeUpdate();
         }
         return properties.size();
+    }
+
+    @SuppressWarnings("unchecked")
+    private int loadNeedsItems() {
+        InputStream is = getClass().getResourceAsStream("/data/needs_items.yaml");
+        if (is == null) { log.warn("needs_items.yaml nicht gefunden"); return 0; }
+
+        Yaml yaml = new Yaml();
+        Map<String, Object> data = yaml.load(is);
+        List<Map<String, Object>> items = (List<Map<String, Object>>) data.get("needsItems");
+        if (items == null) return 0;
+
+        for (Map<String, Object> item : items) {
+            em.createNativeQuery("""
+                INSERT INTO needs_items (id, name, price, hunger_effect, energy_effect,
+                    happiness_effect, stress_effect, depression_reduction)
+                VALUES (:id, :name, :price, :hunger, :energy, :happiness, :stress, :depress)
+                ON CONFLICT (id) DO UPDATE SET
+                    name                = EXCLUDED.name,
+                    price               = EXCLUDED.price,
+                    hunger_effect       = EXCLUDED.hunger_effect,
+                    energy_effect       = EXCLUDED.energy_effect,
+                    happiness_effect    = EXCLUDED.happiness_effect,
+                    stress_effect       = EXCLUDED.stress_effect,
+                    depression_reduction= EXCLUDED.depression_reduction
+                """)
+                .setParameter("id", item.get("id"))
+                .setParameter("name", item.get("name"))
+                .setParameter("price", toDouble(item.get("price")))
+                .setParameter("hunger", toInt(item.get("hungerEffect")))
+                .setParameter("energy", toInt(item.get("energyEffect")))
+                .setParameter("happiness", toInt(item.get("happinessEffect")))
+                .setParameter("stress", toInt(item.get("stressEffect")))
+                .setParameter("depress", Boolean.TRUE.equals(item.get("depressionReduction")))
+                .executeUpdate();
+        }
+        return items.size();
+    }
+
+    @SuppressWarnings("unchecked")
+    private int loadStocks() {
+        InputStream is = getClass().getResourceAsStream("/data/stocks.yaml");
+        if (is == null) { log.warn("stocks.yaml nicht gefunden"); return 0; }
+
+        Yaml yaml = new Yaml();
+        Map<String, Object> data = yaml.load(is);
+        List<Map<String, Object>> stocks = (List<Map<String, Object>>) data.get("stocks");
+        if (stocks == null) return 0;
+
+        for (Map<String, Object> stock : stocks) {
+            em.createNativeQuery("""
+                INSERT INTO stocks (name, ticker, type, current_price, required_cert)
+                VALUES (:name, :ticker, :type, :price, :cert)
+                ON CONFLICT (ticker) DO UPDATE SET
+                    name          = EXCLUDED.name,
+                    type          = EXCLUDED.type,
+                    required_cert = EXCLUDED.required_cert
+                """)
+                .setParameter("name", stock.get("name"))
+                .setParameter("ticker", stock.get("ticker"))
+                .setParameter("type", stock.get("type"))
+                .setParameter("price", toDouble(stock.get("currentPrice")))
+                .setParameter("cert", stock.get("requiredCert"))
+                .executeUpdate();
+        }
+        return stocks.size();
     }
 
     private double toDouble(Object val) {

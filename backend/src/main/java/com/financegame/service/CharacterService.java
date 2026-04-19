@@ -1,12 +1,15 @@
 package com.financegame.service;
 
+import com.financegame.config.GameConfig;
 import com.financegame.dto.CharacterDto;
 import com.financegame.entity.GameCharacter;
 import com.financegame.entity.Investment;
+import com.financegame.entity.NeedsItem;
 import com.financegame.entity.PlayerRealEstate;
 import com.financegame.repository.CharacterRepository;
 import com.financegame.repository.InvestmentRepository;
 import com.financegame.repository.MonthlyExpenseRepository;
+import com.financegame.repository.NeedsItemRepository;
 import com.financegame.repository.PlayerRealEstateRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -18,26 +21,25 @@ import java.math.BigDecimal;
 @Service
 public class CharacterService {
 
-    // Needs decay per month (applied every turn)
-    private static final int HUNGER_DECAY_BASE    = 15;
-    private static final int HUNGER_DECAY_WITH_FOOD = 5;  // food expense active
-    private static final int ENERGY_DECAY         = 8;
-    private static final int HAPPINESS_DECAY      = 5;
-    // Stress is set by active jobs (see TurnService in Step 4)
-
     private final CharacterRepository characterRepository;
     private final MonthlyExpenseRepository monthlyExpenseRepository;
     private final InvestmentRepository investmentRepository;
     private final PlayerRealEstateRepository playerRealEstateRepository;
+    private final NeedsItemRepository needsItemRepository;
+    private final GameConfig gameConfig;
 
     public CharacterService(CharacterRepository characterRepository,
                             MonthlyExpenseRepository monthlyExpenseRepository,
                             InvestmentRepository investmentRepository,
-                            PlayerRealEstateRepository playerRealEstateRepository) {
+                            PlayerRealEstateRepository playerRealEstateRepository,
+                            NeedsItemRepository needsItemRepository,
+                            GameConfig gameConfig) {
         this.characterRepository = characterRepository;
         this.monthlyExpenseRepository = monthlyExpenseRepository;
         this.investmentRepository = investmentRepository;
         this.playerRealEstateRepository = playerRealEstateRepository;
+        this.needsItemRepository = needsItemRepository;
+        this.gameConfig = gameConfig;
     }
 
     @Transactional(readOnly = true)
@@ -58,11 +60,12 @@ public class CharacterService {
             .stream()
             .anyMatch(e -> "ESSEN".equals(e.getCategory()));
 
-        int hungerDecay = hasFoodExpense ? HUNGER_DECAY_WITH_FOOD : HUNGER_DECAY_BASE;
+        GameConfig.NeedsConfig needs = gameConfig.getNeeds();
+        int hungerDecay = hasFoodExpense ? needs.getHungerDecayWithFood() : needs.getHungerDecayBase();
 
         character.setHunger(clamp(character.getHunger() - hungerDecay));
-        character.setEnergy(clamp(character.getEnergy() - ENERGY_DECAY));
-        character.setHappiness(clamp(character.getHappiness() - HAPPINESS_DECAY));
+        character.setEnergy(clamp(character.getEnergy() - needs.getEnergyDecay()));
+        character.setHappiness(clamp(character.getHappiness() - needs.getHappinessDecay()));
 
         return characterRepository.save(character);
     }
@@ -114,6 +117,33 @@ public class CharacterService {
         GameCharacter character = findOrThrow(playerId);
         character.setSchufaScore(Math.max(0, Math.min(1000, newScore)));
         characterRepository.save(character);
+    }
+
+    @Transactional
+    public CharacterDto purchaseNeedItem(Long playerId, String itemId) {
+        NeedsItem item = needsItemRepository.findById(itemId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item nicht gefunden: " + itemId));
+
+        GameCharacter character = findOrThrow(playerId);
+
+        if (item.getPrice().compareTo(BigDecimal.ZERO) > 0) {
+            if (character.getCash().compareTo(item.getPrice()) < 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nicht genug Geld");
+            }
+            character.setCash(character.getCash().subtract(item.getPrice()));
+        }
+
+        character.setHunger(clamp(character.getHunger() + item.getHungerEffect()));
+        character.setEnergy(clamp(character.getEnergy() + item.getEnergyEffect()));
+        character.setHappiness(clamp(character.getHappiness() + item.getHappinessEffect()));
+        character.setStress(clamp(character.getStress() + item.getStressEffect()));
+
+        if (item.isDepressionReduction() && character.getDepressionMonthsRemaining() > 0) {
+            character.setDepressionMonthsRemaining(character.getDepressionMonthsRemaining() - 1);
+        }
+
+        characterRepository.save(character);
+        return CharacterDto.from(character);
     }
 
     public GameCharacter findOrThrow(Long playerId) {

@@ -45,6 +45,29 @@
       </div>
     </div>
 
+    <!-- SCHUFA Breakdown -->
+    <div class="card" v-if="breakdown">
+      <h3 class="text-base font-semibold text-white mb-4">So setzt sich dein Score zusammen</h3>
+      <div class="space-y-2">
+        <div
+          v-for="f in breakdown.factors"
+          :key="f.label"
+          class="flex items-center gap-3"
+        >
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-300">{{ f.label }}</p>
+            <p class="text-xs text-gray-500">{{ f.detail }}</p>
+          </div>
+          <span
+            class="text-sm font-mono font-semibold flex-shrink-0"
+            :class="f.impact > 0 ? 'text-green-400' : f.impact < 0 ? 'text-red-400' : 'text-gray-400'"
+          >
+            {{ f.impact > 0 ? '+' : '' }}{{ f.impact }}
+          </span>
+        </div>
+      </div>
+    </div>
+
     <!-- Active Loans -->
     <div class="card">
       <h3 class="text-base font-semibold text-white mb-4">Aktive Kredite</h3>
@@ -197,6 +220,8 @@ const gameStore = useGameStore()
 const { formatCurrency, formatSchufaScore, formatLoanRate } = useFormatting()
 
 interface Schufa { score: number; label: string; interestRate: number }
+interface SchufaFactor { label: string; impact: number; detail: string }
+interface SchufaBreakdown { score: number; factors: SchufaFactor[] }
 interface Loan {
   id: number; label: string; amountBorrowed: number; amountRemaining: number
   interestRate: number; monthlyPayment: number; turnsRemaining: number
@@ -204,6 +229,7 @@ interface Loan {
 }
 
 const schufa = ref<Schufa | null>(null)
+const breakdown = ref<SchufaBreakdown | null>(null)
 const loans = ref<Loan[]>([])
 const submitting = ref(false)
 
@@ -240,12 +266,14 @@ const previewRate = computed(() => {
 
 async function loadAll() {
   try {
-    const [s, l] = await Promise.all([
+    const [s, l, b] = await Promise.all([
       api.get<Schufa>('/api/loans/schufa'),
       api.get<Loan[]>('/api/loans'),
+      api.get<SchufaBreakdown>('/api/loans/schufa-breakdown'),
     ])
     schufa.value = s
     loans.value = l
+    breakdown.value = b
   } catch {
     toast.error('Daten konnten nicht geladen werden')
   }

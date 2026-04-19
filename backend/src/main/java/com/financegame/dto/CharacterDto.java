@@ -12,7 +12,14 @@ public record CharacterDto(
     int energy,
     int happiness,
     int currentTurn,
-    int schufaScore
+    int schufaScore,
+    int depressionMonthsRemaining,
+    boolean burnoutActive,
+    boolean taxEvasionActive,
+    boolean taxEvasionCaughtPending,
+    BigDecimal cumulativeEvadedTaxes,
+    int jailMonthsRemaining,
+    int exileMonthsRemaining
 ) {
     public static CharacterDto from(GameCharacter c) {
         return new CharacterDto(
@@ -24,7 +31,14 @@ public record CharacterDto(
             c.getEnergy(),
             c.getHappiness(),
             c.getCurrentTurn(),
-            c.getSchufaScore()
+            c.getSchufaScore(),
+            c.getDepressionMonthsRemaining(),
+            c.isBurnoutActive(),
+            c.isTaxEvasionActive(),
+            c.isTaxEvasionCaughtPending(),
+            c.getCumulativeEvadedTaxes(),
+            c.getJailMonthsRemaining(),
+            c.getExileMonthsRemaining()
         );
     }
 }

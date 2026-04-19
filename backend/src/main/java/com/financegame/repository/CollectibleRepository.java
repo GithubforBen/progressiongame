@@ -22,4 +22,20 @@ public class CollectibleRepository {
     public Optional<Collectible> findById(Long id) {
         return Optional.ofNullable(em.find(Collectible.class, id));
     }
+
+    public List<Collectible> findByCollectionName(String collectionName) {
+        return em.createQuery(
+                "SELECT c FROM Collectible c WHERE c.collectionName = :name ORDER BY c.rarity",
+                Collectible.class)
+            .setParameter("name", collectionName)
+            .getResultList();
+    }
+
+    public List<Collectible> findByCountryRequired(String country) {
+        return em.createQuery(
+                "SELECT c FROM Collectible c WHERE c.countryRequired = :country ORDER BY c.rarity",
+                Collectible.class)
+            .setParameter("country", country)
+            .getResultList();
+    }
 }

@@ -1,5 +1,6 @@
 package com.financegame.service;
 
+import com.financegame.domain.events.PlayerRegisteredEvent;
 import com.financegame.dto.AuthResponse;
 import com.financegame.dto.LoginRequest;
 import com.financegame.dto.RegisterRequest;
@@ -13,6 +14,7 @@ import com.financegame.repository.EducationProgressRepository;
 import com.financegame.repository.MonthlyExpenseRepository;
 import com.financegame.repository.PlayerRepository;
 import com.financegame.repository.PlayerTravelRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ public class AuthService {
     private final PlayerTravelRepository playerTravelRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AuthService(
         PlayerRepository playerRepository,
@@ -39,7 +42,8 @@ public class AuthService {
         MonthlyExpenseRepository monthlyExpenseRepository,
         PlayerTravelRepository playerTravelRepository,
         PasswordEncoder passwordEncoder,
-        JwtService jwtService
+        JwtService jwtService,
+        ApplicationEventPublisher eventPublisher
     ) {
         this.playerRepository = playerRepository;
         this.characterRepository = characterRepository;
@@ -48,6 +52,7 @@ public class AuthService {
         this.playerTravelRepository = playerTravelRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -68,6 +73,9 @@ public class AuthService {
         initTravel(player.getId());
 
         String token = jwtService.generateToken(player.getUsername(), player.getId());
+
+        eventPublisher.publishEvent(new PlayerRegisteredEvent(player.getId(), player.getUsername()));
+
         return new AuthResponse(token, new AuthResponse.UserDto(player.getId(), player.getUsername()));
     }
 

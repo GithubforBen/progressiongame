@@ -1,6 +1,7 @@
 package com.financegame.controller;
 
 import com.financegame.dto.LoanDto;
+import com.financegame.dto.SchufaBreakdownDto;
 import com.financegame.dto.SchufaDto;
 import com.financegame.dto.TakeLoanRequest;
 import com.financegame.security.PlayerPrincipal;
@@ -29,6 +30,11 @@ public class LoanController {
     @GetMapping("/schufa")
     public SchufaDto getSchufa(@AuthenticationPrincipal PlayerPrincipal principal) {
         return loanService.getSchufa(principal.id());
+    }
+
+    @GetMapping("/schufa-breakdown")
+    public SchufaBreakdownDto getSchufaBreakdown(@AuthenticationPrincipal PlayerPrincipal principal) {
+        return loanService.getSchufaBreakdown(principal.id());
     }
 
     @PostMapping("/take")

@@ -26,19 +26,22 @@ public class JobService {
     private final JobApplicationRepository jobApplicationRepository;
     private final EducationProgressRepository educationProgressRepository;
     private final CharacterRepository characterRepository;
+    private final EducationService educationService;
 
     public JobService(
         JobRepository jobRepository,
         PlayerJobRepository playerJobRepository,
         JobApplicationRepository jobApplicationRepository,
         EducationProgressRepository educationProgressRepository,
-        CharacterRepository characterRepository
+        CharacterRepository characterRepository,
+        EducationService educationService
     ) {
         this.jobRepository = jobRepository;
         this.playerJobRepository = playerJobRepository;
         this.jobApplicationRepository = jobApplicationRepository;
         this.educationProgressRepository = educationProgressRepository;
         this.characterRepository = characterRepository;
+        this.educationService = educationService;
     }
 
     @Transactional(readOnly = true)
@@ -61,7 +64,7 @@ public class JobService {
             boolean meetsEdu = meetsEducationRequirementWithJson(completed, job);
             boolean meetsSide = meetsSideCertRequirement(completed, job);
             boolean meetsExp = totalExperience >= job.getRequiredMonthsExperience();
-            String sideCertName = EducationService.sideCertLabel(job.getRequiredSideCert());
+            String sideCertName = educationService.sideCertLabel(job.getRequiredSideCert());
             return JobDto.from(job, meetsEdu && meetsSide && meetsExp,
                 appliedJobIds.contains(job.getId()),
                 activeJobIds.contains(job.getId()),
