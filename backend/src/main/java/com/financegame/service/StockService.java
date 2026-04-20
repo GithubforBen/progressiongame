@@ -44,7 +44,7 @@ public class StockService {
     public List<StockDto> getAllStocks(Long playerId) {
         List<String> completedStages = getCompletedStages(playerId);
         return stockRepository.findAll().stream()
-            .map(s -> StockDto.from(s, historyRepository.findByStockIdOrderByTurnAsc(s.getId()), completedStages))
+            .map(s -> StockDto.from(s, historyRepository.findByStockIdAndPlayerIdOrderByTurnAsc(s.getId(), playerId), completedStages))
             .toList();
     }
 
@@ -53,44 +53,39 @@ public class StockService {
         Stock s = stockRepository.findByTicker(ticker)
             .orElseThrow(() -> new RuntimeException("Aktie nicht gefunden: " + ticker));
         List<String> completedStages = getCompletedStages(playerId);
-        return StockDto.from(s, historyRepository.findByStockIdOrderByTurnAsc(s.getId()), completedStages);
+        return StockDto.from(s, historyRepository.findByStockIdAndPlayerIdOrderByTurnAsc(s.getId(), playerId), completedStages);
     }
 
     /**
-     * Called once per turn by TurnService.
-     * Applies random price movement and updates all open positions.
+     * Called once per turn by TurnService. Simulates prices independently per player.
      */
     @Transactional
-    public void simulatePrices(int currentTurn) {
+    public void simulatePrices(Long playerId, int currentTurn) {
         List<Stock> stocks = stockRepository.findAll();
         for (Stock stock : stocks) {
-            BigDecimal newPrice;
-
-            if (historyRepository.existsByStockIdAndTurn(stock.getId(), currentTurn)) {
-                // Another player already simulated prices for this turn — skip price movement,
-                // use the current price already stored.
-                newPrice = stock.getCurrentPrice();
-            } else {
-                newPrice = applyPriceMovement(stock);
-                stock.setCurrentPrice(newPrice);
-                stockRepository.save(stock);
-                historyRepository.save(new StockPriceHistory(stock.getId(), newPrice, currentTurn));
+            if (historyRepository.existsByStockIdAndPlayerIdAndTurn(stock.getId(), playerId, currentTurn)) {
+                continue;
             }
 
-            // Always update open investment positions with the current price
-            for (Investment inv : investmentRepository.findByStockId(stock.getId())) {
+            BigDecimal currentPrice = historyRepository
+                .findLatestPriceByStockIdAndPlayerId(stock.getId(), playerId)
+                .orElse(stock.getCurrentPrice());
+
+            BigDecimal newPrice = applyPriceMovement(currentPrice, stock.getType());
+            historyRepository.save(new StockPriceHistory(stock.getId(), playerId, newPrice, currentTurn));
+
+            for (Investment inv : investmentRepository.findByPlayerIdAndStockId(playerId, stock.getId())) {
                 inv.setCurrentValue(newPrice.multiply(inv.getQuantity()).setScale(2, RoundingMode.HALF_UP));
                 investmentRepository.save(inv);
             }
         }
     }
 
-    private BigDecimal applyPriceMovement(Stock stock) {
-        double maxSwing = gameConfig.getStockVolatility()
-            .getOrDefault(stock.getType(), 0.15);
+    private BigDecimal applyPriceMovement(BigDecimal currentPrice, String stockType) {
+        double maxSwing = gameConfig.getStockVolatility().getOrDefault(stockType, 0.15);
         double change = (random.nextDouble() * 2 - 1) * maxSwing;
         BigDecimal factor = BigDecimal.valueOf(1 + change);
-        return stock.getCurrentPrice()
+        return currentPrice
             .multiply(factor)
             .max(BigDecimal.valueOf(0.01))
             .setScale(2, RoundingMode.HALF_UP);

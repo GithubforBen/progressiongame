@@ -28,6 +28,14 @@ public class InvestmentRepository {
             .getResultList();
     }
 
+    public List<Investment> findByPlayerIdAndStockId(Long playerId, Long stockId) {
+        return em.createQuery(
+                "SELECT i FROM Investment i WHERE i.playerId = :playerId AND i.stockId = :stockId", Investment.class)
+            .setParameter("playerId", playerId)
+            .setParameter("stockId", stockId)
+            .getResultList();
+    }
+
     public Optional<Investment> findById(Long id) {
         return Optional.ofNullable(em.find(Investment.class, id));
     }

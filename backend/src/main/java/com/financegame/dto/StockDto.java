@@ -25,11 +25,16 @@ public record StockDto(
             .map(h -> new PricePointDto(h.getPrice(), h.getTurn()))
             .toList();
 
+        // Derive the player's current price from their personal history; fall back to seed price
+        BigDecimal currentPrice = history.isEmpty()
+            ? stock.getCurrentPrice()
+            : history.get(history.size() - 1).getPrice();
+
         BigDecimal changePct = null;
         if (history.size() >= 2) {
             BigDecimal prev = history.get(history.size() - 2).getPrice();
             if (prev.compareTo(BigDecimal.ZERO) != 0) {
-                changePct = stock.getCurrentPrice()
+                changePct = currentPrice
                     .subtract(prev)
                     .divide(prev, 4, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100))
@@ -45,7 +50,7 @@ public record StockDto(
             stock.getName(),
             stock.getTicker(),
             stock.getType(),
-            stock.getCurrentPrice(),
+            currentPrice,
             changePct,
             points,
             req,

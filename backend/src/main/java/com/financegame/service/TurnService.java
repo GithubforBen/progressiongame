@@ -247,7 +247,7 @@ public class TurnService {
         characterRepository.save(character);
 
         // --- 9b. Simulate stock prices ---
-        stockService.simulatePrices(currentTurn);
+        stockService.simulatePrices(playerId, currentTurn);
 
         // --- 9c. Recalculate net worth and reload ---
         characterService.recalculateNetWorth(playerId);

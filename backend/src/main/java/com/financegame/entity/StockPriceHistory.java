@@ -14,6 +14,9 @@ public class StockPriceHistory {
     @Column(name = "stock_id", nullable = false)
     private Long stockId;
 
+    @Column(name = "player_id", nullable = false)
+    private Long playerId;
+
     @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
@@ -22,14 +25,16 @@ public class StockPriceHistory {
 
     public StockPriceHistory() {}
 
-    public StockPriceHistory(Long stockId, BigDecimal price, int turn) {
+    public StockPriceHistory(Long stockId, Long playerId, BigDecimal price, int turn) {
         this.stockId = stockId;
+        this.playerId = playerId;
         this.price = price;
         this.turn = turn;
     }
 
     public Long getId() { return id; }
     public Long getStockId() { return stockId; }
+    public Long getPlayerId() { return playerId; }
     public BigDecimal getPrice() { return price; }
     public int getTurn() { return turn; }
 }
