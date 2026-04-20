@@ -58,7 +58,7 @@ Format im `completed_stages` TEXT[]-Array:
 
 ## Implementierte Features (vollständig)
 
-### Flyway-Migrationen V1–V13
+### Flyway-Migrationen V1–V14
 
 | Migration | Inhalt |
 |---|---|
@@ -75,6 +75,7 @@ Format im `completed_stages` TEXT[]-Array:
 | V11 | Erweiterte Stock-Typen (DIVIDEND_STOCK, BOND, REIT, LEVERAGE, WARRANT, SHORT, FUTURES) |
 | V12 | Bedürfnissystem (needs_items, depression_months_remaining + burnout_active auf characters) |
 | V13 | Steuerhinterziehung (tax_evasion_active, tax_evasion_caught_pending, cumulative_evaded_taxes, jail_months_remaining, exile_months_remaining auf characters) |
+| V14 | Social Rework (player_social_relationships, player_social_group_unlocks, social_action_log, total_jail_months_served auf characters) |
 
 ### Feature Wave 2 (vollständig implementiert)
 
@@ -156,16 +157,80 @@ Format im `completed_stages` TEXT[]-Array:
 
 ---
 
+### Social Rework (aktuelle Session)
+
+**Design:** 36 Personen in 8 Gruppen (OPEN/EXCLUSIVE), Score 0–100 pro Person, passiver Decay −1/Monat, 4 Aktionen pro Person, Netzwerk-Discovery über Threshold.
+
+**Gruppen:**
+
+| ID | Typ | Voraussetzung |
+|---|---|---|
+| NACHBARSCHAFT | OPEN | — |
+| GASTRONOMEN | OPEN | — |
+| AKADEMIKER | OPEN | Bachelor-Abschluss |
+| GESCHAEFTSLEUTE | EXCLUSIVE | Nettovermögen ≥ 50.000€ |
+| INVESTOREN | EXCLUSIVE | Nettovermögen ≥ 200.000€ |
+| KRIMINELLE | OPEN | — |
+| REISELUSTIGE | OPEN | — |
+| ELITE | EXCLUSIVE | Nettovermögen ≥ 1.000.000€ |
+
+**Aktionen:**
+- `spendTime`: max 4×/Monat, +8 Score
+- `giveGift`: beliebig oft (Cash-Kosten), +20 Score, optionale Voraussetzungs-Condition
+- `insult`: max 1×/Monat, −15 Score, setzt hadConflict=true
+- `rob`: max 1×/Monat, 20–50% Erfolg (je Score), bei ERWISCHT: −40 Opfer, −15 alle Gruppenmitglieder, 3-Monats-Sperre
+
+**Boost-Typen (alle 20 aus Tabelle in promt.md implementiert):** werden monatlich im TurnService angewendet, Score-proportional (score/100 × boostValue).
+
+**Backend – neue Dateien:**
+- `V14__social_rework.sql`: 3 neue Tabellen + `total_jail_months_served` auf `characters`
+- `resources/data/persons.yaml`: 36 Personen, 8 Gruppen, vollständige Conditions/Boosts/Gifts
+- `entity/PlayerSocialRelationship.java` + `PlayerSocialRelationshipId.java` (@IdClass)
+- `entity/PlayerSocialGroupUnlock.java` + `PlayerSocialGroupUnlockId.java` (@IdClass)
+- `repository/PlayerSocialRelationshipRepository.java`
+- `repository/PlayerSocialGroupUnlockRepository.java`
+- `domain/social/PersonDef.java`, `GroupDef.java`, `BoostDef.java`, `GiftRequirement.java`
+- `domain/condition/MinNetWorthCondition.java`, `OwnsCollectionCondition.java`, `HasRelationshipScoreCondition.java`, `HadConflictWithCondition.java`, `MinJailMonthsServedCondition.java`
+- `domain/events/RelationshipChangedEvent.java`, `GroupUnlockedEvent.java`, `RobAttemptedEvent.java`, `SocialActionLockAppliedEvent.java`
+- `service/PersonService.java`: @PostConstruct lädt persons.yaml, YAML-Condition-Parser (alle 9 Typen)
+- `service/SocialService.java`: alle Aktionen + `advanceSocials()` + `getActiveBoosts()` + innere DTOs
+- `controller/SocialController.java`: `GET /api/social/network`, `POST /api/social/persons/{id}/time|gift|insult|rob`
+- `listener/SocialEventListener.java`: EventLog-Einträge für RelationshipChanged, GroupUnlocked, RobAttempted
+
+**Backend – geänderte Dateien:**
+- `domain/GameContext.java`: +`completedCollections`, `relationshipScores`, `hadConflictsWith`
+- `domain/GameContextFactory.java`: +CollectionService + PlayerSocialRelationshipRepo für neue Felder
+- `entity/GameCharacter.java`: +`totalJailMonthsServed`
+- `service/TurnService.java`: `advanceSocials()` ersetzt `advanceRelationships()`, Social-Stat-Boosts (HAPPINESS/STRESS/ENERGY/SCHUFA) direkt auf character
+- `service/CollectionService.java`, `LoanService.java`, `RealEstateService.java`, `TravelService.java`: GameContext-Konstruktor-Calls mit 3 leeren neuen Feldern erweitert (`Set.of(), Map.of(), Set.of()`)
+
+**Frontend:**
+- `beziehungen.vue`: Komplett neu als SVG Node-Graph mit Pan/Zoom, Score-Ringen (SVG stroke-dasharray), Gruppen-Cluster-Labels, klickbare Nodes, Detail-Panel (Score-Balken, Boost-Info, Unlock-Anforderungen, 4 Aktionsbuttons)
+
+**Wichtig – altes NPC-System:**
+- `entity/Npc.java`, `PlayerRelationship.java`, `service/RelationshipService.java`, `controller/RelationshipController.java` bleiben unberührt (DB-Kompatibilität, `npcs`/`player_relationships` Tabellen bleiben)
+- `GET /api/npcs` funktioniert weiterhin — aber `beziehungen.vue` zeigt nur noch das neue System
+
+**Offene TODOs für nächste Session:**
+- Boost-Typen über einfache Stat-Boosts hinaus (LOAN_INTEREST_REDUCTION, PROPERTY_PRICE_DISCOUNT, TRAVEL_COST_REDUCTION, etc.) in den jeweiligen Services verdrahten (LoanService, RealEstateService, TravelService, CollectibleService, TaxEvasionService)
+- `totalJailMonthsServed` in TurnService inkrementieren wenn Gefängnismonat abläuft (aktuell immer 0)
+- Frontend-Tests / E2E-Verifikation nach Deployment
+
+---
+
 ## Wichtige Dateipfade
 
 ```
 progressiongame/
 ├── docker-compose.yml
 ├── HANDOFF.md
+├── promt.md                                ← Vollständiger Social-Rework-Plan (Cold-Start-Kontext)
 ├── backend/src/main/
 │   ├── java/com/financegame/
 │   │   ├── entity/
-│   │   │   ├── GameCharacter.java          ← +depression/burnout/taxEvasion/jail/exile Felder
+│   │   │   ├── GameCharacter.java          ← +depression/burnout/taxEvasion/jail/exile/totalJailMonthsServed
+│   │   │   ├── PlayerSocialRelationship.java   ← NEU (Social Rework)
+│   │   │   ├── PlayerSocialGroupUnlock.java    ← NEU
 │   │   │   ├── EducationProgress.java      ← completedStages TEXT[]
 │   │   │   ├── Job.java, PlayerJob.java, JobApplication.java
 │   │   │   ├── Investment.java, Stock.java
@@ -174,55 +239,68 @@ progressiongame/
 │   │   │   ├── PlayerLoan.java
 │   │   │   ├── PlayerTravel.java, Country.java, ActiveEvent.java
 │   │   │   ├── GamblingSession.java
-│   │   │   └── Npc.java, PlayerRelationship.java
+│   │   │   └── Npc.java, PlayerRelationship.java  ← alt, bleibt (kein Delete)
+│   │   ├── domain/
+│   │   │   ├── GameContext.java            ← +completedCollections, relationshipScores, hadConflictsWith
+│   │   │   ├── GameContextFactory.java     ← +CollectionService + SocialRelRepo
+│   │   │   ├── condition/                  ← +MinNetWorth, OwnsCollection, HasRelationshipScore, HadConflictWith, MinJailMonthsServed
+│   │   │   ├── events/                     ← +RelationshipChanged, GroupUnlocked, RobAttempted, SocialActionLockApplied
+│   │   │   └── social/                     ← NEU: PersonDef, GroupDef, BoostDef, GiftRequirement
 │   │   ├── dto/
-│   │   │   ├── CharacterDto.java           ← alle 16 Felder inkl. Tax-Evasion
+│   │   │   ├── CharacterDto.java           ← alle Felder inkl. Tax-Evasion
 │   │   │   └── TurnResultDto.java          ← +taxEvasionCaught, taxEvasionCaughtAmount
 │   │   ├── service/
-│   │   │   ├── TurnService.java            ← jail/exile ticks, evasion hook, Hilfsmethoden
-│   │   │   ├── TaxEvasionService.java      ← NEU
+│   │   │   ├── TurnService.java            ← advanceSocials statt advanceRelationships, Social-Boosts
+│   │   │   ├── SocialService.java          ← NEU: Aktionen + getNetwork + getActiveBoosts + innere DTOs
+│   │   │   ├── PersonService.java          ← NEU: YAML-Loader für persons.yaml
+│   │   │   ├── TaxEvasionService.java
 │   │   │   ├── CharacterService.java       ← purchaseNeedItem()
-│   │   │   ├── EducationService.java       ← loadEducationData() aus YAML, loadDefaults()
+│   │   │   ├── EducationService.java       ← loadEducationData() aus YAML
 │   │   │   ├── GameDataLoaderService.java  ← loadCollections/Jobs/Collectibles/RealEstate/NeedsItems/Stocks
-│   │   │   ├── LoanService.java            ← clampSchufa() static, getSchufaBreakdown()
+│   │   │   ├── LoanService.java            ← clampSchufa(), getSchufaBreakdown()
 │   │   │   ├── StockService.java, CollectibleService.java, TravelService.java
 │   │   │   ├── GamblingService.java, RandomEventService.java
-│   │   │   ├── RelationshipService.java, RealEstateService.java
-│   │   │   └── CollectionService.java
+│   │   │   ├── RelationshipService.java    ← alt, bleibt (kein Delete)
+│   │   │   ├── RealEstateService.java, CollectionService.java
+│   │   │   └── [weitere Services]
+│   │   ├── repository/
+│   │   │   ├── PlayerSocialRelationshipRepository.java  ← NEU
+│   │   │   ├── PlayerSocialGroupUnlockRepository.java   ← NEU
+│   │   │   └── [alle anderen Repositories]
+│   │   ├── listener/
+│   │   │   ├── SocialEventListener.java    ← NEU
+│   │   │   └── [weitere Listener]
 │   │   └── controller/
-│   │       ├── TaxEvasionController.java   ← NEU (/api/tax-evasion/*)
+│   │       ├── SocialController.java       ← NEU (/api/social/*)
+│   │       ├── TaxEvasionController.java   ← /api/tax-evasion/*
 │   │       ├── LoanController.java         ← /api/loans/schufa-breakdown
 │   │       ├── NeedsController.java        ← /api/needs/*
 │   │       └── [alle anderen Controller]
 │   └── resources/
 │       ├── data/
+│       │   ├── persons.yaml                ← NEU: 36 Personen, 8 Gruppen
 │       │   ├── education.yaml              ← STEUERHINTERZIEHUNG Family am Ende
 │       │   ├── jobs.yaml                   ← 51 Jobs
 │       │   ├── stocks.yaml                 ← 127 Stocks
-│       │   ├── collectibles.yaml
-│       │   ├── real_estate.yaml
-│       │   ├── collections.yaml
-│       │   └── needs_items.yaml
+│       │   ├── collectibles.yaml, real_estate.yaml, collections.yaml, needs_items.yaml
 │       └── db/migration/
-│           ├── V1–V12 (bestehend)
-│           └── V13__tax_evasion.sql        ← NEU
+│           ├── V1–V13 (bestehend)
+│           └── V14__social_rework.sql      ← NEU
 └── frontend/
     ├── layouts/default.vue                 ← v7 Badge, MonthlyBalanceSheet eingebunden
-    ├── stores/game.ts                      ← Character +5 Tax-Felder, TurnResult +2, toggleTaxEvasion/resolveCaught
+    ├── stores/game.ts                      ← Character +5 Tax-Felder, TurnResult +2
     ├── components/
     │   ├── Sidebar.vue                     ← 🕵️ Steuerhinterziehung + Pulse
     │   └── MonthlyBalanceSheet.vue         ← caught-Sektion, "Weiter" gesperrt
     └── pages/
-        ├── steuerhinterziehung.vue         ← NEU
+        ├── beziehungen.vue                 ← NEU: SVG Node-Graph mit Pan/Zoom + Detail-Panel
+        ├── steuerhinterziehung.vue
         ├── karriere.vue                    ← Pan/Zoom-Baum
         ├── ausbildung.vue                  ← Pan/Zoom-Baum
         ├── investitionen.vue               ← Suche + Filter + gesperrte Stocks
-        ├── beduerfnisse.vue                ← Kaufseite + Needs-Balken + Status-Banner
+        ├── beduerfnisse.vue
         ├── reisen.vue                      ← SVG-Weltkarte
-        ├── sammlungen.vue                  ← Suche + Filter
-        ├── kredite.vue                     ← SCHUFA-Breakdown
-        ├── gluecksspiel.vue                ← Slots/BJ/Poker
-        ├── beziehungen.vue, immobilien.vue, rangliste.vue
+        ├── sammlungen.vue, kredite.vue, gluecksspiel.vue
         └── [alle anderen Seiten]
 ```
 
@@ -234,6 +312,8 @@ progressiongame/
 2. **`max_parallel > 1`** wird gespeichert aber nicht durchgesetzt (player_jobs hat (player_id, job_id) PRIMARY KEY).
 3. **TurnController.endTurn()** hat redundante `@Transactional` — TurnService.endTurn() hat selbst eine.
 4. **loadDefaults() in EducationService** enthält keine STEUERHINTERZIEHUNG-Certs — falls education.yaml nicht ladbar ist, fehlen diese im Fallback.
+5. **Social Boost-Typen jenseits Stat-Boosts** (LOAN_INTEREST_REDUCTION, PROPERTY_PRICE_DISCOUNT, TRAVEL_COST_REDUCTION, COLLECTIBLE_PRICE_DISCOUNT, TAX_DETECTION_REDUCTION) sind in `SocialService.getActiveBoosts()` berechnet, aber noch **nicht** in LoanService / RealEstateService / TravelService / CollectibleService / TaxEvasionService verdrahtet. Muster: `socialService.getBoostValueForPlayer(playerId, "LOAN_INTEREST_REDUCTION")` aufrufen und vom Zinssatz subtrahieren.
+6. **`totalJailMonthsServed`** ist als Feld + Spalte vorhanden, wird aber noch **nicht inkrementiert** wenn ein Gefängnismonat abläuft (TurnService jail-tick). `MinJailMonthsServedCondition` gibt daher immer false zurück. Fix: in `TurnService` wo `jailMonthsRemaining` dekrementiert wird, `totalJailMonthsServed` inkrementieren.
 
 ---
 
@@ -242,7 +322,7 @@ progressiongame/
 - Antworten auf **Deutsch**, Code auf **Englisch**
 - Keine Spring Data JPA Repositories — immer `EntityManager` direkt
 - Neue DB-Spalten/-Tabellen → neue Flyway-Migration (nie V1 anfassen)
-- `mvn compile` nach Backend-Änderungen: `/usr/bin/mvn compile -f backend/pom.xml`
+- `mvn compile` nach Backend-Änderungen: `/opt/maven/bin/mvn compile` (aus `backend/`-Verzeichnis)
 - Docker rebuild: `docker compose build && docker compose up -d`
 - Version-Badge in `layouts/default.vue` nach jeder Session erhöhen
 
