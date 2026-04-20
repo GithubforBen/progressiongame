@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -77,7 +78,7 @@ public class RealEstateService {
         String requiredCert = catalog.getRequiredCert();
         if (requiredCert != null) {
             List<String> completedStages = getCompletedStages(playerId);
-            GameContext ctx = new GameContext(null, completedStages, null, false, 0);
+            GameContext ctx = new GameContext(null, completedStages, null, false, 0, Set.of(), Map.of(), Set.of());
             HasCertCondition certCheck = new HasCertCondition(requiredCert);
             if (!certCheck.isMet(ctx)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, certCheck.describe());

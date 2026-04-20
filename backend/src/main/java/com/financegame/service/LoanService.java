@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class LoanService {
@@ -118,7 +119,7 @@ public class LoanService {
         GameCharacter character = characterService.findOrThrow(playerId);
         int score = character.getSchufaScore();
 
-        GameContext ctx = new GameContext(character, List.of(), null, false, 0);
+        GameContext ctx = new GameContext(character, List.of(), null, false, 0, Set.of(), Map.of(), Set.of());
         MinSchufaCondition schufaCheck = new MinSchufaCondition(gameConfig.getLoan().getMinSchufa());
         if (!schufaCheck.isMet(ctx)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,

@@ -3,6 +3,8 @@ package com.financegame.domain;
 import com.financegame.entity.GameCharacter;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Snapshot of all player state needed to evaluate Conditions and apply Effects
@@ -13,5 +15,8 @@ public record GameContext(
     List<String> completedEducationStages,
     String currentCountry,
     boolean traveling,
-    int activeJobCount
+    int activeJobCount,
+    Set<String> completedCollections,
+    Map<String, Integer> relationshipScores,
+    Set<String> hadConflictsWith
 ) {}
