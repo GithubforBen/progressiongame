@@ -59,6 +59,9 @@ public class GameCharacter {
     @Column(name = "exile_months_remaining", nullable = false)
     private int exileMonthsRemaining = 0;
 
+    @Column(name = "total_jail_months_served", nullable = false)
+    private int totalJailMonthsServed = 0;
+
     // --- Getters & Setters ---
 
     public Long getId() { return id; }
@@ -111,4 +114,7 @@ public class GameCharacter {
 
     public int getExileMonthsRemaining() { return exileMonthsRemaining; }
     public void setExileMonthsRemaining(int exileMonthsRemaining) { this.exileMonthsRemaining = exileMonthsRemaining; }
+
+    public int getTotalJailMonthsServed() { return totalJailMonthsServed; }
+    public void setTotalJailMonthsServed(int totalJailMonthsServed) { this.totalJailMonthsServed = totalJailMonthsServed; }
 }

@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 public class TravelService {
@@ -57,7 +59,7 @@ public class TravelService {
     public PlayerTravelStatusDto depart(Long playerId, String countryName) {
         GameCharacter character = characterService.findOrThrow(playerId);
         PlayerTravel travel = getOrCreate(playerId);
-        GameContext ctx = new GameContext(character, List.of(), travel.getCurrentCountry(), travel.isTraveling(), 0);
+        GameContext ctx = new GameContext(character, List.of(), travel.getCurrentCountry(), travel.isTraveling(), 0, Set.of(), Map.of(), Set.of());
 
         if (!new NotInJailCondition().isMet(ctx)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,

@@ -41,6 +41,7 @@ public class TurnService {
     private final PlayerLoanRepository playerLoanRepository;
     private final CollectionService collectionService;
     private final ApplicationEventPublisher eventPublisher;
+    private final SocialService socialService;
     private final Map<String, CollectionBonusApplier> bonusApplierMap;
     private final GameConfig gameConfig;
     private final TaxService taxService;
@@ -67,7 +68,8 @@ public class TurnService {
         ApplicationEventPublisher eventPublisher,
         List<CollectionBonusApplier> bonusAppliers,
         GameConfig gameConfig,
-        TaxService taxService
+        TaxService taxService,
+        SocialService socialService
     ) {
         this.characterService = characterService;
         this.characterRepository = characterRepository;
@@ -90,6 +92,7 @@ public class TurnService {
             .collect(Collectors.toMap(CollectionBonusApplier::getBonusType, Function.identity()));
         this.gameConfig = gameConfig;
         this.taxService = taxService;
+        this.socialService = socialService;
     }
 
     @Transactional
@@ -203,9 +206,17 @@ public class TurnService {
         // --- 6. Needs decay (hunger/energy/happiness) ---
         applyNeedsDecay(character, playerId);
 
-        // --- 6b. Relationship happiness bonus ---
-        int happinessBonus = relationshipService.advanceRelationships(playerId, events);
-        character.setHappiness(clamp(character.getHappiness() + happinessBonus));
+        // --- 6b. Advance social relationships + apply stat boosts ---
+        socialService.advanceSocials(playerId);
+        for (SocialService.ActiveBoostDto boost : socialService.getActiveBoosts(playerId)) {
+            switch (boost.type()) {
+                case "HAPPINESS_PER_TURN" -> character.setHappiness(clamp(character.getHappiness() + (int) boost.totalValue()));
+                case "STRESS_REDUCTION_PER_TURN" -> character.setStress(clamp(character.getStress() - (int) boost.totalValue()));
+                case "ENERGY_BONUS_PER_TURN" -> character.setEnergy(clamp(character.getEnergy() + (int) boost.totalValue()));
+                case "SCHUFA_BONUS_MONTHLY" -> character.setSchufaScore(character.getSchufaScore() + (int) boost.totalValue());
+                default -> {} // other boost types applied elsewhere
+            }
+        }
 
         // --- 6c. Collection bonuses: stat phase (HAPPINESS_BONUS, SCHUFA_BONUS) ---
         for (CollectionService.ActiveBonus bonus : collectionBonuses) {

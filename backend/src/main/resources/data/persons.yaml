@@ -1,0 +1,477 @@
+groups:
+  - id: NACHBARSCHAFT
+    name: "Nachbarschaft"
+    type: OPEN
+    description: "Deine direkten Nachbarn"
+  - id: GASTRONOMEN
+    name: "Gastronomen"
+    type: OPEN
+    description: "Gastronomen und Servicekräfte"
+  - id: AKADEMIKER
+    name: "Akademiker"
+    type: OPEN
+    exclusiveCondition: {type: education-level, prefix: BACHELOR}
+  - id: GESCHAEFTSLEUTE
+    name: "Geschäftsleute"
+    type: EXCLUSIVE
+    exclusiveCondition: {type: min-net-worth, amount: 50000}
+  - id: INVESTOREN
+    name: "Investoren"
+    type: EXCLUSIVE
+    exclusiveCondition: {type: min-net-worth, amount: 200000}
+  - id: KRIMINELLE
+    name: "Underground"
+    type: OPEN
+    description: "Leute am Rande der Gesellschaft"
+  - id: REISELUSTIGE
+    name: "Globetrotter"
+    type: OPEN
+    description: "Weltenbummler mit Rabattcodes"
+  - id: ELITE
+    name: "Elite"
+    type: EXCLUSIVE
+    exclusiveCondition: {type: min-net-worth, amount: 1000000}
+
+persons:
+  # NACHBARSCHAFT (5 Personen)
+  - id: HANS_MUELLER
+    name: "Hans Müller"
+    description: "Freundlicher Rentner, immer gut für ein Gespräch."
+    groupIds: [NACHBARSCHAFT]
+    networkThreshold: 40
+    friendNetwork: [GRETA_SCHMIDT, JUERGEN_VOGEL]
+    wealthLevel: 1
+    boost: {type: HAPPINESS_PER_TURN, value: 3}
+    unlockCondition: null
+    giftRequirement: {cost: 30, description: "Kleines Mitbringsel"}
+
+  - id: GRETA_SCHMIDT
+    name: "Greta Schmidt"
+    description: "Pensionierte Lehrerin mit vielen Kontakten."
+    groupIds: [NACHBARSCHAFT]
+    networkThreshold: 50
+    friendNetwork: [RENATE_BAUER, OSMAN_DEMIR]
+    wealthLevel: 1
+    boost: {type: STRESS_REDUCTION_PER_TURN, value: 2}
+    unlockCondition: {type: has-relationship-score, personId: HANS_MUELLER, minScore: 30}
+    giftRequirement: {cost: 50, description: "Blumenstrauß"}
+
+  - id: RENATE_BAUER
+    name: "Renate Bauer"
+    description: "Geschickte Haushaltsführerin, kennt jeden Spar-Trick."
+    groupIds: [NACHBARSCHAFT]
+    networkThreshold: 60
+    friendNetwork: []
+    wealthLevel: 1
+    boost: {type: EXPENSE_REDUCTION, value: 0.03}
+    unlockCondition: {type: has-relationship-score, personId: GRETA_SCHMIDT, minScore: 40}
+    giftRequirement: {cost: 80, description: "Kochbuch"}
+
+  - id: KARL_WEBER
+    name: "Karl Weber"
+    description: "Geselliger Typ, kennt die halbe Stadt."
+    groupIds: [NACHBARSCHAFT, GASTRONOMEN]
+    networkThreshold: 30
+    friendNetwork: [OSMAN_DEMIR, YUKI_TANAKA]
+    wealthLevel: 2
+    boost: {type: HAPPINESS_PER_TURN, value: 2}
+    unlockCondition: null
+    giftRequirement: {cost: 40, description: "Sixpack Bier"}
+
+  - id: JUERGEN_VOGEL
+    name: "Jürgen Vogel"
+    description: "Ehemaliger Buchhalter, kennt die Steuergesetze in- und auswendig."
+    groupIds: [NACHBARSCHAFT]
+    networkThreshold: 70
+    friendNetwork: [DIRK_HOFFMANN]
+    wealthLevel: 2
+    boost: {type: TAX_DETECTION_REDUCTION, value: 0.03}
+    unlockCondition: {type: has-relationship-score, personId: HANS_MUELLER, minScore: 50}
+    giftRequirement: {cost: 120, description: "Steuersoftware-Lizenz"}
+
+  # GASTRONOMEN (4)
+  - id: OSMAN_DEMIR
+    name: "Osman Demir"
+    description: "Betreibt die beste Bar im Viertel."
+    groupIds: [GASTRONOMEN]
+    networkThreshold: 40
+    friendNetwork: [YUKI_TANAKA, PETRA_KURZ]
+    wealthLevel: 2
+    boost: {type: HAPPINESS_PER_TURN, value: 4}
+    unlockCondition: null
+    giftRequirement: {cost: 60, description: "Flasche Whisky"}
+
+  - id: YUKI_TANAKA
+    name: "Yuki Tanaka"
+    description: "Japanische Restaurantbesitzerin, Meisterin der Effizienz."
+    groupIds: [GASTRONOMEN]
+    networkThreshold: 50
+    friendNetwork: []
+    wealthLevel: 2
+    boost: {type: HUNGER_DECAY_REDUCTION, value: 3}
+    unlockCondition: null
+    giftRequirement: {cost: 100, description: "Premium-Sake"}
+
+  - id: PETRA_KURZ
+    name: "Petra Kurz"
+    description: "Energiegeladene Bäckerin, die jeden Morgen um 4 Uhr aufsteht."
+    groupIds: [GASTRONOMEN]
+    networkThreshold: 40
+    friendNetwork: []
+    wealthLevel: 1
+    boost: {type: ENERGY_BONUS_PER_TURN, value: 3}
+    unlockCondition: {type: has-relationship-score, personId: OSMAN_DEMIR, minScore: 30}
+    giftRequirement: {cost: 50, description: "Premium-Kaffeeröstung"}
+
+  - id: SARAH_HOFFMANN
+    name: "Sarah Hoffmann"
+    description: "Optimistische Studentin, bringt frischen Wind."
+    groupIds: [GASTRONOMEN, AKADEMIKER]
+    networkThreshold: 35
+    friendNetwork: [LISA_KRAUSE, ANNA_WOLF]
+    wealthLevel: 1
+    boost: {type: HAPPINESS_PER_TURN, value: 3}
+    unlockCondition: null
+    giftRequirement: {cost: 40, description: "Konzertkarten"}
+
+  # AKADEMIKER (5)
+  - id: DR_MUELLER
+    name: "Dr. Müller"
+    description: "Erfahrener Unternehmer mit starkem Netzwerk."
+    groupIds: [AKADEMIKER, GESCHAEFTSLEUTE]
+    networkThreshold: 60
+    friendNetwork: [PROF_FISCHER, MONIKA_SCHAEFER]
+    wealthLevel: 3
+    boost: {type: JOB_ACCEPTANCE_BOOST, value: 0.10}
+    unlockCondition: {type: education-level, prefix: BACHELOR}
+    giftRequirement:
+      cost: 300
+      condition: {type: education-level, prefix: BACHELOR}
+      description: "Fachbuch + Nachweis Bachelor-Abschluss"
+
+  - id: PROF_FISCHER
+    name: "Prof. Fischer"
+    description: "Universitätsprofessor für Volkswirtschaft."
+    groupIds: [AKADEMIKER]
+    networkThreshold: 70
+    friendNetwork: [THOMAS_BRAUN]
+    wealthLevel: 3
+    boost: {type: SALARY_BONUS, value: 100}
+    unlockCondition:
+      type: all-of
+      conditions:
+        - {type: education-level, prefix: BACHELOR}
+        - {type: has-relationship-score, personId: DR_MUELLER, minScore: 40}
+    giftRequirement:
+      cost: 500
+      condition: {type: education-level, prefix: MASTER}
+      description: "Wissenschaftliche Publikation + Master-Abschluss"
+
+  - id: LISA_KRAUSE
+    name: "Lisa Krause"
+    description: "HR-Managerin bei einem großen Konzern."
+    groupIds: [AKADEMIKER, GESCHAEFTSLEUTE]
+    networkThreshold: 50
+    friendNetwork: [MONIKA_SCHAEFER]
+    wealthLevel: 3
+    boost: {type: JOB_ACCEPTANCE_BOOST, value: 0.08}
+    unlockCondition: {type: has-relationship-score, personId: SARAH_HOFFMANN, minScore: 40}
+    giftRequirement: {cost: 200, description: "Karrierecoaching-Session"}
+
+  - id: THOMAS_BRAUN
+    name: "Thomas Braun"
+    description: "Kreditberater mit exzellenten Bankkontakten."
+    groupIds: [AKADEMIKER, GESCHAEFTSLEUTE]
+    networkThreshold: 60
+    friendNetwork: [STEFAN_BRANDT]
+    wealthLevel: 3
+    boost: {type: SCHUFA_BONUS_MONTHLY, value: 2}
+    unlockCondition: {type: education-level, prefix: BACHELOR}
+    giftRequirement: {cost: 250, description: "Exklusiver Terminplaner"}
+
+  - id: ANNA_WOLF
+    name: "Anna Wolf"
+    description: "Psychologin, die dir hilft Stress abzubauen."
+    groupIds: [AKADEMIKER]
+    networkThreshold: 45
+    friendNetwork: []
+    wealthLevel: 2
+    boost: {type: STRESS_REDUCTION_PER_TURN, value: 4}
+    unlockCondition: {type: has-relationship-score, personId: SARAH_HOFFMANN, minScore: 30}
+    giftRequirement: {cost: 150, description: "Entspannungs-Kurs Gutschein"}
+
+  # GESCHAEFTSLEUTE (5)
+  - id: STEFAN_BRANDT
+    name: "Stefan Brandt"
+    description: "Filialleiter der Sparkasse, diskret und zuverlässig."
+    groupIds: [GESCHAEFTSLEUTE]
+    networkThreshold: 60
+    friendNetwork: [CLARA_RICHTER, MONIKA_SCHAEFER]
+    wealthLevel: 3
+    boost: {type: LOAN_INTEREST_REDUCTION, value: 0.01}
+    unlockCondition: {type: min-net-worth, amount: 10000}
+    giftRequirement:
+      cost: 600
+      condition: {type: has-cert, certKey: WEITERBILDUNG_BUCHHALTUNG_1}
+      description: "Exklusiver Wein + Buchhaltungskenntnisse"
+
+  - id: FRANK_ZIMMERMANN
+    name: "Frank Zimmermann"
+    description: "Immobilienmakler mit den besten Deals in der Stadt."
+    groupIds: [GESCHAEFTSLEUTE]
+    networkThreshold: 55
+    friendNetwork: [ISABELLA_VON_HOHENSTEIN]
+    wealthLevel: 3
+    boost: {type: PROPERTY_PRICE_DISCOUNT, value: 0.05}
+    unlockCondition: {type: min-net-worth, amount: 20000}
+    giftRequirement:
+      cost: 800
+      condition: {type: has-cert, certKey: WEITERBILDUNG_IMMOBILIEN_1}
+      description: "Hochwertige Geschäftsreise-Tasche"
+
+  - id: MONIKA_SCHAEFER
+    name: "Monika Schäfer"
+    description: "Personalchefin mit Einfluss auf Bewerbungsverfahren."
+    groupIds: [GESCHAEFTSLEUTE]
+    networkThreshold: 50
+    friendNetwork: [LISA_KRAUSE]
+    wealthLevel: 3
+    boost: {type: JOB_ACCEPTANCE_BOOST, value: 0.12}
+    unlockCondition: {type: min-net-worth, amount: 15000}
+    giftRequirement: {cost: 400, description: "Business-Dinner Einladung"}
+
+  - id: DIRK_HOFFMANN
+    name: "Dirk Hoffmann"
+    description: "Steuerberater, der gerne ein Auge zudrückt."
+    groupIds: [GESCHAEFTSLEUTE, KRIMINELLE]
+    networkThreshold: 65
+    friendNetwork: [TINA_SCHWARZ]
+    wealthLevel: 3
+    boost: {type: TAX_DETECTION_REDUCTION, value: 0.05}
+    unlockCondition:
+      type: any-of
+      conditions:
+        - {type: has-relationship-score, personId: JUERGEN_VOGEL, minScore: 60}
+        - {type: has-cert, certKey: WEITERBILDUNG_STEUERN_2}
+    giftRequirement:
+      cost: 1000
+      condition: {type: has-cert, certKey: WEITERBILDUNG_STEUERHINTERZIEHUNG_1}
+      description: "Offshore-Tipp + Steuerhinterziehungs-Wissen"
+
+  - id: SANDRA_KOCH
+    name: "Sandra Koch"
+    description: "Erfolgreiche Unternehmerin mit breitem Netzwerk."
+    groupIds: [GESCHAEFTSLEUTE]
+    networkThreshold: 70
+    friendNetwork: [VIKTOR_LEHMANN, SIR_REGINALD]
+    wealthLevel: 4
+    boost: {type: SALARY_MULTIPLIER_BONUS, value: 0.03}
+    unlockCondition: {type: min-net-worth, amount: 30000}
+    giftRequirement: {cost: 1200, description: "Luxus-Uhr"}
+
+  # INVESTOREN (4)
+  - id: MARCO_RICHTER
+    name: "Marco Richter"
+    description: "Ehrgeiziger Trader mit Insider-Kontakten."
+    groupIds: [INVESTOREN]
+    networkThreshold: 65
+    friendNetwork: [CLARA_RICHTER, VIKTOR_LEHMANN]
+    wealthLevel: 4
+    boost: {type: STOCK_VOLATILITY_REDUCTION, value: 0.05}
+    unlockCondition:
+      type: all-of
+      conditions:
+        - {type: min-net-worth, amount: 50000}
+        - {type: has-cert, certKey: WEITERBILDUNG_CRYPTO_1}
+    giftRequirement:
+      cost: 2000
+      condition: {type: has-cert, certKey: WEITERBILDUNG_BUCHHALTUNG_2}
+      description: "Exklusive Marktanalyse + Buchhaltungsexpertise"
+
+  - id: CLARA_RICHTER
+    name: "Clara Richter"
+    description: "Portfoliomanagerin mit Gespür für passive Einkommen."
+    groupIds: [INVESTOREN]
+    networkThreshold: 70
+    friendNetwork: []
+    wealthLevel: 4
+    boost: {type: MONTHLY_INCOME_BONUS, value: 150}
+    unlockCondition: {type: min-net-worth, amount: 100000}
+    giftRequirement: {cost: 3000, description: "Kunstwerk aus bekannter Galerie"}
+
+  - id: VIKTOR_LEHMANN
+    name: "Viktor Lehmann"
+    description: "Professioneller Pokerspieler, kennt jeden Trick."
+    groupIds: [INVESTOREN, KRIMINELLE]
+    networkThreshold: 55
+    friendNetwork: [RALF_RATTE]
+    wealthLevel: 3
+    boost: {type: GAMBLING_LUCK_BOOST, value: 0.03}
+    unlockCondition: {type: min-net-worth, amount: 40000}
+    giftRequirement: {cost: 1500, description: "Limitierte Spielkarten-Edition"}
+
+  - id: PETRA_STERN
+    name: "Petra Stern"
+    description: "Sammlerin seltener Objekte mit weltweiten Kontakten."
+    groupIds: [INVESTOREN]
+    networkThreshold: 60
+    friendNetwork: [SOFIA_MARTINEZ]
+    wealthLevel: 4
+    boost: {type: COLLECTIBLE_PRICE_DISCOUNT, value: 0.08}
+    unlockCondition:
+      type: all-of
+      conditions:
+        - {type: min-net-worth, amount: 60000}
+        - {type: owns-collection, collectionName: KUNSTKENNER}
+    giftRequirement:
+      cost: 2500
+      condition: {type: owns-collection, collectionName: UHRMACHER}
+      description: "Seltenes Sammlerstück aus Uhrmacher-Kollektion"
+
+  # KRIMINELLE (4)
+  - id: RALF_RATTE
+    name: "Ralf 'Ratte' König"
+    description: "Zwielichtige Gestalt, die immer einen Deal parat hat."
+    groupIds: [KRIMINELLE]
+    networkThreshold: 40
+    friendNetwork: [BOGDAN_NOWAK, TINA_SCHWARZ]
+    wealthLevel: 2
+    boost: {type: ROB_SUCCESS_BOOST, value: 0.08}
+    unlockCondition:
+      type: any-of
+      conditions:
+        - {type: had-conflict-with, personId: MARCO_RICHTER}
+        - {type: min-jail-months-served, months: 1}
+    giftRequirement: {cost: 500, description: "Flasche billigen Schnaps + keine Fragen"}
+
+  - id: TINA_SCHWARZ
+    name: "Tina Schwarz"
+    description: "Expertin für digitale Spuren löschen."
+    groupIds: [KRIMINELLE]
+    networkThreshold: 55
+    friendNetwork: []
+    wealthLevel: 2
+    boost: {type: TAX_DETECTION_REDUCTION, value: 0.06}
+    unlockCondition: {type: has-relationship-score, personId: RALF_RATTE, minScore: 40}
+    giftRequirement:
+      cost: 800
+      condition: {type: has-cert, certKey: WEITERBILDUNG_HACKER_1}
+      description: "Hacking-Tool + technisches Know-how"
+
+  - id: BOGDAN_NOWAK
+    name: "Bogdan Nowak"
+    description: "Streng schweigsamer Mann mit dunkler Vergangenheit."
+    groupIds: [KRIMINELLE]
+    networkThreshold: 50
+    friendNetwork: []
+    wealthLevel: 2
+    boost: {type: ROB_LOOT_MULTIPLIER, value: 0.15}
+    unlockCondition: {type: has-relationship-score, personId: RALF_RATTE, minScore: 50}
+    giftRequirement: {cost: 600, description: "Bargeld, keine Quittung"}
+
+  - id: UNDERWORLD_KONTAKT
+    name: "???"
+    description: "Jemand, der von Ralf erwähnt wird, aber nie seinen Namen nennt."
+    groupIds: [KRIMINELLE]
+    networkThreshold: 80
+    friendNetwork: []
+    wealthLevel: 3
+    boost: {type: ROB_SUCCESS_BOOST, value: 0.12}
+    unlockCondition:
+      type: all-of
+      conditions:
+        - {type: has-relationship-score, personId: BOGDAN_NOWAK, minScore: 60}
+        - {type: had-conflict-with, personId: RALF_RATTE}
+    giftRequirement: {cost: 2000, description: "Nur Bargeld"}
+
+  # REISELUSTIGE (3)
+  - id: LENA_BERG
+    name: "Lena Berg"
+    description: "Weltenbummlerin mit Rabattcodes für alles."
+    groupIds: [REISELUSTIGE]
+    networkThreshold: 45
+    friendNetwork: [AHMED_KARIMI, SOFIA_MARTINEZ]
+    wealthLevel: 2
+    boost: {type: TRAVEL_COST_REDUCTION, value: 0.10}
+    unlockCondition: null
+    giftRequirement: {cost: 200, description: "Reiseführer für exotisches Land"}
+
+  - id: AHMED_KARIMI
+    name: "Ahmed Karimi"
+    description: "Vielreisender Journalist mit Kontakten in aller Welt."
+    groupIds: [REISELUSTIGE]
+    networkThreshold: 55
+    friendNetwork: []
+    wealthLevel: 2
+    boost: {type: TRAVEL_DURATION_REDUCTION, value: 1}
+    unlockCondition: {type: has-relationship-score, personId: LENA_BERG, minScore: 40}
+    giftRequirement: {cost: 300, description: "Hochwertige Kamera"}
+
+  - id: SOFIA_MARTINEZ
+    name: "Sofia Martinez"
+    description: "Antiquitätenhändlerin mit Kontakten zu Sammlern weltweit."
+    groupIds: [REISELUSTIGE, INVESTOREN]
+    networkThreshold: 60
+    friendNetwork: [PETRA_STERN]
+    wealthLevel: 3
+    boost: {type: COLLECTIBLE_DROP_RATE_BOOST, value: 0.05}
+    unlockCondition: {type: has-relationship-score, personId: LENA_BERG, minScore: 50}
+    giftRequirement:
+      cost: 400
+      condition: {type: owns-collection, collectionName: ARCHAEOLOGIE}
+      description: "Seltenes archäologisches Fundstück"
+
+  # ELITE (3)
+  - id: SIR_REGINALD
+    name: "Sir Reginald Blackwood"
+    description: "Britischer Adeliger mit undurchschaubaren Geschäftsinteressen."
+    groupIds: [ELITE]
+    networkThreshold: 75
+    friendNetwork: [ISABELLA_VON_HOHENSTEIN, DR_MAXIMILIAN_FURST]
+    wealthLevel: 5
+    boost: {type: SALARY_MULTIPLIER_BONUS, value: 0.08}
+    unlockCondition:
+      type: all-of
+      conditions:
+        - {type: min-net-worth, amount: 500000}
+        - {type: has-relationship-score, personId: SANDRA_KOCH, minScore: 70}
+    giftRequirement:
+      cost: 10000
+      condition: {type: owns-collection, collectionName: WEINKENNER}
+      description: "Château Pétrus 1982 + Weinkenner-Sammlung"
+
+  - id: ISABELLA_VON_HOHENSTEIN
+    name: "Isabella von Hohenstein"
+    description: "Alte Adels-Familie, enormes Immobilien-Portfolio."
+    groupIds: [ELITE]
+    networkThreshold: 80
+    friendNetwork: []
+    wealthLevel: 5
+    boost: {type: PROPERTY_PRICE_DISCOUNT, value: 0.12}
+    unlockCondition:
+      type: all-of
+      conditions:
+        - {type: min-net-worth, amount: 700000}
+        - {type: has-relationship-score, personId: FRANK_ZIMMERMANN, minScore: 80}
+    giftRequirement:
+      cost: 15000
+      condition: {type: owns-collection, collectionName: KUNSTKENNER}
+      description: "Signiertes Kunstwerk + vollständige Kunstkenner-Sammlung"
+
+  - id: DR_MAXIMILIAN_FURST
+    name: "Dr. Maximilian Fürst"
+    description: "Privatbankier, verwaltet das Vermögen der Reichen."
+    groupIds: [ELITE]
+    networkThreshold: 85
+    friendNetwork: []
+    wealthLevel: 5
+    boost: {type: LOAN_INTEREST_REDUCTION, value: 0.03}
+    unlockCondition:
+      type: all-of
+      conditions:
+        - {type: min-net-worth, amount: 1000000}
+        - {type: has-relationship-score, personId: SIR_REGINALD, minScore: 60}
+    giftRequirement:
+      cost: 20000
+      condition: {type: education-level, prefix: MASTER}
+      description: "Limitierte Schweizer Uhr + Master-Abschluss"

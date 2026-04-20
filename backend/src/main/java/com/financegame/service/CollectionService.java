@@ -5,6 +5,8 @@ import com.financegame.domain.condition.HasCertCondition;
 import com.financegame.domain.events.CollectiblePurchasedEvent;
 import com.financegame.dto.CollectibleDto;
 import com.financegame.dto.CollectionDto;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import com.financegame.entity.Collection;
 import com.financegame.entity.Collectible;
@@ -143,7 +145,7 @@ public class CollectionService {
             Collection col = collectionRepository.findByName(item.getCollectionName()).orElse(null);
             if (col != null && col.getRequiredCert() != null) {
                 List<String> completedStages = getCompletedStages(playerId);
-                GameContext ctx = new GameContext(null, completedStages, null, false, 0);
+                GameContext ctx = new GameContext(null, completedStages, null, false, 0, Set.of(), Map.of(), Set.of());
                 HasCertCondition certCheck = new HasCertCondition(col.getRequiredCert());
                 if (!certCheck.isMet(ctx)) {
                     throw new ResponseStatusException(HttpStatus.FORBIDDEN, certCheck.describe());
