@@ -5,6 +5,8 @@ import com.financegame.entity.GameCharacter;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -141,7 +143,7 @@ class ConditionTest {
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private GameContext ctx(List<String> stages, GameCharacter character, boolean traveling) {
-        return new GameContext(character, stages, null, traveling, 0);
+        return new GameContext(character, stages, null, traveling, 0, Set.of(), Map.of(), Set.of());
     }
 
     private GameCharacter characterWithSchufa(int score) {

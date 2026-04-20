@@ -34,7 +34,7 @@
 
     <!-- Version badge -->
     <div class="fixed bottom-2 right-3 text-gray-700 text-xs font-mono select-none pointer-events-none">
-      v8
+      v9
     </div>
 
     <!-- Monthly balance sheet modal -->

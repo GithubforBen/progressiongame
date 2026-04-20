@@ -265,12 +265,16 @@ import { useFormatting } from '~/composables/useFormatting'
 import { useGameStore } from '~/stores/game'
 import { useToastStore } from '~/stores/toast'
 
-definePageMeta({ layout: 'default', middleware: 'auth' })
+definePageMeta({ layout: 'default' })
 
 const api = useApi()
 const { formatCurrency } = useFormatting()
 const gameStore = useGameStore()
 const toast = useToastStore()
+
+onMounted(async () => {
+  await gameStore.init()
+})
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
 const tabs = [
