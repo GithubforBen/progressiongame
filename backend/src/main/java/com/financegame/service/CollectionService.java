@@ -5,9 +5,7 @@ import com.financegame.domain.condition.HasCertCondition;
 import com.financegame.domain.events.CollectiblePurchasedEvent;
 import com.financegame.dto.CollectibleDto;
 import com.financegame.dto.CollectionDto;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.financegame.dto.PublicCollectionDto;
 import com.financegame.entity.Collection;
 import com.financegame.entity.Collectible;
 import com.financegame.entity.PlayerCollectible;
@@ -28,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class CollectionService {
@@ -92,6 +91,26 @@ public class CollectionService {
                 locked
             );
         }).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicCollectionDto> getPublicCollections(Long playerId) {
+        List<Collection> all = collectionRepository.findAll();
+        Set<Long> ownedIds = playerCollectibleRepository.findByPlayerId(playerId)
+            .stream().map(PlayerCollectible::getCollectibleId).collect(Collectors.toSet());
+        Map<String, Long> ownedPerCollection = collectibleRepository.findAll().stream()
+            .filter(c -> c.getCollectionName() != null && ownedIds.contains(c.getId()))
+            .collect(Collectors.groupingBy(Collectible::getCollectionName, Collectors.counting()));
+        return all.stream()
+            .map(col -> {
+                int owned = ownedPerCollection.getOrDefault(col.getName(), 0L).intValue();
+                return new PublicCollectionDto(
+                    col.getName(), col.getDisplayName(),
+                    col.getItemCount(), owned, owned >= col.getItemCount()
+                );
+            })
+            .sorted(java.util.Comparator.comparingInt(PublicCollectionDto::ownedCount).reversed())
+            .toList();
     }
 
     @Transactional(readOnly = true)

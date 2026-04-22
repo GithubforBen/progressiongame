@@ -1,6 +1,22 @@
 <template>
   <div class="space-y-6">
-    <h2 class="text-xl font-bold text-white">Sammlungen</h2>
+    <div class="flex items-center gap-4">
+      <h2 class="text-xl font-bold text-white">Sammlungen</h2>
+      <div class="flex gap-1 ml-auto">
+        <button
+          class="px-3 py-1.5 rounded text-xs font-medium transition-colors"
+          :class="activeTab === 'meine' ? 'bg-accent text-white' : 'bg-surface-700 text-gray-400 hover:text-white'"
+          @click="activeTab = 'meine'"
+        >Meine Sammlungen</button>
+        <button
+          class="px-3 py-1.5 rounded text-xs font-medium transition-colors"
+          :class="activeTab === 'vergleichen' ? 'bg-accent text-white' : 'bg-surface-700 text-gray-400 hover:text-white'"
+          @click="activeTab = 'vergleichen'"
+        >Vergleichen</button>
+      </div>
+    </div>
+
+    <template v-if="activeTab === 'meine'">
 
     <!-- Travel context banner -->
     <div v-if="travelStatus" class="card py-2.5 px-4 flex items-center gap-3">
@@ -169,11 +185,93 @@
         </div>
       </div>
     </div>
+
+    </template><!-- end meine -->
+
+    <!-- Vergleichen Tab -->
+    <template v-else>
+      <!-- Player selector -->
+      <div class="card">
+        <p class="text-sm text-gray-400 mb-3">Wähle einen Spieler zum Vergleichen:</p>
+        <div v-if="leaderboardLoading" class="text-gray-500 text-xs">Lade…</div>
+        <div v-else-if="otherPlayers.length === 0" class="text-gray-600 text-xs">
+          Noch keine anderen Spieler vorhanden.
+        </div>
+        <div v-else class="flex flex-wrap gap-2">
+          <button
+            v-for="p in otherPlayers"
+            :key="p.playerId"
+            class="px-3 py-1.5 rounded text-xs font-medium transition-colors"
+            :class="comparePlayerId === p.playerId ? 'bg-accent text-white' : 'bg-surface-700 text-gray-400 hover:text-white'"
+            @click="loadCompareCollections(p.playerId)"
+          >
+            #{{ p.rank }} {{ p.username }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Side-by-side comparison -->
+      <div v-if="comparePlayerId !== null && !compareLoading" class="card">
+        <h3 class="text-base font-semibold text-white mb-4">
+          Meine Sammlungen vs. {{ compareName }}
+        </h3>
+        <div class="space-y-2">
+          <div
+            v-for="myCol in collections"
+            :key="myCol.name"
+            class="grid grid-cols-2 gap-3 items-stretch"
+          >
+            <!-- My side -->
+            <div
+              class="rounded-lg border p-3"
+              :class="myCol.locked ? 'border-white/5 bg-surface-800/40 opacity-50' : myCol.completed ? 'border-green-500/40 bg-green-500/5' : 'border-white/10 bg-white/3'"
+            >
+              <p class="text-xs font-medium text-white truncate">{{ myCol.displayName }}</p>
+              <div class="mt-1 h-1.5 bg-surface-700 rounded-full overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-all duration-500"
+                  :class="myCol.completed ? 'bg-green-500' : 'bg-accent'"
+                  :style="{ width: `${myCol.itemCount > 0 ? (myCol.ownedCount / myCol.itemCount * 100) : 0}%` }"
+                />
+              </div>
+              <p class="text-xs text-gray-500 mt-1">
+                {{ myCol.ownedCount }}/{{ myCol.itemCount }}
+                <span v-if="myCol.completed" class="text-green-400 ml-1">✓</span>
+              </p>
+            </div>
+            <!-- Their side -->
+            <div
+              class="rounded-lg border p-3"
+              :class="compareMap[myCol.name]?.completed ? 'border-green-500/40 bg-green-500/5' : 'border-white/10 bg-white/3'"
+            >
+              <div v-if="compareMap[myCol.name]">
+                <div class="mt-1 h-1.5 bg-surface-700 rounded-full overflow-hidden">
+                  <div
+                    class="h-full rounded-full transition-all duration-500 bg-blue-400"
+                    :style="{ width: `${compareMap[myCol.name].itemCount > 0 ? (compareMap[myCol.name].ownedCount / compareMap[myCol.name].itemCount * 100) : 0}%` }"
+                  />
+                </div>
+                <p class="text-xs text-gray-500 mt-1">
+                  {{ compareMap[myCol.name].ownedCount }}/{{ compareMap[myCol.name].itemCount }}
+                  <span v-if="compareMap[myCol.name].completed" class="text-green-400 ml-1">✓</span>
+                </p>
+              </div>
+              <p v-else class="text-xs text-gray-600">—</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else-if="compareLoading" class="card text-gray-500 text-sm">Lade Vergleich…</div>
+      <div v-else class="card text-gray-500 text-sm text-center py-8">
+        Wähle oben einen Spieler aus.
+      </div>
+    </template><!-- end vergleichen -->
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 
 definePageMeta({ layout: 'default' })
 
@@ -199,6 +297,56 @@ interface TravelStatus {
   arriveAtTurn: number | null; traveling: boolean; visitedCountries: string[]
 }
 
+// ── Tabs ───────────────────────────────────────────────────────────────────────
+const activeTab = ref<'meine' | 'vergleichen'>('meine')
+
+interface PublicCollection {
+  name: string; displayName: string; itemCount: number; ownedCount: number; completed: boolean
+}
+interface LeaderboardPlayer {
+  playerId: number; username: string; rank: number; isMe: boolean
+}
+
+const leaderboardPlayers = ref<LeaderboardPlayer[]>([])
+const leaderboardLoading = ref(false)
+const comparePlayerId = ref<number | null>(null)
+const compareCollections = ref<PublicCollection[]>([])
+const compareLoading = ref(false)
+
+const otherPlayers = computed(() => leaderboardPlayers.value.filter(p => !p.isMe))
+const compareName = computed(() =>
+  leaderboardPlayers.value.find(p => p.playerId === comparePlayerId.value)?.username ?? ''
+)
+const compareMap = computed<Record<string, PublicCollection>>(() =>
+  Object.fromEntries(compareCollections.value.map(c => [c.name, c]))
+)
+
+async function loadCompareCollections(playerId: number) {
+  comparePlayerId.value = playerId
+  compareLoading.value = true
+  try {
+    compareCollections.value = await api.get<PublicCollection[]>(
+      `/api/leaderboard/player/${playerId}/collections`
+    )
+  } catch {
+    toast.error('Vergleich konnte nicht geladen werden')
+  } finally {
+    compareLoading.value = false
+  }
+}
+
+watch(activeTab, async (tab) => {
+  if (tab === 'vergleichen' && leaderboardPlayers.value.length === 0) {
+    leaderboardLoading.value = true
+    try {
+      leaderboardPlayers.value = await api.get<LeaderboardPlayer[]>('/api/leaderboard')
+    } finally {
+      leaderboardLoading.value = false
+    }
+  }
+})
+
+// ── Collections + Shop ─────────────────────────────────────────────────────────
 const collections = ref<CollectionRow[]>([])
 const items = ref<CollectibleItem[]>([])
 const travelStatus = ref<TravelStatus | null>(null)

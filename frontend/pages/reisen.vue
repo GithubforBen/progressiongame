@@ -51,25 +51,16 @@
             <!-- Ocean -->
             <rect x="0" y="0" :width="MAP_W" :height="MAP_H" fill="#0a1628" />
 
-            <!-- Simplified continent silhouettes -->
-            <!-- Europe -->
-            <polygon points="440,100 540,95 560,130 555,170 530,185 500,195 480,185 455,165 450,140 440,100"
-              fill="#1a2a1a" stroke="#2a3a2a" stroke-width="1" />
-            <!-- Africa -->
-            <polygon points="470,195 530,190 545,220 540,290 510,330 480,325 460,280 465,220"
-              fill="#1a2a1a" stroke="#2a3a2a" stroke-width="1" />
-            <!-- Asia -->
-            <polygon points="560,80 750,70 810,90 830,130 820,180 780,210 720,220 660,200 610,190 570,180 560,140 560,80"
-              fill="#1a2a1a" stroke="#2a3a2a" stroke-width="1" />
-            <!-- North America -->
-            <polygon points="100,80 280,75 290,140 270,180 230,200 180,210 130,180 100,140 90,100"
-              fill="#1a2a1a" stroke="#2a3a2a" stroke-width="1" />
-            <!-- South America -->
-            <polygon points="200,220 280,215 290,260 275,330 240,370 200,350 180,290 185,240"
-              fill="#1a2a1a" stroke="#2a3a2a" stroke-width="1" />
-            <!-- Australia -->
-            <polygon points="760,280 870,275 880,340 850,370 790,365 760,330 755,295"
-              fill="#1a2a1a" stroke="#2a3a2a" stroke-width="1" />
+            <!-- Country shapes from TopoJSON (Natural Earth 110m) -->
+            <path
+              v-for="cp in countryPaths"
+              :key="cp.id"
+              :d="cp.d"
+              :fill="cp.isGame ? '#1f3a1f' : '#1a2a1a'"
+              :stroke="cp.isGame ? '#3a5a3a' : '#2a3a2a'"
+              stroke-width="0.5"
+              stroke-linejoin="round"
+            />
 
             <!-- Grid lines -->
             <line v-for="x in 20" :key="'vl'+x" :x1="x*MAP_W/20" y1="0" :x2="x*MAP_W/20" :y2="MAP_H"
@@ -236,6 +227,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
+import { geoNaturalEarth1, geoPath } from 'd3-geo'
+import { feature } from 'topojson-client'
+import type { Topology } from 'topojson-specification'
 
 definePageMeta({ layout: 'default' })
 
@@ -267,26 +261,42 @@ interface CollectibleSummary {
 const MAP_W = 960
 const MAP_H = 440
 
-const COUNTRY_COORDS: Record<string, { x: number; y: number }> = {
-  Deutschland:  { x: 493, y: 142 },
-  UK:           { x: 460, y: 128 },
-  Frankreich:   { x: 470, y: 158 },
-  Spanien:      { x: 450, y: 175 },
-  Schweiz:      { x: 490, y: 162 },
-  Italien:      { x: 505, y: 178 },
-  USA:          { x: 185, y: 168 },
-  Japan:        { x: 810, y: 162 },
-  China:        { x: 755, y: 178 },
-  Australien:   { x: 820, y: 318 },
-  Russland:     { x: 650, y: 100 },
-  Brasilien:    { x: 245, y: 295 },
-  Kanada:       { x: 170, y: 110 },
-  Indien:       { x: 680, y: 210 },
-  Südafrika:    { x: 500, y: 315 },
+// ISO 3166-1 numeric IDs for the 15 game countries
+const GAME_ISO_SET = new Set([392, 380, 840, 756, 826, 156, 276, 250, 724, 36, 643, 76, 124, 356, 710])
+
+// Geographic centroids [lng, lat] for country pin placement
+const GAME_COUNTRY_CENTROIDS: Record<string, [number, number]> = {
+  Japan:       [138.0, 36.2],
+  Italien:     [12.6,  42.5],
+  USA:         [-100.0, 40.0],
+  Schweiz:     [8.2,  46.8],
+  UK:          [-1.5,  54.0],
+  China:       [104.0, 35.0],
+  Deutschland: [10.5,  51.2],
+  Frankreich:  [2.3,  46.5],
+  Spanien:     [-3.7,  40.4],
+  Australien:  [134.0, -25.0],
+  Russland:    [60.0,  60.0],
+  Brasilien:   [-52.0, -10.0],
+  Kanada:      [-95.0, 57.0],
+  Indien:      [78.9,  20.6],
+  Südafrika:   [25.0, -29.0],
 }
 
+const projection = geoNaturalEarth1()
+  .scale(153)
+  .translate([MAP_W / 2, MAP_H / 2])
+
+const pathGenerator = geoPath(projection)
+
+interface CountryPath { id: number; d: string; isGame: boolean }
+const countryPaths = ref<CountryPath[]>([])
+
 function coords(name: string): { x: number; y: number } {
-  return COUNTRY_COORDS[name] ?? { x: MAP_W / 2, y: MAP_H / 2 }
+  const ll = GAME_COUNTRY_CENTROIDS[name]
+  if (!ll) return { x: MAP_W / 2, y: MAP_H / 2 }
+  const pt = projection(ll)
+  return pt ? { x: pt[0], y: pt[1] } : { x: MAP_W / 2, y: MAP_H / 2 }
 }
 
 const mapEl = ref<HTMLElement | null>(null)
@@ -418,6 +428,20 @@ function countryEmoji(name: string): string {
 }
 
 onMounted(async () => {
+  // Load world TopoJSON for country shapes
+  try {
+    const topo = await fetch('/countries-110m.json').then(r => r.json())
+    const fc = feature(topo as Topology, (topo as any).objects.countries) as any
+    countryPaths.value = fc.features
+      .map((f: any) => ({
+        id: +f.id,
+        d: pathGenerator(f) ?? '',
+        isGame: GAME_ISO_SET.has(+f.id),
+      }))
+      .filter((p: CountryPath) => p.d !== '')
+  } catch {
+    // Map still works without shapes
+  }
   await loadAll()
   resetView()
 })
