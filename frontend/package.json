@@ -10,15 +10,21 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "nuxt": "^3.13.2",
     "@nuxtjs/tailwindcss": "^6.12.2",
     "@pinia/nuxt": "^0.5.5",
-    "pinia": "^2.2.6",
     "chart.js": "^4.4.6",
-    "vue-chartjs": "^5.3.2"
+    "d3-geo": "^3.1.1",
+    "nuxt": "^3.13.2",
+    "pinia": "^2.2.6",
+    "topojson-client": "^3.1.0",
+    "vue-chartjs": "^5.3.2",
+    "world-atlas": "^2.0.2"
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",
+    "@types/d3-geo": "^3.1.0",
+    "@types/topojson-client": "^3.1.5",
+    "@types/topojson-specification": "^1.0.5",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3",
     "vue-tsc": "^2.1.10"

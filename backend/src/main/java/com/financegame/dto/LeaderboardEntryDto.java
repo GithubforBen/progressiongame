@@ -7,6 +7,8 @@ public record LeaderboardEntryDto(
     Long playerId,
     String username,
     BigDecimal netWorth,
+    BigDecimal monthlyIncome,
+    int completedCollections,
     int currentTurn,
     boolean isMe
 ) {}
