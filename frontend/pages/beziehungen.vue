@@ -106,6 +106,17 @@
         </div>
       </div>
 
+      <!-- Global time slots -->
+      <div v-if="network" class="px-4 py-2.5 border-b border-white/10 flex items-center justify-between">
+        <span class="text-xs text-gray-500">Zeit verbringen</span>
+        <div class="flex gap-1">
+          <div v-for="i in 4" :key="i"
+               class="w-3 h-3 rounded-sm transition-colors"
+               :class="i <= globalTimeUsed ? 'bg-accent' : 'bg-surface-600'" />
+        </div>
+        <span class="text-xs text-gray-500">{{ globalTimeUsed }}/4</span>
+      </div>
+
       <!-- Person detail -->
       <div v-if="selected" class="flex-1 overflow-y-auto p-4 space-y-4">
         <!-- Header -->
@@ -161,21 +172,21 @@
                   class="w-full text-sm py-2 rounded-lg font-medium transition-colors"
                   :class="selected.canSpendTime ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-surface-700 text-gray-500 cursor-not-allowed'">
             <span v-if="actionLoading === 'time'">…</span>
-            <span v-else-if="!selected.canSpendTime">Zeit verbringen (Limit erreicht)</span>
+            <span v-else-if="!selected.canSpendTime">Zeit verbringen (4/4 diesen Monat)</span>
             <span v-else>Zeit verbringen (+{{ SCORE_TIME }} Score)</span>
           </button>
 
-          <button @click="doGiveGift" :disabled="actionLoading !== null"
-                  class="w-full text-sm py-2 rounded-lg font-medium bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-300 transition-colors border border-yellow-600/20">
+          <button @click="doGiveGift" :disabled="!selected.canGiveGift || actionLoading !== null"
+                  class="w-full text-sm py-2 rounded-lg font-medium transition-colors border"
+                  :class="selected.canGiveGift ? 'bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-300 border-yellow-600/20' : 'bg-surface-700 text-gray-500 border-transparent cursor-not-allowed'">
             <span v-if="actionLoading === 'gift'">…</span>
+            <span v-else-if="!selected.canGiveGift">Geschenk (bereits gegeben)</span>
             <span v-else>Geschenk (+{{ SCORE_GIFT }} Score)</span>
           </button>
 
-          <button @click="doInsult" :disabled="!selected.canInsult || actionLoading !== null"
-                  class="w-full text-sm py-2 rounded-lg font-medium transition-colors"
-                  :class="selected.canInsult ? 'bg-orange-600/20 hover:bg-orange-600/30 text-orange-300 border border-orange-600/20' : 'bg-surface-700 text-gray-500 cursor-not-allowed'">
+          <button @click="doInsult" :disabled="actionLoading !== null"
+                  class="w-full text-sm py-2 rounded-lg font-medium bg-orange-600/20 hover:bg-orange-600/30 text-orange-300 border border-orange-600/20 transition-colors">
             <span v-if="actionLoading === 'insult'">…</span>
-            <span v-else-if="!selected.canInsult">Beleidigt (diesen Monat)</span>
             <span v-else>Beleidigen ({{ SCORE_INSULT }} Score)</span>
           </button>
 
@@ -230,6 +241,7 @@ interface PersonNode {
   locked: boolean
   lockedUntilTurn: number
   canSpendTime: boolean
+  canGiveGift: boolean
   canInsult: boolean
   canRob: boolean
   boost: BoostDef | null
@@ -243,6 +255,7 @@ interface SocialNetwork {
   edges: PersonEdge[]
   unlockedGroups: GroupDto[]
   activeBoosts: ActiveBoostDto[]
+  globalTimeUsedThisMonth: number
 }
 
 const network = ref<SocialNetwork | null>(null)
@@ -253,6 +266,8 @@ const actionLoading = ref<string | null>(null)
 const selected = computed(() =>
   network.value?.persons.find(p => p.personId === selectedId.value) ?? null
 )
+
+const globalTimeUsed = computed(() => network.value?.globalTimeUsedThisMonth ?? 0)
 
 const edges = computed(() => {
   if (!network.value) return []

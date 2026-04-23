@@ -27,6 +27,9 @@ public class PlayerSocialRelationship {
     @Column(name = "monthly_time_spent_count", nullable = false)
     private int monthlyTimeSpentCount = 0;
 
+    @Column(name = "monthly_gift_done", nullable = false)
+    private boolean monthlyGiftDone = false;
+
     @Column(name = "monthly_insult_done", nullable = false)
     private boolean monthlyInsultDone = false;
 
@@ -58,6 +61,9 @@ public class PlayerSocialRelationship {
 
     public int getMonthlyTimeSpentCount() { return monthlyTimeSpentCount; }
     public void setMonthlyTimeSpentCount(int monthlyTimeSpentCount) { this.monthlyTimeSpentCount = monthlyTimeSpentCount; }
+
+    public boolean isMonthlyGiftDone() { return monthlyGiftDone; }
+    public void setMonthlyGiftDone(boolean monthlyGiftDone) { this.monthlyGiftDone = monthlyGiftDone; }
 
     public boolean isMonthlyInsultDone() { return monthlyInsultDone; }
     public void setMonthlyInsultDone(boolean monthlyInsultDone) { this.monthlyInsultDone = monthlyInsultDone; }

@@ -68,18 +68,23 @@ public class SocialService {
 
         Set<String> unlockedGroupIds = groupUnlockRepo.findUnlockedGroupIds(playerId);
 
+        int globalTimeUsed = relMap.values().stream().mapToInt(PlayerSocialRelationship::getMonthlyTimeSpentCount).sum();
         List<PersonNodeDto> nodes = buildPersonNodes(ctx, relMap, unlockedGroupIds, currentTurn);
         List<PersonEdgeDto> edges = buildEdges(nodes);
         List<GroupDto> groups = buildGroupDtos(ctx, unlockedGroupIds);
         List<ActiveBoostDto> boosts = computeActiveBoosts(relMap);
 
-        return new SocialNetworkDto(nodes, edges, groups, boosts);
+        return new SocialNetworkDto(nodes, edges, groups, boosts, globalTimeUsed);
     }
 
     private List<PersonNodeDto> buildPersonNodes(GameContext ctx,
                                                   Map<String, PlayerSocialRelationship> relMap,
                                                   Set<String> unlockedGroupIds,
                                                   int currentTurn) {
+        // Global time budget: sum across all relationships this month
+        int globalTimeUsed = relMap.values().stream().mapToInt(PlayerSocialRelationship::getMonthlyTimeSpentCount).sum();
+        boolean hasTimeLeft = globalTimeUsed < MAX_TIME_PER_MONTH;
+
         Set<String> visiblePersonIds = new HashSet<>();
 
         for (PersonDef p : personService.getAllPersons()) {
@@ -124,8 +129,9 @@ public class SocialService {
                 score,
                 locked,
                 locked ? rel.getLockedActionsUntilTurn() : 0,
-                met && !locked && rel.getMonthlyTimeSpentCount() < MAX_TIME_PER_MONTH && condMet,
-                met && !locked && !rel.isMonthlyInsultDone() && condMet,
+                met && !locked && hasTimeLeft && condMet,
+                met && !locked && (rel == null || !rel.isMonthlyGiftDone()) && condMet,
+                met && !locked && condMet,           // insult: always available (unlimited)
                 met && !locked && !rel.isMonthlyRobAttempted() && condMet,
                 p.boost(),
                 unlockReqs
@@ -191,9 +197,12 @@ public class SocialService {
         PlayerSocialRelationship rel = getOrCreateRelationship(playerId, personId, ctx.character().getCurrentTurn());
         requireNotLocked(rel, ctx.character().getCurrentTurn());
 
-        if (rel.getMonthlyTimeSpentCount() >= MAX_TIME_PER_MONTH) {
+        // Global cap: 4 time-slots total across all persons per month
+        int globalTimeUsed = relationshipRepo.findByPlayerId(playerId)
+            .stream().mapToInt(PlayerSocialRelationship::getMonthlyTimeSpentCount).sum();
+        if (globalTimeUsed >= MAX_TIME_PER_MONTH) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                "Du hast diesen Monat bereits " + MAX_TIME_PER_MONTH + "× Zeit verbracht.");
+                "Du hast diesen Monat bereits " + MAX_TIME_PER_MONTH + "× Zeit verbracht (globales Limit).");
         }
 
         int oldScore = rel.getScore();
@@ -216,6 +225,11 @@ public class SocialService {
         PlayerSocialRelationship rel = getOrCreateRelationship(playerId, personId, ctx.character().getCurrentTurn());
         requireNotLocked(rel, ctx.character().getCurrentTurn());
 
+        if (rel.isMonthlyGiftDone()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Du hast " + person.name() + " diesen Monat bereits ein Geschenk gemacht.");
+        }
+
         if (person.giftRequirement() != null && person.giftRequirement().condition() != null
             && !person.giftRequirement().condition().isMet(ctx)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -233,6 +247,7 @@ public class SocialService {
 
         int oldScore = rel.getScore();
         rel.setScore(Math.min(100, oldScore + SCORE_PER_GIFT));
+        rel.setMonthlyGiftDone(true);
         relationshipRepo.save(rel);
 
         eventPublisher.publishEvent(new RelationshipChangedEvent(playerId, personId, oldScore, rel.getScore(), "Geschenk"));
@@ -249,13 +264,8 @@ public class SocialService {
         PlayerSocialRelationship rel = getOrCreateRelationship(playerId, personId, ctx.character().getCurrentTurn());
         requireNotLocked(rel, ctx.character().getCurrentTurn());
 
-        if (rel.isMonthlyInsultDone()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Du hast diese Person diesen Monat bereits beleidigt.");
-        }
-
         int oldScore = rel.getScore();
         rel.setScore(Math.max(0, oldScore + SCORE_INSULT));
-        rel.setMonthlyInsultDone(true);
         rel.setHadConflict(true);
         relationshipRepo.save(rel);
 
@@ -349,6 +359,7 @@ public class SocialService {
         for (PlayerSocialRelationship rel : relationships) {
             rel.setScore(Math.max(0, rel.getScore() - PASSIVE_DECAY_PER_MONTH));
             rel.setMonthlyTimeSpentCount(0);
+            rel.setMonthlyGiftDone(false);
             rel.setMonthlyInsultDone(false);
             rel.setMonthlyRobAttempted(false);
             relationshipRepo.save(rel);
@@ -436,7 +447,8 @@ public class SocialService {
         List<PersonNodeDto> persons,
         List<PersonEdgeDto> edges,
         List<GroupDto> unlockedGroups,
-        List<ActiveBoostDto> activeBoosts
+        List<ActiveBoostDto> activeBoosts,
+        int globalTimeUsedThisMonth
     ) {}
 
     public record PersonNodeDto(
@@ -449,6 +461,7 @@ public class SocialService {
         boolean locked,
         int lockedUntilTurn,
         boolean canSpendTime,
+        boolean canGiveGift,
         boolean canInsult,
         boolean canRob,
         BoostDef boost,

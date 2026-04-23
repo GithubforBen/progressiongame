@@ -4,6 +4,8 @@ import com.financegame.dto.BlackjackStateDto;
 import com.financegame.dto.GamblingBetRequest;
 import com.financegame.dto.PokerResultDto;
 import com.financegame.dto.SlotResultDto;
+import com.financegame.dto.TexasHoldemActionRequest;
+import com.financegame.dto.TexasHoldemStateDto;
 import com.financegame.security.PlayerPrincipal;
 import com.financegame.service.GamblingService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -63,5 +65,24 @@ public class GamblingController {
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
         return gamblingService.playPoker(principal.id(), request.bet());
+    }
+
+    // --- Texas Hold'em ---
+
+    @PostMapping("/texasholdem/start")
+    public TexasHoldemStateDto startTexasHoldem(
+        @RequestBody GamblingBetRequest request,
+        @AuthenticationPrincipal PlayerPrincipal principal
+    ) {
+        return gamblingService.startTexasHoldem(principal.id(), request.bet());
+    }
+
+    @PostMapping("/texasholdem/{id}/action")
+    public TexasHoldemStateDto actTexasHoldem(
+        @PathVariable Long id,
+        @RequestBody TexasHoldemActionRequest request,
+        @AuthenticationPrincipal PlayerPrincipal principal
+    ) {
+        return gamblingService.actTexasHoldem(principal.id(), id, request.action(), request.amount());
     }
 }

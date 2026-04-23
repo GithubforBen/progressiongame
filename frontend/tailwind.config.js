@@ -12,21 +12,23 @@ module.exports = {
     extend: {
       colors: {
         surface: {
-          950: '#08090e',
-          900: '#0f1117',
-          800: '#1a1d27',
-          700: '#242736',
-          600: '#2e3347',
-          500: '#3a4060',
+          950: '#0a0a0a',
+          900: '#111111',
+          800: '#181818',
+          700: '#222222',
+          600: '#2c2c2c',
+          500: '#383838',
         },
         accent: {
-          DEFAULT: '#6366f1',
-          light: '#818cf8',
-          hover: '#4f46e5',
+          DEFAULT: '#d4321f',
+          light: '#e8614e',
+          hover: '#b42a18',
+          bg: 'rgba(212,50,31,0.12)',
+          border: 'rgba(212,50,31,0.38)',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['Space Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
     },
