@@ -25,6 +25,11 @@
         <span class="text-xs text-yellow-300">⭐ {{ activeEvents.length }} Event{{ activeEvents.length > 1 ? 's' : '' }} aktiv</span>
       </div>
 
+      <!-- Visited counter -->
+      <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+        <span class="text-xs text-gray-400">{{ visitedCount }}/{{ countries.length }} Länder besucht</span>
+      </div>
+
       <div class="flex-1" />
       <button @click="resetView" class="text-xs text-gray-500 hover:text-gray-300 font-mono transition-colors">Ansicht zurücksetzen</button>
     </div>
@@ -76,6 +81,34 @@
               stroke="#ffffff04" stroke-width="1" />
             <line v-for="y in 12" :key="'hl'+y" x1="0" :y1="y*MAP_H/12" :x2="MAP_W" :y2="y*MAP_H/12"
               stroke="#ffffff04" stroke-width="1" />
+
+            <!-- Continent labels -->
+            <text x="490" y="88" text-anchor="middle" font-size="9" fill="#334155" font-weight="bold" letter-spacing="3" style="user-select:none">EUROPA</text>
+            <text x="480" y="260" text-anchor="middle" font-size="9" fill="#334155" font-weight="bold" letter-spacing="3" style="user-select:none">AFRIKA</text>
+            <text x="700" y="60" text-anchor="middle" font-size="9" fill="#334155" font-weight="bold" letter-spacing="3" style="user-select:none">ASIEN</text>
+            <text x="185" y="60" text-anchor="middle" font-size="9" fill="#334155" font-weight="bold" letter-spacing="3" style="user-select:none">NORDAMERIKA</text>
+            <text x="235" y="390" text-anchor="middle" font-size="9" fill="#334155" font-weight="bold" letter-spacing="3" style="user-select:none">SÜDAMERIKA</text>
+            <text x="820" y="260" text-anchor="middle" font-size="9" fill="#334155" font-weight="bold" letter-spacing="3" style="user-select:none">AUSTRALIEN</text>
+
+            <!-- Travel route line (dashed, from current/home to destination) -->
+            <line
+              v-if="travelRouteFrom && travelRouteTo"
+              :x1="travelRouteFrom.x" :y1="travelRouteFrom.y"
+              :x2="travelRouteTo.x" :y2="travelRouteTo.y"
+              stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.5"
+            />
+
+            <!-- Legend -->
+            <g transform="translate(16, 400)">
+              <circle cx="6" cy="6" r="5" fill="#22c55e" />
+              <text x="14" y="10" font-size="7.5" fill="#94a3b8" style="user-select:none">Aktuell hier</text>
+              <circle cx="6" cy="20" r="5" fill="#3b82f6" />
+              <text x="14" y="24" font-size="7.5" fill="#94a3b8" style="user-select:none">Reiseziel</text>
+              <circle cx="6" cy="34" r="5" fill="#6366f1" />
+              <text x="14" y="38" font-size="7.5" fill="#94a3b8" style="user-select:none">Besucht</text>
+              <circle cx="6" cy="48" r="5" fill="#334155" />
+              <text x="14" y="52" font-size="7.5" fill="#94a3b8" style="user-select:none">Nicht besucht</text>
+            </g>
 
             <!-- Country circles -->
             <g
@@ -191,11 +224,22 @@
             </div>
 
             <!-- Collectibles -->
-            <div v-if="availableAt(selectedCountry.name) > 0" class="p-3 rounded-lg bg-accent/10 border border-accent/20">
-              <p class="text-accent text-sm font-medium">
-                {{ availableAt(selectedCountry.name) }} Sammelgegenstand{{ availableAt(selectedCountry.name) > 1 ? 'e' : '' }} verfügbar
+            <div v-if="collectiblesAt(selectedCountry.name).length" class="space-y-2">
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Sammelgegenstände
+                <span class="text-accent font-normal normal-case ml-1">
+                  {{ ownedAt(selectedCountry.name) }}/{{ collectiblesAt(selectedCountry.name).length }} gesammelt
+                </span>
               </p>
-              <router-link to="/sammlungen" class="text-xs text-accent/70 hover:text-accent">→ Zu den Sammlungen</router-link>
+              <div
+                v-for="item in collectiblesAt(selectedCountry.name)"
+                :key="item.id"
+                class="flex items-center justify-between text-xs py-1 border-b border-surface-700 last:border-0"
+              >
+                <span :class="item.alreadyOwned ? 'text-gray-500 line-through' : 'text-gray-200'">{{ item.name }}</span>
+                <span :class="rarityClass(item.rarity)" class="text-xs font-mono ml-2 flex-shrink-0">{{ item.rarity }}</span>
+              </div>
+              <NuxtLink to="/sammlungen" class="text-xs text-accent/70 hover:text-accent">→ Zu den Sammlungen</NuxtLink>
             </div>
 
             <!-- Active events -->
@@ -260,6 +304,7 @@ interface ActiveEvent {
   collectibleId: number | null; message: string
 }
 interface CollectibleSummary {
+  id: number; name: string; rarity: string
   countryRequired: string | null; alreadyOwned: boolean; canBuy: boolean
 }
 
@@ -344,11 +389,34 @@ const collectibleSummary = ref<CollectibleSummary[]>([])
 const selectedCountry = ref<Country | null>(null)
 const actionLoading = ref<string | false>(false)
 
-function availableAt(countryName: string): number {
-  return collectibleSummary.value.filter(
-    c => c.countryRequired === countryName && !c.alreadyOwned
-  ).length
+const visitedCount = computed(() => countries.value.filter(c => c.visited).length)
+
+function collectiblesAt(countryName: string): CollectibleSummary[] {
+  return collectibleSummary.value.filter(c => c.countryRequired === countryName)
 }
+function ownedAt(countryName: string): number {
+  return collectiblesAt(countryName).filter(c => c.alreadyOwned).length
+}
+
+function rarityClass(rarity: string): string {
+  switch (rarity?.toUpperCase()) {
+    case 'LEGENDARY': return 'text-yellow-400'
+    case 'EPIC':      return 'text-purple-400'
+    case 'RARE':      return 'text-blue-400'
+    case 'UNCOMMON':  return 'text-green-400'
+    default:          return 'text-gray-500'
+  }
+}
+
+const travelRouteFrom = computed(() => {
+  if (!status.value?.traveling) return null
+  const home = status.value.currentCountry ?? 'Deutschland'
+  return COUNTRY_COORDS[home] ?? null
+})
+const travelRouteTo = computed(() => {
+  if (!status.value?.traveling || !status.value.destinationCountry) return null
+  return COUNTRY_COORDS[status.value.destinationCountry] ?? null
+})
 
 function eventsForCountry(countryName: string): ActiveEvent[] {
   return activeEvents.value.filter(e => e.country === countryName)
@@ -365,7 +433,7 @@ async function loadAll() {
       api.get<TravelStatus>('/api/travel/status'),
       api.get<Country[]>('/api/travel/countries'),
       api.get<ActiveEvent[]>('/api/collectibles/events'),
-      api.get<CollectibleSummary[]>('/api/collections/items'),
+      api.get<CollectibleSummary[]>('/api/collectibles'),
     ])
     status.value = s
     countries.value = c

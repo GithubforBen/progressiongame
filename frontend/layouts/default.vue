@@ -11,16 +11,26 @@
         </div>
 
         <div class="flex items-center gap-4">
-          <div class="hidden sm:flex items-center gap-2">
+          <!-- Jail / pending-catch banner -->
+          <div v-if="caughtPending" class="hidden sm:flex items-center gap-1.5 text-xs text-red-400 font-semibold">
+            <span>⚠️</span>
+            <NuxtLink to="/steuerhinterziehung" class="underline underline-offset-2">Steuerfahndung auflösen</NuxtLink>
+          </div>
+          <div v-else-if="inJail" class="hidden sm:flex items-center gap-1.5 text-xs text-orange-400 font-semibold">
+            <span>🔒</span>
+            <span>{{ gameStore.character?.jailMonthsRemaining }} Monate Haft verbleiben</span>
+          </div>
+          <div v-else class="hidden sm:flex items-center gap-2">
             <span class="text-gray-500 text-xs">Kontostand</span>
             <span class="text-green-400 font-semibold font-mono text-sm">{{ formattedCash }}</span>
           </div>
           <button
-            class="btn-primary text-sm"
-            :disabled="processingTurn"
+            class="text-sm"
+            :class="caughtPending ? 'btn-danger' : 'btn-primary'"
+            :disabled="processingTurn || caughtPending"
             @click="endTurn"
           >
-            {{ processingTurn ? 'Verarbeite…' : 'Monat abschliessen' }}
+            {{ processingTurn ? 'Verarbeite…' : inJail ? `Monat absitzen (${gameStore.character?.jailMonthsRemaining} verbleiben)` : 'Monat abschliessen' }}
           </button>
         </div>
       </header>
@@ -34,7 +44,7 @@
 
     <!-- Version badge -->
     <div class="fixed bottom-2 right-3 text-gray-700 text-xs font-mono select-none pointer-events-none">
-      v9
+      v10
     </div>
 
     <!-- Monthly balance sheet modal -->
@@ -58,6 +68,9 @@ const toastStore = useToastStore()
 const processingTurn = ref(false)
 const showBalanceSheet = ref(false)
 const completedMonthLabel = ref('')
+
+const inJail = computed(() => (gameStore.character?.jailMonthsRemaining ?? 0) > 0)
+const caughtPending = computed(() => gameStore.character?.taxEvasionCaughtPending ?? false)
 
 const formattedCash = computed(() => {
   const cash = gameStore.character?.cash ?? 0

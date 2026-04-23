@@ -8,8 +8,10 @@ import com.financegame.dto.TurnResultDto;
 import com.financegame.entity.*;
 import com.financegame.repository.*;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -98,6 +100,12 @@ public class TurnService {
     @Transactional
     public TurnResultDto endTurn(Long playerId) {
         GameCharacter character = characterService.findOrThrow(playerId);
+
+        if (character.isTaxEvasionCaughtPending()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Du wurdest bei der Steuerhinterziehung erwischt! Löse die Situation zuerst auf.");
+        }
+
         int currentTurn = character.getCurrentTurn();
 
         List<String> events = new ArrayList<>();

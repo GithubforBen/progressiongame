@@ -26,7 +26,7 @@
         <StatCard
           title="Aktueller Monat"
           :value="gameStore.currentMonthLabel"
-          subtitle="`Runde ${character?.currentTurn ?? 1}`"
+          :subtitle="`Runde ${gameStore.character?.currentTurn ?? 1}`"
         />
       </div>
 
