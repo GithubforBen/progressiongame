@@ -18,7 +18,7 @@
     <!-- Nav -->
     <nav class="flex-1 px-1.5 py-2.5 overflow-y-auto overflow-x-hidden">
       <div
-        v-for="(group, gi) in NAV_GROUPS"
+        v-for="(group, gi) in [...NAV_GROUPS, ...victoryNavGroup]"
         :key="gi"
         :class="compact ? 'mb-1.5' : 'mb-1'"
       >
@@ -72,6 +72,11 @@
       </div>
     </nav>
 
+    <!-- Playtime -->
+    <div v-if="!compact" class="px-3.5 py-1.5 border-t border-surface-700">
+      <p class="text-xs text-gray-600">⏱ Spielzeit: <span class="text-gray-400">{{ gameStore.formattedPlaytime }}</span></p>
+    </div>
+
     <!-- Player info -->
     <div class="border-t border-surface-700 p-1.5">
       <NuxtLink
@@ -116,6 +121,7 @@ const ICONS: Record<string, string> = {
   Star:            '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
   Building2:       '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4M10 10h4M10 14h4M10 18h4"/>',
   Trophy:          '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>',
+  Crown:           '<path d="M11.562 3.266a1 1 0 0 1 .876 0L22 8l-4 13H6L2 8z"/><path d="M12 12v9"/><path d="M12 3v3"/><path d="m9 16.998-.9-3"/><path d="m15 17 .9-3"/>',
   Settings:        '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
 }
 
@@ -147,6 +153,7 @@ const NAV_GROUPS = [
     items: [
       { path: '/leben',        label: 'Leben',       icon: 'Heart' },
       { path: '/beduerfnisse', label: 'Bedürfnisse', icon: 'Activity' },
+      { path: '/lebensstil',   label: 'Lebensstil',  icon: 'Crown' },
       { path: '/reisen',       label: 'Reisen',       icon: 'Plane' },
       { path: '/beziehungen',  label: 'Beziehungen', icon: 'Users' },
       { path: '/sammlungen',   label: 'Sammlungen',  icon: 'Star' },
@@ -161,6 +168,11 @@ const NAV_GROUPS = [
     ],
   },
 ]
+
+const victoryNavGroup = computed(() => gameStore.character?.victoryAchieved
+  ? [{ label: '', items: [{ path: '/sieg', label: '🏆 Sieg', icon: 'Crown' }] }]
+  : []
+)
 
 const hasCaughtPending = computed(() => gameStore.character?.taxEvasionCaughtPending === true)
 

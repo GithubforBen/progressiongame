@@ -19,6 +19,8 @@ export interface Character {
   cumulativeEvadedTaxes?: number
   jailMonthsRemaining?: number
   exileMonthsRemaining?: number
+  victoryAchieved?: boolean
+  personalBestNetWorth?: number
 }
 
 export interface MonthlyExpense {
@@ -56,11 +58,22 @@ export const useGameStore = defineStore('game', {
     lastTurnResult: null as TurnResult | null,
     loading: false,
     initialized: false,
+    playtimeSeconds: 0,
+    _playtimeInterval: null as ReturnType<typeof setInterval> | null,
   }),
 
   getters: {
     totalMonthlyExpenses: (state) =>
       state.expenses.filter((e) => e.active).reduce((sum, e) => sum + e.amount, 0),
+
+    formattedPlaytime: (state) => {
+      const h = Math.floor(state.playtimeSeconds / 3600)
+      const m = Math.floor((state.playtimeSeconds % 3600) / 60)
+      const s = state.playtimeSeconds % 60
+      if (h > 0) return `${h}h ${m}m`
+      if (m > 0) return `${m}m ${s}s`
+      return `${s}s`
+    },
 
     currentMonthLabel: (state) => {
       const months = [
@@ -82,6 +95,19 @@ export const useGameStore = defineStore('game', {
       if (!authStore.token) return
       await Promise.all([this.fetchCharacter(), this.fetchExpenses()])
       this.initialized = true
+      this.startPlaytimeTracking()
+    },
+
+    startPlaytimeTracking() {
+      if (import.meta.client) {
+        const stored = localStorage.getItem('playtimeSeconds')
+        if (stored) this.playtimeSeconds = parseInt(stored, 10) || 0
+        if (this._playtimeInterval) return
+        this._playtimeInterval = setInterval(() => {
+          this.playtimeSeconds++
+          localStorage.setItem('playtimeSeconds', String(this.playtimeSeconds))
+        }, 1000)
+      }
     },
 
     async fetchCharacter() {
@@ -144,6 +170,17 @@ export const useGameStore = defineStore('game', {
         headers: { Authorization: `Bearer ${authStore.token}` },
         body: { choice },
       })
+    },
+
+    async resetCharacter() {
+      const config = useRuntimeConfig()
+      const authStore = useAuthStore()
+      await $fetch(`${config.public.apiBase}/api/character/reset`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authStore.token}` },
+      })
+      this.initialized = false
+      await this.init()
     },
 
     clearTurnResult() {

@@ -37,15 +37,18 @@
               :style="{ width: stat.value + '%' }"
             />
           </div>
-          <p v-if="stat.value < 20" class="text-xs text-red-400 mt-0.5">Kritisch!</p>
-          <p v-else-if="stat.value < 40" class="text-xs text-yellow-400 mt-0.5">Niedrig</p>
+          <p v-if="(!stat.invert && stat.value < 20) || (stat.invert && stat.value > 80)" class="text-xs text-red-400 mt-0.5">Kritisch!</p>
+          <p v-else-if="(!stat.invert && stat.value < 40) || (stat.invert && stat.value > 60)" class="text-xs text-yellow-400 mt-0.5">Erhöht</p>
         </div>
       </div>
     </div>
 
     <!-- Shop -->
     <div class="card">
-      <h3 class="text-base font-semibold text-white mb-4">Aktivitäten & Einkäufe</h3>
+      <div class="mb-4">
+        <h3 class="text-base font-semibold text-white">Sofortartikel</h3>
+        <p class="text-xs text-gray-500 mt-0.5">Einmalkäufe für sofortige Effekte auf deine Werte. Versicherungen findest du unter <NuxtLink to="/leben" class="text-accent hover:underline">Leben & Ausgaben</NuxtLink>.</p>
+      </div>
       <div v-if="loading" class="text-gray-500 text-sm">Lade...</div>
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
         <div
@@ -123,10 +126,10 @@ const stats = computed(() => {
   const c = character.value
   if (!c) return []
   return [
-    { label: 'Hunger', icon: '🍽', value: c.hunger ?? 0, color: statColor(c.hunger ?? 0), barColor: statBarColor(c.hunger ?? 0) },
-    { label: 'Energie', icon: '⚡', value: c.energy ?? 0, color: statColor(c.energy ?? 0), barColor: statBarColor(c.energy ?? 0) },
-    { label: 'Glück', icon: '😊', value: c.happiness ?? 0, color: statColor(c.happiness ?? 0), barColor: statBarColor(c.happiness ?? 0) },
-    { label: 'Stress', icon: '😤', value: c.stress ?? 0, color: stressColor(c.stress ?? 0), barColor: stressBarColor(c.stress ?? 0) },
+    { label: 'Hunger', icon: '🍽', value: c.hunger ?? 0, color: statColor(c.hunger ?? 0), barColor: statBarColor(c.hunger ?? 0), invert: false },
+    { label: 'Energie', icon: '⚡', value: c.energy ?? 0, color: statColor(c.energy ?? 0), barColor: statBarColor(c.energy ?? 0), invert: false },
+    { label: 'Glück', icon: '😊', value: c.happiness ?? 0, color: statColor(c.happiness ?? 0), barColor: statBarColor(c.happiness ?? 0), invert: false },
+    { label: 'Stress', icon: '😤', value: c.stress ?? 0, color: stressColor(c.stress ?? 0), barColor: stressBarColor(c.stress ?? 0), invert: true },
   ]
 })
 

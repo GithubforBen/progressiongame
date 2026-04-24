@@ -32,8 +32,9 @@ public class GameDataLoaderService implements ApplicationRunner {
         int properties = loadRealEstate();
         int needsItems = loadNeedsItems();
         int stocks = loadStocks();
-        log.info("DataLoader: {} Collections, {} Jobs, {} Collectibles, {} Immobilien, {} NeedsItems, {} Stocks geladen",
-            collections, jobs, collectibles, properties, needsItems, stocks);
+        int lifestyleItems = loadLifestyleItems();
+        log.info("DataLoader: {} Collections, {} Jobs, {} Collectibles, {} Immobilien, {} NeedsItems, {} Stocks, {} Lifestyle geladen",
+            collections, jobs, collectibles, properties, needsItems, stocks, lifestyleItems);
     }
 
     @SuppressWarnings("unchecked")
@@ -290,6 +291,47 @@ public class GameDataLoaderService implements ApplicationRunner {
                 .executeUpdate();
         }
         return stocks.size();
+    }
+
+    @SuppressWarnings("unchecked")
+    private int loadLifestyleItems() {
+        InputStream is = getClass().getResourceAsStream("/data/lifestyle_items.yaml");
+        if (is == null) { log.warn("lifestyle_items.yaml nicht gefunden"); return 0; }
+
+        Yaml yaml = new Yaml();
+        Map<String, Object> data = yaml.load(is);
+        List<Map<String, Object>> items = (List<Map<String, Object>>) data.get("lifestyleItems");
+        if (items == null) return 0;
+
+        for (Map<String, Object> item : items) {
+            em.createNativeQuery("""
+                INSERT INTO lifestyle_item_catalog
+                    (id, name, icon, cost, monthly_cost, stress_reduction_month,
+                     tax_evasion_boost, unlocks_billionaire, description)
+                VALUES (:id, :name, :icon, :cost, :monthlyCost, :stressReduction,
+                        :taxEvasionBoost, :unlocksBillionaire, :description)
+                ON CONFLICT (id) DO UPDATE SET
+                    name                   = EXCLUDED.name,
+                    icon                   = EXCLUDED.icon,
+                    cost                   = EXCLUDED.cost,
+                    monthly_cost           = EXCLUDED.monthly_cost,
+                    stress_reduction_month = EXCLUDED.stress_reduction_month,
+                    tax_evasion_boost      = EXCLUDED.tax_evasion_boost,
+                    unlocks_billionaire    = EXCLUDED.unlocks_billionaire,
+                    description            = EXCLUDED.description
+                """)
+                .setParameter("id", item.get("id"))
+                .setParameter("name", item.get("name"))
+                .setParameter("icon", item.get("icon"))
+                .setParameter("cost", toDouble(item.get("cost")))
+                .setParameter("monthlyCost", toDouble(item.get("monthlyCost")))
+                .setParameter("stressReduction", toInt(item.get("stressReductionMonth")))
+                .setParameter("taxEvasionBoost", Boolean.TRUE.equals(item.get("taxEvasionBoost")))
+                .setParameter("unlocksBillionaire", Boolean.TRUE.equals(item.get("unlocksBillionaire")))
+                .setParameter("description", item.get("description"))
+                .executeUpdate();
+        }
+        return items.size();
     }
 
     private double toDouble(Object val) {

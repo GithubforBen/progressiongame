@@ -19,7 +19,9 @@ public record CharacterDto(
     boolean taxEvasionCaughtPending,
     BigDecimal cumulativeEvadedTaxes,
     int jailMonthsRemaining,
-    int exileMonthsRemaining
+    int exileMonthsRemaining,
+    boolean victoryAchieved,
+    BigDecimal personalBestNetWorth
 ) {
     public static CharacterDto from(GameCharacter c) {
         return new CharacterDto(
@@ -38,7 +40,9 @@ public record CharacterDto(
             c.isTaxEvasionCaughtPending(),
             c.getCumulativeEvadedTaxes(),
             c.getJailMonthsRemaining(),
-            c.getExileMonthsRemaining()
+            c.getExileMonthsRemaining(),
+            c.isVictoryAchieved(),
+            c.getPersonalBestNetWorth()
         );
     }
 }

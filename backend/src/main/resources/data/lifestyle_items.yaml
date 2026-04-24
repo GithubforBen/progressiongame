@@ -1,0 +1,80 @@
+lifestyleItems:
+  - id: "FAHRRAD"
+    name: "Fahrrad"
+    icon: "🚴"
+    cost: 500
+    monthlyCost: 0
+    stressReductionMonth: 5
+    taxEvasionBoost: false
+    unlocksBillionaire: false
+    description: "Ein gutes Fahrrad — entspanntes Pendeln senkt deinen Stress um 5 pro Monat."
+
+  - id: "AUTO"
+    name: "Auto"
+    icon: "🚗"
+    cost: 15000
+    monthlyCost: 0
+    stressReductionMonth: 10
+    taxEvasionBoost: false
+    unlocksBillionaire: false
+    description: "Komfortables Fahrzeug — spart Zeit und senkt Stress um 10 pro Monat. Ersetzt das Fahrrad."
+
+  - id: "PRIVAT_JET"
+    name: "Privat Jet"
+    icon: "✈️"
+    cost: 2000000
+    monthlyCost: 5000
+    stressReductionMonth: 0
+    taxEvasionBoost: true
+    unlocksBillionaire: false
+    description: "Luxuriöses Reisen. Kostet 5.000 €/Monat Betrieb, verschleiert aber Vermögen (Steuerprüfungsrisiko −15%)."
+
+  - id: "JACHT"
+    name: "Jacht"
+    icon: "⛵"
+    cost: 5000000
+    monthlyCost: 0
+    stressReductionMonth: 0
+    taxEvasionBoost: false
+    unlocksBillionaire: true
+    description: "Eine luxuriöse Jacht — Türöffner in den Kreis der Milliardäre."
+
+  - id: "SCHLOSS"
+    name: "Schloss"
+    icon: "🏰"
+    cost: 200000000
+    monthlyCost: 0
+    stressReductionMonth: 0
+    taxEvasionBoost: false
+    unlocksBillionaire: false
+    description: "Ein mittelalterliches Schloss. Beeindruckt jeden. Bedingung für den Sieg."
+
+  - id: "SUPERCAR"
+    name: "Supercar-Sammlung"
+    icon: "🏎️"
+    cost: 50000000
+    monthlyCost: 0
+    stressReductionMonth: 0
+    taxEvasionBoost: false
+    unlocksBillionaire: false
+    description: "Eine Sammlung von Supersportwagen. Status-Symbol der Extraklasse. Bedingung für den Sieg."
+
+  - id: "SUPER_YACHT"
+    name: "Super Yacht"
+    icon: "🛥️"
+    cost: 500000000
+    monthlyCost: 0
+    stressReductionMonth: 0
+    taxEvasionBoost: false
+    unlocksBillionaire: false
+    description: "Eine monumentale Super Yacht — schwimmendes Palast. Bedingung für den Sieg."
+
+  - id: "SPACE_STATION"
+    name: "Raumstation"
+    icon: "🛸"
+    cost: 100000000000
+    monthlyCost: 0
+    stressReductionMonth: 0
+    taxEvasionBoost: false
+    unlocksBillionaire: false
+    description: "Deine eigene Raumstation. Das ultimative Status-Symbol. Bedingung für den Sieg."

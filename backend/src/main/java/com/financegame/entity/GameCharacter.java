@@ -62,6 +62,12 @@ public class GameCharacter {
     @Column(name = "total_jail_months_served", nullable = false)
     private int totalJailMonthsServed = 0;
 
+    @Column(name = "victory_achieved", nullable = false)
+    private boolean victoryAchieved = false;
+
+    @Column(name = "personal_best_net_worth", nullable = false, precision = 20, scale = 2)
+    private BigDecimal personalBestNetWorth = BigDecimal.ZERO;
+
     // --- Getters & Setters ---
 
     public Long getId() { return id; }
@@ -117,4 +123,10 @@ public class GameCharacter {
 
     public int getTotalJailMonthsServed() { return totalJailMonthsServed; }
     public void setTotalJailMonthsServed(int totalJailMonthsServed) { this.totalJailMonthsServed = totalJailMonthsServed; }
+
+    public boolean isVictoryAchieved() { return victoryAchieved; }
+    public void setVictoryAchieved(boolean victoryAchieved) { this.victoryAchieved = victoryAchieved; }
+
+    public BigDecimal getPersonalBestNetWorth() { return personalBestNetWorth; }
+    public void setPersonalBestNetWorth(BigDecimal personalBestNetWorth) { this.personalBestNetWorth = personalBestNetWorth; }
 }
