@@ -47,6 +47,7 @@ public class TurnService {
     private final Map<String, CollectionBonusApplier> bonusApplierMap;
     private final GameConfig gameConfig;
     private final TaxService taxService;
+    private final LifestyleService lifestyleService;
 
     private final Random random = new Random();
 
@@ -71,7 +72,8 @@ public class TurnService {
         List<CollectionBonusApplier> bonusAppliers,
         GameConfig gameConfig,
         TaxService taxService,
-        SocialService socialService
+        SocialService socialService,
+        LifestyleService lifestyleService
     ) {
         this.characterService = characterService;
         this.characterRepository = characterRepository;
@@ -95,6 +97,7 @@ public class TurnService {
         this.gameConfig = gameConfig;
         this.taxService = taxService;
         this.socialService = socialService;
+        this.lifestyleService = lifestyleService;
     }
 
     @Transactional
@@ -166,7 +169,15 @@ public class TurnService {
                     .setScale(2, RoundingMode.HALF_UP);
                 taxPaid = taxPaid.subtract(evaded);
                 character.setCumulativeEvadedTaxes(character.getCumulativeEvadedTaxes().add(evaded));
-                if (random.nextDouble() < detectionChance(evasionLevel)) {
+                boolean hasRechtsschutz = monthlyExpenseRepository.findActiveByPlayerId(playerId)
+                    .stream().anyMatch(e -> "RECHTSSCHUTZ".equals(e.getCategory()));
+                boolean hasJet = lifestyleService.getOwnedCatalogItems(playerId)
+                    .stream().anyMatch(c -> c.isTaxEvasionBoost());
+                double baseChance = detectionChance(evasionLevel);
+                double finalChance = baseChance;
+                if (hasRechtsschutz) finalChance *= 0.70;
+                if (hasJet) finalChance *= 0.85;
+                if (random.nextDouble() < finalChance) {
                     taxEvasionCaught = true;
                     taxEvasionCaughtAmount = character.getCumulativeEvadedTaxes();
                     character.setTaxEvasionCaughtPending(true);
@@ -204,9 +215,22 @@ public class TurnService {
             totalExpenses = totalExpenses.add(medicalCost);
         }
 
-        // --- 5. Apply net cash change ---
+        // --- 5. Apply net cash change (allow overdraft down to -5000) ---
         BigDecimal netChange = grossIncome.subtract(totalExpenses);
-        character.setCash(character.getCash().add(netChange).max(BigDecimal.ZERO));
+        BigDecimal newCash = character.getCash().add(netChange)
+            .max(CharacterService.OVERDRAFT_LIMIT);
+        character.setCash(newCash);
+
+        // --- 5a. Overdraft interest & Schufa penalty ---
+        if (newCash.compareTo(BigDecimal.ZERO) < 0) {
+            BigDecimal interest = newCash.abs()
+                .multiply(new BigDecimal("0.02")).setScale(2, RoundingMode.HALF_UP);
+            character.setCash(character.getCash().subtract(interest).max(CharacterService.OVERDRAFT_LIMIT));
+            expenseBreakdown.add(new TurnResultDto.LineItem("Überziehungszinsen (2%)", interest));
+            totalExpenses = totalExpenses.add(interest);
+            character.setSchufaScore(LoanService.clampSchufa(character.getSchufaScore() - 10));
+            events.add("Kontoüberziehung! Schufa -10, Zinsen: " + interest + " €");
+        }
 
         // --- 5b. Random events ---
         randomEventService.applyRandomEvents(playerId, character, events);
@@ -250,6 +274,19 @@ public class TurnService {
         activeEventRepository.deleteExpiredForPlayer(playerId, currentTurn);
         generateRandomEvent(playerId, currentTurn, events);
 
+        // --- 8e. Schufa passive regeneration toward 500 ---
+        int schufa = character.getSchufaScore();
+        int drift = 0;
+        if (schufa < 500) drift = 1;
+        else if (schufa > 500) drift = -1;
+        if (character.getNetWorth() != null
+                && character.getNetWorth().compareTo(new BigDecimal("1000000")) > 0) {
+            drift += (schufa < 500) ? 2 : -2;
+        }
+        if (drift != 0) {
+            character.setSchufaScore(LoanService.clampSchufa(schufa + drift));
+        }
+
         // --- 9. Advance turn counter & persist character ---
         character.setCurrentTurn(currentTurn + 1);
         characterRepository.save(character);
@@ -260,6 +297,9 @@ public class TurnService {
         // --- 9c. Recalculate net worth and reload ---
         characterService.recalculateNetWorth(playerId);
         character = characterService.findOrThrow(playerId);
+
+        // --- 9d. Check victory condition ---
+        checkVictoryCondition(playerId, character, events);
 
         // --- 10. Save monthly snapshot ---
         monthlySnapshotRepository.save(new MonthlySnapshot(
@@ -387,18 +427,46 @@ public class TurnService {
             total = total.add(expense.getAmount());
             breakdown.add(new TurnResultDto.LineItem(expense.getLabel(), expense.getAmount()));
         }
+
+        // Lifestyle item monthly costs (e.g., Privat Jet fuel)
+        for (var item : lifestyleService.getOwnedCatalogItems(playerId)) {
+            if (item.getMonthlyCost().compareTo(BigDecimal.ZERO) > 0) {
+                total = total.add(item.getMonthlyCost());
+                breakdown.add(new TurnResultDto.LineItem(item.getName() + " (Betriebskosten)", item.getMonthlyCost()));
+            }
+        }
+
         return total;
     }
 
     private void applyNeedsDecay(GameCharacter character, Long playerId) {
-        boolean hasFoodExpense = monthlyExpenseRepository.findActiveByPlayerId(playerId)
-            .stream().anyMatch(e -> "ESSEN".equals(e.getCategory()));
+        List<MonthlyExpense> activeExpenses = monthlyExpenseRepository.findActiveByPlayerId(playerId);
+        boolean hasFoodExpense = activeExpenses.stream().anyMatch(e -> "ESSEN".equals(e.getCategory()));
 
         GameConfig.NeedsConfig needs = gameConfig.getNeeds();
         int hungerDecay = hasFoodExpense ? needs.getHungerDecayWithFood() : needs.getHungerDecayBase();
         character.setHunger(clamp(character.getHunger() - hungerDecay));
         character.setEnergy(clamp(character.getEnergy() - needs.getEnergyDecay()));
         character.setHappiness(clamp(character.getHappiness() - needs.getHappinessDecay()));
+
+        // Krankenkasse tier stress reduction
+        activeExpenses.stream()
+            .filter(e -> "KRANKENVERSICHERUNG".equals(e.getCategory()))
+            .findFirst().ifPresent(kv -> {
+                int stressReduction = 0;
+                if (kv.getAmount().compareTo(new BigDecimal("400")) >= 0) stressReduction = 10;
+                else if (kv.getAmount().compareTo(new BigDecimal("250")) >= 0) stressReduction = 5;
+                if (stressReduction > 0) {
+                    character.setStress(clamp(character.getStress() - stressReduction));
+                }
+            });
+
+        // Lifestyle item stress reduction
+        lifestyleService.getOwnedCatalogItems(playerId).forEach(item -> {
+            if (item.getStressReductionMonth() > 0) {
+                character.setStress(clamp(character.getStress() - item.getStressReductionMonth()));
+            }
+        });
     }
 
     private void applyNeedsCriticalEvents(GameCharacter character, Long playerId, List<String> events) {
@@ -611,6 +679,27 @@ public class TurnService {
         List<GameConfig.TaxEvasionConfig.TaxEvasionLevel> levels = gameConfig.getTaxEvasion().getLevels();
         if (level < 1 || level > levels.size()) return 1.0;
         return levels.get(level - 1).getDetectionChance();
+    }
+
+    private static final BigDecimal VICTORY_NET_WORTH = new BigDecimal("500000000000"); // 500 billion
+    private static final java.util.Set<String> VICTORY_ITEMS =
+        java.util.Set.of("SCHLOSS", "SUPERCAR", "SUPER_YACHT", "SPACE_STATION");
+
+    private void checkVictoryCondition(Long playerId, GameCharacter character, List<String> events) {
+        if (character.isVictoryAchieved()) return;
+        if (character.getNetWorth().compareTo(VICTORY_NET_WORTH) < 0) return;
+
+        java.util.Set<String> ownedIds = lifestyleService.getOwnedCatalogItems(playerId)
+            .stream().map(com.financegame.entity.LifestyleItemCatalog::getId)
+            .collect(java.util.stream.Collectors.toSet());
+        if (!ownedIds.containsAll(VICTORY_ITEMS)) return;
+
+        character.setVictoryAchieved(true);
+        if (character.getNetWorth().compareTo(character.getPersonalBestNetWorth()) > 0) {
+            character.setPersonalBestNetWorth(character.getNetWorth());
+        }
+        characterRepository.save(character);
+        events.add("🏆 SIEG! Du hast das Spiel gewonnen! Nettovermögen: " + character.getNetWorth() + " €");
     }
 
     private static int clamp(int v) { return Math.max(0, Math.min(100, v)); }

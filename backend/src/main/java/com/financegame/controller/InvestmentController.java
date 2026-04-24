@@ -2,6 +2,7 @@ package com.financegame.controller;
 
 import com.financegame.dto.BuyStockRequest;
 import com.financegame.dto.InvestmentDto;
+import com.financegame.dto.SellStockResponse;
 import com.financegame.security.PlayerPrincipal;
 import com.financegame.service.InvestmentService;
 import org.springframework.http.HttpStatus;
@@ -35,11 +36,10 @@ public class InvestmentController {
     }
 
     @PostMapping("/{id}/sell")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void sellStock(
+    public SellStockResponse sellStock(
         @PathVariable Long id,
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
-        investmentService.sellStock(principal.id(), id);
+        return investmentService.sellStock(principal.id(), id);
     }
 }

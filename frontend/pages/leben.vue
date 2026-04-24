@@ -111,38 +111,83 @@
       </div>
     </div>
 
-    <!-- Neue Ausgabe hinzufügen -->
+    <!-- Versicherungs-Katalog -->
     <div class="card">
-      <h3 class="text-base font-semibold text-white mb-4">Ausgabe hinzufügen</h3>
-      <form @submit.prevent="addExpense" class="space-y-3">
+      <h3 class="text-base font-semibold text-white mb-1">Versicherungen</h3>
+      <p class="text-xs text-gray-500 mb-4">Wähle deinen Versicherungsschutz. Tiers sind Upgrades – nur eine Krankenkasse kann aktiv sein.</p>
+
+      <!-- Krankenversicherung Tiers -->
+      <div class="mb-5">
+        <h4 class="text-sm font-semibold text-gray-300 mb-3">🏥 Krankenversicherung</h4>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Kategorie</label>
-            <select v-model="form.category" class="input w-full">
-              <option value="">Wählen...</option>
-              <option value="KRANKENVERSICHERUNG">Krankenversicherung</option>
-              <option value="GYM">Fitnessstudio</option>
-              <option value="STREAMING">Streaming</option>
-              <option value="MOBILFUNK">Mobilfunk</option>
-              <option value="INTERNET">Internet</option>
-              <option value="ZEITSCHRIFTEN">Zeitschriften/Abos</option>
-              <option value="SONSTIGES">Sonstiges</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Bezeichnung</label>
-            <input v-model="form.label" type="text" class="input w-full" placeholder="z.B. Netflix" />
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Betrag (€ / Monat)</label>
-            <input v-model.number="form.amount" type="number" min="1" step="0.01" class="input w-full" placeholder="z.B. 12.99" />
+          <div
+            v-for="tier in kvTiers"
+            :key="tier.label"
+            class="rounded-lg border p-4 flex flex-col gap-2"
+            :class="activeKvLabel === tier.label
+              ? 'border-green-500/50 bg-green-500/8'
+              : 'border-white/10 bg-white/3'"
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-white font-medium text-sm">{{ tier.label }}</span>
+              <span v-if="activeKvLabel === tier.label" class="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">Aktiv</span>
+            </div>
+            <p class="text-yellow-400 font-mono text-sm">{{ formatCurrency(tier.amount) }}/Monat</p>
+            <ul class="space-y-1">
+              <li v-for="effect in tier.effects" :key="effect" class="text-xs text-green-400">✓ {{ effect }}</li>
+            </ul>
+            <button
+              v-if="activeKvLabel !== tier.label"
+              class="btn-primary text-xs py-1.5 mt-auto"
+              :disabled="catalogLoading"
+              @click="selectKvTier(tier)"
+            >
+              {{ activeKvLabel ? 'Wechseln' : 'Hinzufügen' }}
+            </button>
+            <button
+              v-else
+              class="btn-secondary text-xs py-1.5 mt-auto bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20"
+              :disabled="catalogLoading"
+              @click="removeKv()"
+            >
+              Kündigen
+            </button>
           </div>
         </div>
-        <button type="submit" :disabled="addLoading" class="btn-primary w-full sm:w-auto">
-          {{ addLoading ? 'Wird hinzugefügt...' : '+ Ausgabe hinzufügen' }}
-        </button>
-        <p v-if="addError" class="text-red-400 text-sm">{{ addError }}</p>
-      </form>
+      </div>
+
+      <!-- Rechtsschutz -->
+      <div>
+        <h4 class="text-sm font-semibold text-gray-300 mb-3">⚖️ Rechtsschutzversicherung</h4>
+        <div class="rounded-lg border p-4" :class="hasRechtsschutz ? 'border-blue-500/50 bg-blue-500/8' : rechtsschutzLocked ? 'border-white/5 bg-white/2 opacity-60' : 'border-white/10 bg-white/3'">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-white font-medium text-sm">Rechtsschutz Premium</span>
+                <span v-if="hasRechtsschutz" class="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">Aktiv</span>
+                <span v-else-if="rechtsschutzLocked" class="text-xs px-1.5 py-0.5 rounded bg-gray-700 text-gray-500">🔒 Gesperrt</span>
+              </div>
+              <p class="text-yellow-400 font-mono text-sm mb-2">{{ formatCurrency(300) }}/Monat</p>
+              <p class="text-xs text-green-400">✓ Steuerprüfungsrisiko −30%</p>
+              <p v-if="rechtsschutzLocked" class="text-xs text-gray-500 mt-1">Benötigt: Schufa ≥ 600 (aktuell {{ gameStore.character?.schufaScore ?? '??' }})</p>
+            </div>
+            <div class="flex-shrink-0">
+              <button
+                v-if="!hasRechtsschutz && !rechtsschutzLocked"
+                class="btn-primary text-xs py-1.5 px-3"
+                :disabled="catalogLoading"
+                @click="addRechtsschutz()"
+              >Hinzufügen</button>
+              <button
+                v-else-if="hasRechtsschutz"
+                class="btn-secondary text-xs py-1.5 px-3 bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20"
+                :disabled="catalogLoading"
+                @click="removeRechtsschutz()"
+              >Kündigen</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -155,6 +200,7 @@ definePageMeta({ layout: 'default' })
 const api = useApi()
 const toast = useToastStore()
 const { formatCurrency } = useFormatting()
+const gameStore = useGameStore()
 
 interface Expense {
   id: number
@@ -177,13 +223,41 @@ const expenses = ref<Expense[]>([])
 const expensesLoading = ref(false)
 const tax = ref<TaxPreview | null>(null)
 const taxLoading = ref(false)
-const addLoading = ref(false)
-const addError = ref('')
+const catalogLoading = ref(false)
 
-const form = ref({ category: '', label: '', amount: 0 })
+const kvTiers = [
+  {
+    label: 'Krankenkasse Basis',
+    amount: 150,
+    effects: ['Kein Arztrechnung-Risiko'],
+  },
+  {
+    label: 'Krankenkasse Standard',
+    amount: 250,
+    effects: ['Kein Arztrechnung-Risiko', '−5 Stress pro Monat'],
+  },
+  {
+    label: 'Krankenkasse Premium',
+    amount: 400,
+    effects: ['Kein Arztrechnung-Risiko', '−10 Stress pro Monat'],
+  },
+]
 
 const hasKv = computed(() =>
   expenses.value.some(e => e.category === 'KRANKENVERSICHERUNG' && e.active)
+)
+
+const activeKvLabel = computed(() => {
+  const kv = expenses.value.find(e => e.category === 'KRANKENVERSICHERUNG' && e.active)
+  return kv?.label ?? null
+})
+
+const hasRechtsschutz = computed(() =>
+  expenses.value.some(e => e.category === 'RECHTSSCHUTZ' && e.active)
+)
+
+const rechtsschutzLocked = computed(() =>
+  (gameStore.character?.schufaScore ?? 0) < 600
 )
 
 const totalActiveExpenses = computed(() =>
@@ -235,26 +309,70 @@ async function deleteExpense(expense: Expense) {
   }
 }
 
-async function addExpense() {
-  addError.value = ''
-  if (!form.value.category) { addError.value = 'Bitte Kategorie wählen.'; return }
-  if (!form.value.label.trim()) { addError.value = 'Bezeichnung darf nicht leer sein.'; return }
-  if (!form.value.amount || form.value.amount <= 0) { addError.value = 'Betrag muss größer als 0 sein.'; return }
+async function selectKvTier(tier: { label: string; amount: number }) {
+  catalogLoading.value = true
+  try {
+    const existing = expenses.value.find(e => e.category === 'KRANKENVERSICHERUNG')
+    if (existing) await api.del(`/api/expenses/${existing.id}`)
+    const created = await api.post<Expense>('/api/expenses', {
+      category: 'KRANKENVERSICHERUNG',
+      label: tier.label,
+      amount: tier.amount,
+    })
+    expenses.value = expenses.value.filter(e => e.category !== 'KRANKENVERSICHERUNG')
+    expenses.value.push(created)
+    toast.success(`${tier.label} aktiviert`)
+  } catch (e: any) {
+    toast.error((e as any)?.data?.message ?? 'Fehler beim Hinzufügen')
+  } finally {
+    catalogLoading.value = false
+  }
+}
 
-  addLoading.value = true
+async function removeKv() {
+  const existing = expenses.value.find(e => e.category === 'KRANKENVERSICHERUNG')
+  if (!existing) return
+  catalogLoading.value = true
+  try {
+    await api.del(`/api/expenses/${existing.id}`)
+    expenses.value = expenses.value.filter(e => e.id !== existing.id)
+    toast.success('Krankenversicherung gekündigt')
+  } catch {
+    toast.error('Fehler beim Kündigen')
+  } finally {
+    catalogLoading.value = false
+  }
+}
+
+async function addRechtsschutz() {
+  catalogLoading.value = true
   try {
     const created = await api.post<Expense>('/api/expenses', {
-      category: form.value.category,
-      label: form.value.label.trim(),
-      amount: form.value.amount,
+      category: 'RECHTSSCHUTZ',
+      label: 'Rechtsschutzversicherung',
+      amount: 300,
     })
     expenses.value.push(created)
-    form.value = { category: '', label: '', amount: 0 }
-    toast.success('Ausgabe hinzugefügt')
+    toast.success('Rechtsschutzversicherung hinzugefügt')
   } catch (e: any) {
-    addError.value = e?.data?.message ?? 'Fehler beim Hinzufügen'
+    toast.error((e as any)?.data?.message ?? 'Fehler')
   } finally {
-    addLoading.value = false
+    catalogLoading.value = false
+  }
+}
+
+async function removeRechtsschutz() {
+  const existing = expenses.value.find(e => e.category === 'RECHTSSCHUTZ')
+  if (!existing) return
+  catalogLoading.value = true
+  try {
+    await api.del(`/api/expenses/${existing.id}`)
+    expenses.value = expenses.value.filter(e => e.id !== existing.id)
+    toast.success('Rechtsschutz gekündigt')
+  } catch {
+    toast.error('Fehler beim Kündigen')
+  } finally {
+    catalogLoading.value = false
   }
 }
 
@@ -262,7 +380,7 @@ function categoryIcon(cat: string): string {
   const map: Record<string, string> = {
     ESSEN: '🍔', WOHNEN: '🏠', KRANKENVERSICHERUNG: '🏥',
     GYM: '💪', STREAMING: '📺', MOBILFUNK: '📱',
-    INTERNET: '🌐', ZEITSCHRIFTEN: '📰', SONSTIGES: '💼',
+    INTERNET: '🌐', ZEITSCHRIFTEN: '📰', SONSTIGES: '💼', RECHTSSCHUTZ: '⚖️',
   }
   return map[cat] ?? '💰'
 }
@@ -272,6 +390,7 @@ function categoryLabel(cat: string): string {
     ESSEN: 'Ernährung', WOHNEN: 'Wohnen', KRANKENVERSICHERUNG: 'Krankenversicherung',
     GYM: 'Fitnessstudio', STREAMING: 'Streaming', MOBILFUNK: 'Mobilfunk',
     INTERNET: 'Internet', ZEITSCHRIFTEN: 'Abonnements', SONSTIGES: 'Sonstiges',
+    RECHTSSCHUTZ: 'Rechtsschutz',
   }
   return map[cat] ?? cat
 }
@@ -285,6 +404,7 @@ function categoryStyle(cat: string): string {
     INTERNET: 'bg-sky-500/20 text-sky-400',
     ESSEN: 'bg-yellow-500/20 text-yellow-400',
     WOHNEN: 'bg-orange-500/20 text-orange-400',
+    RECHTSSCHUTZ: 'bg-blue-500/20 text-blue-400',
   }
   return map[cat] ?? 'bg-gray-500/20 text-gray-400'
 }

@@ -6,6 +6,20 @@
     </div>
 
     <template v-else>
+      <!-- Victory banner -->
+      <div
+        v-if="character?.victoryAchieved && !victoryBannerDismissed"
+        class="card border border-yellow-500/40 bg-yellow-500/10 flex items-center gap-4"
+      >
+        <span class="text-3xl flex-shrink-0">🏆</span>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-yellow-300">Sieg errungen!</p>
+          <p class="text-sm text-yellow-400/80">Du hast alle Ziele erreicht und bist FinanzLeben-Champion.</p>
+        </div>
+        <NuxtLink to="/sieg" class="btn-primary flex-shrink-0 text-sm">Siegesbildschirm</NuxtLink>
+        <button class="text-gray-500 hover:text-gray-300 flex-shrink-0 ml-1" @click="victoryBannerDismissed = true">✕</button>
+      </div>
+
       <!-- Top stats -->
       <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
@@ -13,6 +27,8 @@
           :value="formatCurrency(character?.cash ?? 0)"
           :trend-positive="cashTrend >= 0"
           :trend="cashTrend !== 0 ? formatCurrency(Math.abs(cashTrend)) : undefined"
+          :subtitle="(character?.cash ?? 0) < 0 ? '⚠ Überziehung' : undefined"
+          :value-class="(character?.cash ?? 0) < 0 ? 'text-red-400' : ''"
         />
         <StatCard
           title="Nettovermögen"
@@ -138,6 +154,7 @@ const { formatCurrency } = useFormatting()
 const character = computed(() => gameStore.character)
 const loading = ref(true)
 const previousCash = ref<number | null>(null)
+const victoryBannerDismissed = ref(false)
 
 interface Snapshot {
   turn: number
@@ -154,8 +171,14 @@ const cashTrend = computed(() => {
   return character.value.cash - previousCash.value
 })
 
+function turnToMonthLabel(turn: number): string {
+  const months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+  const year = 2025 + Math.floor((turn - 1) / 12)
+  return `${months[(turn - 1) % 12]} ${year}`
+}
+
 const netWorthChartData = computed(() => ({
-  labels: snapshots.value.map(s => `M${s.turn}`),
+  labels: snapshots.value.map(s => turnToMonthLabel(s.turn)),
   datasets: [
     {
       label: 'Nettovermögen',
@@ -180,7 +203,7 @@ const netWorthChartData = computed(() => ({
 }))
 
 const incomeExpensesChartData = computed(() => ({
-  labels: snapshots.value.map(s => `M${s.turn}`),
+  labels: snapshots.value.map(s => turnToMonthLabel(s.turn)),
   datasets: [
     {
       label: 'Einnahmen',

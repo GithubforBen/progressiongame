@@ -354,6 +354,18 @@ async function buyStock(stock: Stock) {
   }
   buyLoading.value = true
   try {
+    // Refresh price before submitting to avoid stale-price errors
+    const freshStocks = await api.get<Stock[]>('/api/stocks')
+    const fresh = freshStocks.find(s => s.id === stock.id)
+    if (fresh && fresh.currentPrice !== stock.currentPrice) {
+      const idx = stocks.value.findIndex(s => s.id === stock.id)
+      if (idx !== -1) stocks.value[idx].currentPrice = fresh.currentPrice
+      if (selectedStock.value?.id === stock.id) selectedStock.value.currentPrice = fresh.currentPrice
+      buyError.value = `Preis aktualisiert auf ${formatCurrency(fresh.currentPrice)}. Bitte bestätigen.`
+      buyLoading.value = false
+      return
+    }
+
     const inv = await api.post<Investment>('/api/investments/stocks/buy', {
       ticker: stock.ticker,
       quantity: buyQuantity.value,
@@ -369,12 +381,27 @@ async function buyStock(stock: Stock) {
   }
 }
 
+interface SellResult {
+  ticker: string
+  proceeds: number
+  costBasis: number
+  grossProfit: number
+  taxPaid: number
+  netProceeds: number
+}
+
 async function sellPosition(inv: Investment) {
   sellLoading.value = inv.id
   try {
-    await api.post(`/api/investments/${inv.id}/sell`)
+    const result = await api.post<SellResult>(`/api/investments/${inv.id}/sell`)
     portfolio.value = portfolio.value.filter(i => i.id !== inv.id)
-    toast.success(`${inv.name} verkauft für ${formatCurrency(inv.currentValue)}`)
+    if (result.taxPaid > 0) {
+      toast.success(
+        `${inv.name} verkauft · Gewinn: ${formatCurrency(result.grossProfit)} · Steuer (25%): ${formatCurrency(result.taxPaid)} · Netto: ${formatCurrency(result.netProceeds)}`
+      )
+    } else {
+      toast.success(`${inv.name} verkauft für ${formatCurrency(result.netProceeds)}`)
+    }
     await gameStore.init()
   } catch (e: any) {
     toast.error(e?.data?.message ?? 'Verkauf fehlgeschlagen')

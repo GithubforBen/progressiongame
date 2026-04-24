@@ -28,14 +28,16 @@
 
         <div class="flex justify-center gap-3 mb-6">
           <div
-            v-for="(reel, i) in displayReels"
+            v-for="(reel, i) in animatingReels"
             :key="i"
-            class="w-20 h-20 flex items-center justify-center rounded-xl text-4xl border-2 transition-all duration-300"
-            :class="spinning
-              ? 'border-accent/50 bg-accent/10 animate-pulse'
-              : slotResult ? resultBorderClass(slotResult.outcome) : 'border-surface-600 bg-surface-700'"
+            class="w-20 h-20 flex items-center justify-center rounded-xl text-4xl border-2 transition-all duration-300 overflow-hidden relative"
+            :class="[
+              lockedReels[i] ? (slotResult ? resultBorderClass(slotResult.outcome) : 'border-green-500/50 bg-green-500/10') : '',
+              !lockedReels[i] && spinning ? 'border-accent/50 bg-accent/10' : '',
+              !spinning && !lockedReels[i] ? (slotResult ? resultBorderClass(slotResult.outcome) : 'border-surface-600 bg-surface-700') : '',
+            ]"
           >
-            {{ reel }}
+            <span :class="spinning && !lockedReels[i] ? 'reel-spin' : ''">{{ reel }}</span>
           </div>
         </div>
 
@@ -478,20 +480,48 @@ const slotBet = ref(10)
 const spinning = ref(false)
 const slotResult = ref<SlotResult | null>(null)
 const slotSymbolMap: Record<string, string> = { SEVEN: '7️⃣', BELL: '🔔', BAR: '🎰', CHERRY: '🍒', LEMON: '🍋', BLANK: '⬛' }
-const displayReels = computed<string[]>(() => {
-  if (slotResult.value && !spinning.value) return slotResult.value.reels.map(r => slotSymbolMap[r] ?? r)
-  return ['❓', '❓', '❓']
-})
+const allSymbols = ['7️⃣', '🔔', '🎰', '🍒', '🍋', '⬛']
+const animatingReels = ref<string[]>(['❓', '❓', '❓'])
+const lockedReels = ref<boolean[]>([false, false, false])
+
 async function playSlots() {
   spinning.value = true
   slotResult.value = null
+  lockedReels.value = [false, false, false]
+  animatingReels.value = ['❓', '❓', '❓']
+
+  // Start rapid symbol cycling
+  const intervals: ReturnType<typeof setInterval>[] = []
+  for (let i = 0; i < 3; i++) {
+    let idx = 0
+    intervals[i] = setInterval(() => {
+      animatingReels.value[i] = allSymbols[idx % allSymbols.length]
+      idx++
+    }, 80)
+  }
+
   try {
     const result = await api.post<SlotResult>('/api/gambling/slots', { bet: slotBet.value })
+    const finalSymbols = result.reels.map(r => slotSymbolMap[r] ?? r)
+
+    // Stop reels sequentially: 600ms, 1200ms, 1800ms after result
+    for (let i = 0; i < 3; i++) {
+      await new Promise<void>(resolve => setTimeout(resolve, 600))
+      clearInterval(intervals[i])
+      animatingReels.value[i] = finalSymbols[i]
+      lockedReels.value[i] = true
+    }
+
     slotResult.value = result
     await gameStore.fetchCharacter()
     if (result.netChange >= 0) toast.success(outcomeLabel(result.outcome) + ' ' + formatCurrency(result.netChange))
-  } catch (e: any) { toast.error(e?.data?.message ?? 'Fehler beim Spielen') }
-  finally { spinning.value = false }
+  } catch (e: any) {
+    intervals.forEach(clearInterval)
+    animatingReels.value = ['❌', '❌', '❌']
+    toast.error((e as any)?.data?.message ?? 'Fehler beim Spielen')
+  } finally {
+    spinning.value = false
+  }
 }
 
 // ── Blackjack ─────────────────────────────────────────────────────────────
@@ -658,3 +688,15 @@ function handBadgeClass(result: string): string {
   return 'bg-red-500/20 text-red-400'
 }
 </script>
+
+<style scoped>
+@keyframes reelSpin {
+  0%   { transform: translateY(-60%) scale(0.8); opacity: 0.4; }
+  50%  { transform: translateY(0)    scale(1.1); opacity: 1; }
+  100% { transform: translateY(60%)  scale(0.8); opacity: 0.4; }
+}
+.reel-spin {
+  display: inline-block;
+  animation: reelSpin 0.16s ease-in-out infinite;
+}
+</style>

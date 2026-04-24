@@ -6,6 +6,7 @@ import com.financegame.domain.condition.HasCertCondition;
 import com.financegame.domain.events.StockPurchasedEvent;
 import com.financegame.domain.events.StockSoldEvent;
 import com.financegame.dto.InvestmentDto;
+import com.financegame.dto.SellStockResponse;
 import com.financegame.entity.GameCharacter;
 import com.financegame.entity.Investment;
 import com.financegame.entity.Stock;
@@ -96,8 +97,10 @@ public class InvestmentService {
         return InvestmentDto.from(investment);
     }
 
+    private static final BigDecimal TAX_RATE = new BigDecimal("0.25");
+
     @Transactional
-    public void sellStock(Long playerId, Long investmentId) {
+    public SellStockResponse sellStock(Long playerId, Long investmentId) {
         Investment investment = investmentRepository.findById(investmentId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                 "Investment nicht gefunden"));
@@ -110,15 +113,24 @@ public class InvestmentService {
         }
 
         BigDecimal proceeds = investment.getCurrentValue();
-        BigDecimal profitLoss = proceeds.subtract(investment.getAmountInvested());
+        BigDecimal costBasis = investment.getAmountInvested();
+        BigDecimal grossProfit = proceeds.subtract(costBasis);
         String ticker = investment.getName();
 
-        characterService.addCash(playerId, proceeds);
+        BigDecimal taxPaid = BigDecimal.ZERO;
+        if (grossProfit.compareTo(BigDecimal.ZERO) > 0) {
+            taxPaid = grossProfit.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal netProceeds = proceeds.subtract(taxPaid);
+
+        characterService.addCash(playerId, netProceeds);
         investmentRepository.delete(investmentId);
 
         recalcNetWorth(playerId);
 
-        eventPublisher.publishEvent(new StockSoldEvent(playerId, ticker, proceeds, profitLoss));
+        eventPublisher.publishEvent(new StockSoldEvent(playerId, ticker, proceeds, grossProfit));
+
+        return new SellStockResponse(ticker, proceeds, costBasis, grossProfit, taxPaid, netProceeds);
     }
 
     private void recalcNetWorth(Long playerId) {

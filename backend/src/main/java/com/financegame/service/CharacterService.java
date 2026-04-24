@@ -11,6 +11,8 @@ import com.financegame.repository.InvestmentRepository;
 import com.financegame.repository.MonthlyExpenseRepository;
 import com.financegame.repository.NeedsItemRepository;
 import com.financegame.repository.PlayerRealEstateRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,9 @@ import java.math.BigDecimal;
 
 @Service
 public class CharacterService {
+
+    @PersistenceContext
+    private EntityManager em;
 
     private final CharacterRepository characterRepository;
     private final MonthlyExpenseRepository monthlyExpenseRepository;
@@ -88,17 +93,22 @@ public class CharacterService {
         characterRepository.save(character);
     }
 
+    public static final BigDecimal OVERDRAFT_LIMIT = new BigDecimal("-5000.00");
+
     /**
-     * Deduct cash and persist. Throws 400 if insufficient funds.
+     * Deduct cash and persist. Allows overdraft down to OVERDRAFT_LIMIT (-5000).
      */
     @Transactional
     public void deductCash(Long playerId, BigDecimal amount, String context) {
         GameCharacter character = findOrThrow(playerId);
-        if (character.getCash().compareTo(amount) < 0) {
+        BigDecimal newBalance = character.getCash().subtract(amount);
+        if (newBalance.compareTo(OVERDRAFT_LIMIT) < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Nicht genug Geld fuer: " + context);
+                "Nicht genug Geld. Benötigt: " + amount.setScale(2, java.math.RoundingMode.HALF_UP)
+                + " €, Verfügbar: " + character.getCash().setScale(2, java.math.RoundingMode.HALF_UP) + " €"
+                + " (Kreditlimit: " + OVERDRAFT_LIMIT.abs() + " €)");
         }
-        character.setCash(character.getCash().subtract(amount));
+        character.setCash(newBalance);
         characterRepository.save(character);
     }
 
@@ -144,6 +154,53 @@ public class CharacterService {
 
         characterRepository.save(character);
         return CharacterDto.from(character);
+    }
+
+    @Transactional
+    public void resetCharacter(Long playerId) {
+        GameCharacter character = findOrThrow(playerId);
+        BigDecimal personalBest = character.getPersonalBestNetWorth();
+
+        // Purge all player-specific game data
+        em.createNativeQuery("DELETE FROM investments WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM player_real_estate WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM monthly_expenses WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM player_lifestyle_items WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM player_loans WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM monthly_snapshots WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM player_collectibles WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM player_relationships WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM player_social_relationships WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM player_social_group_unlocks WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM player_travel WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM player_investment_levels WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM job_applications WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM active_events WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM events_log WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM gambling_sessions WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM social_action_log WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+        em.createNativeQuery("DELETE FROM education_progress WHERE player_id = :pid").setParameter("pid", playerId).executeUpdate();
+
+        // Reset character to starting values, preserving personal best
+        character.setCash(new BigDecimal("1000.00"));
+        character.setNetWorth(new BigDecimal("1000.00"));
+        character.setStress(0);
+        character.setHunger(100);
+        character.setEnergy(100);
+        character.setHappiness(70);
+        character.setCurrentTurn(1);
+        character.setSchufaScore(500);
+        character.setDepressionMonthsRemaining(0);
+        character.setBurnoutActive(false);
+        character.setTaxEvasionActive(false);
+        character.setTaxEvasionCaughtPending(false);
+        character.setCumulativeEvadedTaxes(BigDecimal.ZERO);
+        character.setJailMonthsRemaining(0);
+        character.setExileMonthsRemaining(0);
+        character.setTotalJailMonthsServed(0);
+        character.setVictoryAchieved(false);
+        character.setPersonalBestNetWorth(personalBest);
+        characterRepository.save(character);
     }
 
     public GameCharacter findOrThrow(Long playerId) {
