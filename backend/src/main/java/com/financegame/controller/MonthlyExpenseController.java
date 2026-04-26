@@ -4,6 +4,7 @@ import com.financegame.dto.AddExpenseRequest;
 import com.financegame.dto.MonthlyExpenseDto;
 import com.financegame.security.PlayerPrincipal;
 import com.financegame.service.ExpenseService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +29,7 @@ public class MonthlyExpenseController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public MonthlyExpenseDto addExpense(
-        @RequestBody AddExpenseRequest request,
+        @Valid @RequestBody AddExpenseRequest request,
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
         return expenseService.addExpense(principal.id(), request.category(), request.label(), request.amount());

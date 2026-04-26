@@ -43,8 +43,8 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       this.token = null
       if (import.meta.client) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+        sessionStorage.removeItem('token')
+        sessionStorage.removeItem('user')
       }
       // Reset game store by re-navigating (store state clears naturally)
       navigateTo('/login')
@@ -52,12 +52,18 @@ export const useAuthStore = defineStore('auth', {
 
     restoreSession() {
       if (import.meta.client) {
-        const token = localStorage.getItem('token')
-        const userRaw = localStorage.getItem('user')
+        const token = sessionStorage.getItem('token')
+        const userRaw = sessionStorage.getItem('user')
         if (token) {
           this.token = token
           if (userRaw) {
-            try { this.user = JSON.parse(userRaw) } catch {}
+            try {
+              const parsed = JSON.parse(userRaw)
+              // Validate the parsed object has the expected shape before trusting it
+              if (parsed && typeof parsed.id === 'number' && typeof parsed.username === 'string') {
+                this.user = parsed
+              }
+            } catch {}
           }
         }
       }
@@ -67,8 +73,8 @@ export const useAuthStore = defineStore('auth', {
       this.token = token
       this.user = user
       if (import.meta.client) {
-        localStorage.setItem('token', token)
-        localStorage.setItem('user', JSON.stringify(user))
+        sessionStorage.setItem('token', token)
+        sessionStorage.setItem('user', JSON.stringify(user))
       }
     },
   },

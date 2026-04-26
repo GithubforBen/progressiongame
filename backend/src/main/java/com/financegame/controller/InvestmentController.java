@@ -5,6 +5,7 @@ import com.financegame.dto.InvestmentDto;
 import com.financegame.dto.SellStockResponse;
 import com.financegame.security.PlayerPrincipal;
 import com.financegame.service.InvestmentService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +30,7 @@ public class InvestmentController {
     @PostMapping("/stocks/buy")
     @ResponseStatus(HttpStatus.CREATED)
     public InvestmentDto buyStock(
-        @RequestBody BuyStockRequest request,
+        @Valid @RequestBody BuyStockRequest request,
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
         return investmentService.buyStock(principal.id(), request.ticker(), request.quantity());
