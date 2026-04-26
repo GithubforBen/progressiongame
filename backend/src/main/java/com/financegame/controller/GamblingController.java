@@ -8,6 +8,7 @@ import com.financegame.dto.TexasHoldemActionRequest;
 import com.financegame.dto.TexasHoldemStateDto;
 import com.financegame.security.PlayerPrincipal;
 import com.financegame.service.GamblingService;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +26,7 @@ public class GamblingController {
 
     @PostMapping("/slots")
     public SlotResultDto playSlots(
-        @RequestBody GamblingBetRequest request,
+        @Valid @RequestBody GamblingBetRequest request,
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
         return gamblingService.playSlots(principal.id(), request.bet());
@@ -35,7 +36,7 @@ public class GamblingController {
 
     @PostMapping("/blackjack/start")
     public BlackjackStateDto startBlackjack(
-        @RequestBody GamblingBetRequest request,
+        @Valid @RequestBody GamblingBetRequest request,
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
         return gamblingService.startBlackjack(principal.id(), request.bet());
@@ -61,7 +62,7 @@ public class GamblingController {
 
     @PostMapping("/poker")
     public PokerResultDto playPoker(
-        @RequestBody GamblingBetRequest request,
+        @Valid @RequestBody GamblingBetRequest request,
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
         return gamblingService.playPoker(principal.id(), request.bet());
@@ -71,7 +72,7 @@ public class GamblingController {
 
     @PostMapping("/texasholdem/start")
     public TexasHoldemStateDto startTexasHoldem(
-        @RequestBody GamblingBetRequest request,
+        @Valid @RequestBody GamblingBetRequest request,
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
         return gamblingService.startTexasHoldem(principal.id(), request.bet());

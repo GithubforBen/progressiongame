@@ -6,6 +6,7 @@ import com.financegame.dto.SchufaDto;
 import com.financegame.dto.TakeLoanRequest;
 import com.financegame.security.PlayerPrincipal;
 import com.financegame.service.LoanService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -40,7 +41,7 @@ public class LoanController {
     @PostMapping("/take")
     @ResponseStatus(HttpStatus.CREATED)
     public LoanDto takeLoan(
-        @RequestBody TakeLoanRequest req,
+        @Valid @RequestBody TakeLoanRequest req,
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
         return loanService.takeLoan(principal.id(), req);

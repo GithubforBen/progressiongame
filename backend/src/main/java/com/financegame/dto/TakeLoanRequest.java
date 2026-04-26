@@ -1,5 +1,25 @@
 package com.financegame.dto;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 import java.math.BigDecimal;
 
-public record TakeLoanRequest(String label, BigDecimal amount, int termMonths) {}
+public record TakeLoanRequest(
+
+    @Size(max = 100, message = "Bezeichnung darf maximal 100 Zeichen lang sein")
+    String label,
+
+    @NotNull(message = "Betrag ist erforderlich")
+    @DecimalMin(value = "1000.00", message = "Mindestbetrag: 1.000 €")
+    @DecimalMax(value = "10000000.00", message = "Maximalbetrag: 10.000.000 €")
+    BigDecimal amount,
+
+    @Min(value = 6, message = "Laufzeit muss mindestens 6 Monate betragen")
+    @Max(value = 360, message = "Laufzeit darf maximal 360 Monate betragen")
+    int termMonths
+) {}

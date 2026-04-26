@@ -21,11 +21,12 @@ public class JwtService {
         @Value("${jwt.secret}") String secret,
         @Value("${jwt.expiration-ms}") long expirationMs
     ) {
-        // Pad secret to at least 32 bytes for HMAC-SHA256
-        String paddedSecret = secret.length() < 32
-            ? secret + "0".repeat(32 - secret.length())
-            : secret;
-        this.key = Keys.hmacShaKeyFor(paddedSecret.getBytes(StandardCharsets.UTF_8));
+        if (secret == null || secret.length() < 32) {
+            throw new IllegalArgumentException(
+                "JWT_SECRET must be at least 32 characters long. " +
+                "Generate one with: openssl rand -base64 48");
+        }
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMs;
     }
 
