@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: ${DB_USER:-financegame}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ${DB_DATA_PATH:-./data/postgres}:/var/lib/postgresql/data
     networks:
       - financegame-net
     healthcheck:
@@ -48,17 +48,12 @@ services:
     depends_on:
       - backend
     environment:
-      # Öffentliche URL (Browser → Cloudflare Tunnel → Backend)
       NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-http://localhost:8080}
-      # Interne URL (Nuxt SSR → Docker-internes Netz → Backend, umgeht Cloudflare)
       NUXT_INTERNAL_API_BASE: ${NUXT_INTERNAL_API_BASE:-http://backend:8080}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     networks:
       - financegame-net
-
-volumes:
-  pgdata:
 
 networks:
   financegame-net:
