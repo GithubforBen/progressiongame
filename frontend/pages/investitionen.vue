@@ -143,7 +143,7 @@
           <!-- Expanded: Chart + Buy form (only for unlocked) -->
           <div v-if="!stock.locked && selectedStock?.id === stock.id" class="border-t border-white/5 p-3 space-y-3">
             <!-- Mini price chart -->
-            <div v-if="stock.history.length >= 2" class="h-32">
+            <div v-if="(stock.history?.length ?? 0) >= 2" class="h-32">
               <ClientOnly>
                 <LineChart :data="buildChartData(stock)" :options="chartOptions" class="h-full" />
               </ClientOnly>
@@ -301,10 +301,11 @@ const chartOptions = {
 }
 
 function buildChartData(stock: Stock) {
+  const history = stock.history ?? []
   return {
-    labels: stock.history.map(h => `M${h.turn}`),
+    labels: history.map(h => `M${h.turn}`),
     datasets: [{
-      data: stock.history.map(h => h.price),
+      data: history.map(h => h.price),
       borderColor: stock.type === 'MEME' ? '#a855f7' : '#6366f1',
       backgroundColor: stock.type === 'MEME' ? 'rgba(168,85,247,0.1)' : 'rgba(99,102,241,0.1)',
       fill: true,
@@ -327,7 +328,8 @@ function goToUnlock(cert: string | null) {
 async function loadStocks() {
   stocksLoading.value = true
   try {
-    stocks.value = await api.get<Stock[]>('/api/stocks')
+    const result = await api.get<Stock[]>('/api/stocks')
+    stocks.value = Array.isArray(result) ? result : []
   } catch {
     toast.error('Aktien konnten nicht geladen werden')
   } finally {
@@ -338,7 +340,8 @@ async function loadStocks() {
 async function loadPortfolio() {
   portfolioLoading.value = true
   try {
-    portfolio.value = await api.get<Investment[]>('/api/investments')
+    const result = await api.get<Investment[]>('/api/investments')
+    portfolio.value = Array.isArray(result) ? result : []
   } catch {
     toast.error('Portfolio konnte nicht geladen werden')
   } finally {
