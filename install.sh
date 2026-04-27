@@ -37,7 +37,6 @@ prompt() {
 }
 
 prompt_password() {
-    # prompt_password VAR "Frage"
     local _var=$1 _q=$2 _val
     read -rsp "$(echo -e "  ${BOLD}${YELLOW}?  ${_q}: ${NC}")" _val
     echo
@@ -45,14 +44,12 @@ prompt_password() {
 }
 
 prompt_yn() {
-    # prompt_yn "Frage" → gibt 0 (ja) oder 1 (nein) zurück
     local _q=$1 _ans
     read -rp "$(echo -e "  ${BOLD}${YELLOW}?  ${_q} [j/N]: ${NC}")" _ans
     [[ "${_ans,,}" == "j" || "${_ans,,}" == "ja" || "${_ans,,}" == "y" || "${_ans,,}" == "yes" ]]
 }
 
 generate_secret() {
-    # Erzeugt 64 alphanumerische Zeichen
     openssl rand -base64 64 | tr -dc 'A-Za-z0-9' | head -c 64
 }
 
@@ -114,7 +111,7 @@ install_cloudflared() {
 
     info "Installiere cloudflared..."
     local arch
-    arch=$(dpkg --print-architecture)   # amd64 | arm64
+    arch=$(dpkg --print-architecture)
 
     curl -fsSL \
         "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${arch}.deb" \
@@ -140,9 +137,9 @@ main() {
     echo "  Bestehende .env-Datei wird gesichert falls vorhanden."
     line
 
-    # ── Voraussetzungen ──────────────────────────────────────
     check_root
 
+    # ── 1. Systempakete & Docker ─────────────────────────────
     header "1 / 6  Systempakete & Docker"
     apt-get update -qq
     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
@@ -150,7 +147,7 @@ main() {
 
     install_docker
 
-    # ── Ports ────────────────────────────────────────────────
+    # ── 2. Ports ─────────────────────────────────────────────
     header "2 / 6  Port-Konfiguration"
 
     info "Scanne belegte Ports..."
@@ -163,7 +160,6 @@ main() {
     prompt BACKEND_PORT  "Host-Port für das Backend"  "$SUG_BACKEND"
     prompt FRONTEND_PORT "Host-Port für das Frontend" "$SUG_FRONTEND"
 
-    # Validierung
     for PORT in "$BACKEND_PORT" "$FRONTEND_PORT"; do
         if ! [[ "$PORT" =~ ^[0-9]+$ ]] || (( PORT < 1024 || PORT > 65535 )); then
             err "Ungültiger Port: $PORT (erlaubt: 1024–65535)"
@@ -183,20 +179,30 @@ main() {
         fi
     done
 
-    success "Ports geprüft: Backend=$BACKEND_PORT  Frontend=$FRONTEND_PORT"
+    success "Ports OK: Backend=$BACKEND_PORT  Frontend=$FRONTEND_PORT"
 
-    # ── Datenbank ─────────────────────────────────────────────
+    # ── 3. Datenbank ─────────────────────────────────────────
     header "3 / 6  Datenbank-Konfiguration"
 
-    prompt DB_NAME "Datenbankname"       "financegame"
-    prompt DB_USER "Datenbankbenutzer"   "financegame"
+    prompt DB_NAME     "Datenbankname"               "financegame"
+    prompt DB_USER     "Datenbankbenutzer"            "financegame"
+    prompt DB_DATA_PATH "Speicherort der DB-Daten auf diesem Server" \
+                        "${SCRIPT_DIR}/data/postgres"
+
+    # Absoluten Pfad sicherstellen
+    DB_DATA_PATH="$(realpath -m "$DB_DATA_PATH")"
+
+    # Verzeichnis anlegen und Berechtigungen setzen (Postgres läuft als UID 999)
+    mkdir -p "$DB_DATA_PATH"
+    chown -R 999:999 "$DB_DATA_PATH" 2>/dev/null || true
 
     DB_PASSWORD="$(generate_secret | head -c 32)"
     JWT_SECRET="$(generate_secret)"
 
+    success "DB-Pfad: $DB_DATA_PATH"
     success "Passwort & JWT-Secret automatisch generiert"
 
-    # ── Cloudflare Tunnel ────────────────────────────────────
+    # ── 4. Cloudflare Tunnel ──────────────────────────────────
     header "4 / 6  Cloudflare Tunnel"
 
     USE_CLOUDFLARE=false
@@ -221,7 +227,7 @@ main() {
         echo "  │ 4. Vergib einen Namen (z.B. 'financegame')                  │"
         echo "  │ 5. Kopiere den Token und füge ihn unten ein                 │"
         echo "  │                                                              │"
-        echo "  │  Nach dem Setup konfigurierst du im Dashboard die Routen:   │"
+        echo "  │  Routen im Cloudflare-Dashboard konfigurieren:              │"
         echo "  │                                                              │"
         echo "  │  Frontend-Route:                                             │"
         echo "  │    Public hostname: spiel.deine-domain.com                  │"
@@ -248,11 +254,9 @@ main() {
             prompt FRONTEND_PUBLIC_URL "Öffentliche Frontend-URL (https://...)" ""
             prompt BACKEND_PUBLIC_URL  "Öffentliche Backend-URL  (https://...)" ""
 
-            # Abschließende Slashes entfernen
             FRONTEND_PUBLIC_URL="${FRONTEND_PUBLIC_URL%/}"
             BACKEND_PUBLIC_URL="${BACKEND_PUBLIC_URL%/}"
 
-            # Protokoll-Prüfung
             if [[ ! "$FRONTEND_PUBLIC_URL" =~ ^https?:// ]]; then
                 err "Frontend-URL muss mit http:// oder https:// beginnen."
                 exit 1
@@ -264,17 +268,27 @@ main() {
         fi
     fi
 
-    # ── Zusammenfassung ───────────────────────────────────────
+    # CORS: Bei Cloudflare öffentliche Frontend-URL + localhost kombinieren,
+    # damit sowohl der Tunnel als auch lokale Entwicklung funktionieren.
+    if [[ "$USE_CLOUDFLARE" == "true" ]]; then
+        CORS_ALLOWED_ORIGINS="${FRONTEND_PUBLIC_URL},http://localhost:${FRONTEND_PORT}"
+    else
+        CORS_ALLOWED_ORIGINS="http://localhost:${FRONTEND_PORT}"
+    fi
+
+    # ── 5. Zusammenfassung ────────────────────────────────────
     header "5 / 6  Konfigurationsübersicht"
 
     echo -e "  Host-Port Backend:     ${BOLD}${BACKEND_PORT}${NC}"
     echo -e "  Host-Port Frontend:    ${BOLD}${FRONTEND_PORT}${NC}"
     echo -e "  Datenbankname:         ${BOLD}${DB_NAME}${NC}"
     echo -e "  Datenbankbenutzer:     ${BOLD}${DB_USER}${NC}"
+    echo -e "  DB-Datenpfad:          ${BOLD}${DB_DATA_PATH}${NC}"
     echo -e "  DB-Passwort:           ${BOLD}(automatisch generiert)${NC}"
     echo -e "  JWT-Secret:            ${BOLD}(automatisch generiert, 64 Zeichen)${NC}"
-    echo -e "  Frontend-URL:          ${BOLD}${FRONTEND_PUBLIC_URL}${NC}"
-    echo -e "  Backend-URL:           ${BOLD}${BACKEND_PUBLIC_URL}${NC}"
+    echo -e "  Frontend-URL (public): ${BOLD}${FRONTEND_PUBLIC_URL}${NC}"
+    echo -e "  Backend-URL  (public): ${BOLD}${BACKEND_PUBLIC_URL}${NC}"
+    echo -e "  CORS erlaubte Origins: ${BOLD}${CORS_ALLOWED_ORIGINS}${NC}"
     echo -e "  Cloudflare Tunnel:     ${BOLD}$([ "$USE_CLOUDFLARE" == "true" ] && echo "Ja ✓" || echo "Nein")${NC}"
     echo
 
@@ -283,7 +297,7 @@ main() {
         exit 0
     fi
 
-    # ── Dateien schreiben & starten ──────────────────────────
+    # ── 6. Installation ───────────────────────────────────────
     header "6 / 6  Installation"
 
     # .env sichern falls vorhanden
@@ -293,26 +307,33 @@ main() {
         warn "Vorhandene .env gesichert als: $BACKUP"
     fi
 
-    # .env schreiben
+    # .env schreiben – alle Werte explizit, keine Fallbacks auf docker-compose angewiesen
     cat > .env <<EOF
 # Automatisch generiert von install.sh – $(date)
 # ACHTUNG: Diese Datei enthält sensible Daten – niemals in Git committen!
 
+# Datenbank
 DB_NAME=${DB_NAME}
 DB_USER=${DB_USER}
 DB_PASSWORD=${DB_PASSWORD}
+DB_DATA_PATH=${DB_DATA_PATH}
 
+# JWT
 JWT_SECRET=${JWT_SECRET}
 
+# Ports (Host-seitig)
 BACKEND_PORT=${BACKEND_PORT}
 FRONTEND_PORT=${FRONTEND_PORT}
 
-CORS_ALLOWED_ORIGINS=${FRONTEND_PUBLIC_URL}
+# CORS: kommagetrennte Liste erlaubter Frontend-Ursprünge
+CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+
+# API-URLs
 NUXT_PUBLIC_API_BASE=${BACKEND_PUBLIC_URL}
 NUXT_INTERNAL_API_BASE=http://backend:8080
 EOF
 
-    # Sicherstellen dass .env in .gitignore steht
+    # .env in .gitignore sicherstellen
     if ! grep -qxF '.env' .gitignore 2>/dev/null; then
         echo '.env' >> .gitignore
         info ".env zu .gitignore hinzugefügt"
@@ -320,7 +341,7 @@ EOF
 
     success ".env erstellt"
 
-    # Container stoppen falls bereits laufend
+    # Laufende Container stoppen
     if docker compose ps --quiet 2>/dev/null | grep -q .; then
         info "Stoppe laufende Container..."
         docker compose down
@@ -355,7 +376,7 @@ EOF
     if [[ "$BACKEND_OK" == "true" ]]; then
         success "Backend antwortet auf http://localhost:${BACKEND_PORT}/api/health"
     else
-        warn "Backend antwortet noch nicht. Das ist normal beim ersten Start (Maven-Build)."
+        warn "Backend antwortet noch nicht. Beim ersten Start normal (Maven-Build)."
         warn "Logs prüfen mit:  docker compose logs -f backend"
     fi
 
@@ -364,7 +385,6 @@ EOF
         echo
         info "Richte Cloudflare Tunnel als Systemd-Service ein..."
 
-        # Vorhandenen Service entfernen falls nötig
         if systemctl is-active --quiet cloudflared 2>/dev/null; then
             systemctl stop cloudflared
             cloudflared service uninstall 2>/dev/null || true
@@ -373,13 +393,11 @@ EOF
         cloudflared service install "$CF_TUNNEL_TOKEN"
         systemctl enable --now cloudflared
 
-        # Kurz warten und Status prüfen
         sleep 3
         if systemctl is-active --quiet cloudflared; then
             success "Cloudflare Tunnel aktiv"
         else
-            warn "Cloudflare Tunnel gestartet, aber Status unklar."
-            warn "Prüfen mit: systemctl status cloudflared"
+            warn "Status unklar – prüfen mit: systemctl status cloudflared"
         fi
     fi
 
@@ -400,6 +418,9 @@ EOF
         echo -e "  ${BOLD}Cloudflare Tunnel:${NC}  aktiv  (systemctl status cloudflared)"
         echo
     fi
+    echo -e "  ${BOLD}Datenbank-Daten:${NC}"
+    echo "    $DB_DATA_PATH"
+    echo
     line
     echo
     echo -e "  ${BOLD}Nützliche Befehle:${NC}"
