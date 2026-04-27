@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financegame.dto.BlackjackStateDto;
 import com.financegame.dto.PokerResultDto;
+import com.financegame.dto.RouletteRequest;
+import com.financegame.dto.RouletteResultDto;
 import com.financegame.dto.SlotResultDto;
 import com.financegame.dto.TexasHoldemStateDto;
 import com.financegame.entity.GamblingSession;
@@ -25,6 +27,13 @@ public class GamblingService {
 
     private static final BigDecimal MIN_BET = new BigDecimal("1.00");
     private static final BigDecimal MAX_BET = new BigDecimal("10000.00");
+
+    // ── Roulette constants ─────────────────────────────────────────────────
+    private static final BigDecimal ROULETTE_MAX_TOTAL = new BigDecimal("10000.00");
+    private static final Set<Integer> RED_NUMBERS = Set.of(
+        1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36);
+    private static final Set<Integer> BLACK_NUMBERS = Set.of(
+        2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35);
 
     private final GamblingRepository gamblingRepository;
     private final CharacterService characterService;
@@ -290,6 +299,167 @@ public class GamblingService {
             payout,
             payout.subtract(bet)
         );
+    }
+
+    // ======================== ROULETTE ========================
+
+    @Transactional
+    public RouletteResultDto playRoulette(Long playerId, RouletteRequest request) {
+        List<RouletteRequest.RouletteBet> bets = request.bets();
+
+        BigDecimal totalBet = BigDecimal.ZERO;
+        for (RouletteRequest.RouletteBet b : bets) {
+            validateRouletteBet(b);
+            totalBet = totalBet.add(b.amount());
+        }
+        if (totalBet.compareTo(ROULETTE_MAX_TOTAL) > 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Gesamteinsatz darf 10.000 € nicht überschreiten");
+        }
+
+        characterService.deductCash(playerId, totalBet, "Roulette");
+
+        int winning = ThreadLocalRandom.current().nextInt(37);
+
+        BigDecimal totalPayout = BigDecimal.ZERO;
+        List<RouletteResultDto.BetResult> results = new ArrayList<>();
+        for (RouletteRequest.RouletteBet b : bets) {
+            BigDecimal payout = resolveRouletteBet(b, winning);
+            totalPayout = totalPayout.add(payout);
+            results.add(new RouletteResultDto.BetResult(
+                b.type(), b.numbers(), b.amount(),
+                payout.compareTo(BigDecimal.ZERO) > 0, payout));
+        }
+
+        if (totalPayout.compareTo(BigDecimal.ZERO) > 0) {
+            characterService.addCash(playerId, totalPayout);
+        }
+
+        String color = winning == 0 ? "green"
+            : RED_NUMBERS.contains(winning) ? "red" : "black";
+        BigDecimal netChange = totalPayout.subtract(totalBet);
+
+        GamblingSession session = new GamblingSession();
+        session.setPlayerId(playerId);
+        session.setGameType("ROULETTE");
+        session.setStatus(netChange.compareTo(BigDecimal.ZERO) >= 0 ? "WON" : "LOST");
+        session.setBetAmount(totalBet);
+        session.setPayoutAmount(totalPayout);
+        gamblingRepository.save(session);
+
+        return new RouletteResultDto(winning, color, totalBet, totalPayout, netChange, results);
+    }
+
+    private BigDecimal resolveRouletteBet(RouletteRequest.RouletteBet bet, int w) {
+        boolean hits = switch (bet.type()) {
+            case "STRAIGHT", "SPLIT", "STREET", "CORNER", "SIX_LINE", "TRIO"
+                -> bet.numbers().contains(w);
+            case "RED"      -> RED_NUMBERS.contains(w);
+            case "BLACK"    -> BLACK_NUMBERS.contains(w);
+            case "EVEN"     -> w != 0 && w % 2 == 0;
+            case "ODD"      -> w % 2 == 1;
+            case "LOW"      -> w >= 1 && w <= 18;
+            case "HIGH"     -> w >= 19 && w <= 36;
+            case "DOZEN_1"  -> w >= 1 && w <= 12;
+            case "DOZEN_2"  -> w >= 13 && w <= 24;
+            case "DOZEN_3"  -> w >= 25 && w <= 36;
+            case "COLUMN_1" -> w != 0 && w % 3 == 1;
+            case "COLUMN_2" -> w != 0 && w % 3 == 2;
+            case "COLUMN_3" -> w != 0 && w % 3 == 0;
+            default         -> false;
+        };
+        if (!hits) return BigDecimal.ZERO;
+
+        int multiplier = switch (bet.type()) {
+            case "STRAIGHT"                          -> 36;
+            case "SPLIT"                             -> 18;
+            case "STREET", "TRIO"                   -> 12;
+            case "CORNER"                            -> 9;
+            case "SIX_LINE"                          -> 6;
+            case "DOZEN_1", "DOZEN_2", "DOZEN_3",
+                 "COLUMN_1", "COLUMN_2", "COLUMN_3" -> 3;
+            default                                  -> 2;
+        };
+        return bet.amount().multiply(BigDecimal.valueOf(multiplier))
+                           .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private void validateRouletteBet(RouletteRequest.RouletteBet bet) {
+        List<Integer> nums = bet.numbers() != null ? bet.numbers() : Collections.emptyList();
+        switch (bet.type()) {
+            case "STRAIGHT" -> {
+                if (nums.size() != 1) throw rouletteBad("STRAIGHT braucht genau 1 Zahl");
+                if (nums.get(0) < 0 || nums.get(0) > 36) throw rouletteBad("Ungültige Zahl");
+            }
+            case "SPLIT" -> {
+                if (nums.size() != 2) throw rouletteBad("SPLIT braucht genau 2 Zahlen");
+                validateSplitAdjacency(nums.get(0), nums.get(1));
+            }
+            case "STREET" -> {
+                if (nums.size() != 3) throw rouletteBad("STREET braucht genau 3 Zahlen");
+                validateStreetNums(nums);
+            }
+            case "CORNER" -> {
+                if (nums.size() != 4) throw rouletteBad("CORNER braucht genau 4 Zahlen");
+                validateCornerNums(nums);
+            }
+            case "SIX_LINE" -> {
+                if (nums.size() != 6) throw rouletteBad("SIX_LINE braucht genau 6 Zahlen");
+                validateSixLineNums(nums);
+            }
+            case "TRIO" -> {
+                if (nums.size() != 3) throw rouletteBad("TRIO braucht genau 3 Zahlen");
+                List<Integer> sorted = nums.stream().sorted().toList();
+                if (!sorted.equals(List.of(0, 1, 2)) && !sorted.equals(List.of(0, 2, 3)))
+                    throw rouletteBad("TRIO: nur 0-1-2 oder 0-2-3 erlaubt");
+            }
+            case "RED","BLACK","EVEN","ODD","LOW","HIGH",
+                 "DOZEN_1","DOZEN_2","DOZEN_3",
+                 "COLUMN_1","COLUMN_2","COLUMN_3" -> { /* no number validation needed */ }
+            default -> throw rouletteBad("Unbekannter Wetttyp: " + bet.type());
+        }
+    }
+
+    private int rouletteCol(int n) { return (n - 1) % 3; }
+    private int rouletteRow(int n) { return (n - 1) / 3; }
+
+    private void validateSplitAdjacency(int a, int b) {
+        if (a < 1 || a > 36 || b < 1 || b > 36) throw rouletteBad("SPLIT: Zahlen müssen 1–36 sein");
+        boolean horizontal = rouletteRow(a) == rouletteRow(b) && Math.abs(rouletteCol(a) - rouletteCol(b)) == 1;
+        boolean vertical   = rouletteCol(a) == rouletteCol(b) && Math.abs(rouletteRow(a) - rouletteRow(b)) == 1;
+        if (!horizontal && !vertical)
+            throw rouletteBad("SPLIT: " + a + " und " + b + " sind nicht benachbart");
+    }
+
+    private void validateStreetNums(List<Integer> nums) {
+        List<Integer> sorted = nums.stream().sorted().toList();
+        int first = sorted.get(0);
+        if (first < 1 || (first - 1) % 3 != 0) throw rouletteBad("STREET: ungültige Startzahl");
+        if (!sorted.equals(List.of(first, first + 1, first + 2)))
+            throw rouletteBad("STREET: muss eine vollständige Reihe sein");
+    }
+
+    private void validateCornerNums(List<Integer> nums) {
+        List<Integer> sorted = nums.stream().sorted().toList();
+        int tl = sorted.get(0);
+        if (tl < 1 || tl > 36) throw rouletteBad("CORNER: ungültige Zahl");
+        if (rouletteCol(tl) == 2) throw rouletteBad("CORNER: nicht möglich ab Spalte 3");
+        if (rouletteRow(tl) >= 11) throw rouletteBad("CORNER: keine weitere Reihe verfügbar");
+        List<Integer> expected = List.of(tl, tl + 1, tl + 3, tl + 4);
+        if (!sorted.equals(expected)) throw rouletteBad("CORNER: keine gültige 2×2-Ecke");
+    }
+
+    private void validateSixLineNums(List<Integer> nums) {
+        List<Integer> sorted = nums.stream().sorted().toList();
+        int first = sorted.get(0);
+        if (first < 1 || (first - 1) % 3 != 0) throw rouletteBad("SIX_LINE: ungültige Startzahl");
+        if (rouletteRow(first) >= 11) throw rouletteBad("SIX_LINE: keine weitere Reihe verfügbar");
+        List<Integer> expected = List.of(first, first+1, first+2, first+3, first+4, first+5);
+        if (!sorted.equals(expected)) throw rouletteBad("SIX_LINE: muss zwei aufeinanderfolgende Reihen sein");
+    }
+
+    private ResponseStatusException rouletteBad(String msg) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, msg);
     }
 
     // ======================== HELPERS ========================
