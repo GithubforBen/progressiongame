@@ -468,8 +468,8 @@ async function loadAll() {
       api.get<Job[]>('/api/jobs'),
       api.get<PlayerJob[]>('/api/jobs/my'),
     ])
-    availableJobs.value = jobs
-    activeJobs.value = myJobs
+    availableJobs.value = Array.isArray(jobs) ? jobs : []
+    activeJobs.value = Array.isArray(myJobs) ? myJobs : []
   } finally {
     jobsLoading.value = false
     await nextTick()

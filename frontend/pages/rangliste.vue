@@ -186,7 +186,8 @@ function rankEmoji(rank: number) {
 async function fetchLeaderboard() {
   loading.value = true
   try {
-    entries.value = await api.get<LeaderboardEntry[]>(`/api/leaderboard?sort=${sortBy.value}`)
+    const result = await api.get<LeaderboardEntry[]>(`/api/leaderboard?sort=${sortBy.value}`)
+    entries.value = Array.isArray(result) ? result : []
   } finally {
     loading.value = false
   }
@@ -204,9 +205,8 @@ async function togglePlayerDetail(entry: LeaderboardEntry) {
   expandedPlayerId.value = entry.playerId
   collectionsLoading.value = true
   try {
-    expandedCollections.value = await api.get<PublicCollection[]>(
-      `/api/leaderboard/player/${entry.playerId}/collections`
-    )
+    const result = await api.get<PublicCollection[]>(`/api/leaderboard/player/${entry.playerId}/collections`)
+    expandedCollections.value = Array.isArray(result) ? result : []
   } finally {
     collectionsLoading.value = false
   }

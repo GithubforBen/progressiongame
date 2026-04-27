@@ -7,7 +7,7 @@
       <!-- Header -->
       <div class="absolute top-3 left-3 z-10 flex items-center gap-2">
         <h2 class="text-white font-bold text-lg">Netzwerk</h2>
-        <span class="text-gray-400 text-xs">({{ network?.persons.length ?? 0 }} Kontakte)</span>
+        <span class="text-gray-400 text-xs">({{ network?.persons?.length ?? 0 }} Kontakte)</span>
       </div>
       <!-- Zoom controls -->
       <div class="absolute top-3 right-3 z-10 flex gap-1">
@@ -43,7 +43,7 @@
                 stroke="#4f4f6f" stroke-width="1.5" opacity="0.6"/>
 
           <!-- Person nodes -->
-          <g v-for="person in network.persons" :key="person.personId"
+          <g v-for="person in network?.persons ?? []" :key="person.personId"
              style="cursor:pointer" @click="selectPerson(person)">
             <!-- Score ring -->
             <circle v-if="person.met && person.score > 0"
@@ -365,7 +365,7 @@ function groupColor(gid: string) {
 }
 
 function groupName(gid: string) {
-  return network.value?.unlockedGroups.find(g => g.id === gid)?.name ?? gid
+  return network.value?.unlockedGroups?.find(g => g.id === gid)?.name ?? gid
 }
 
 // --- Pan & Zoom ---
@@ -459,7 +459,7 @@ async function refresh() {
   const data = await api.get<SocialNetwork>('/api/social/network')
   network.value = data
   if (selectedId.value) {
-    const still = data.persons.find(p => p.personId === selectedId.value)
+    const still = (data.persons ?? []).find(p => p.personId === selectedId.value)
     if (!still) selectedId.value = null
   }
 }
