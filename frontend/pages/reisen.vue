@@ -399,10 +399,10 @@ const collectibleSummary = ref<CollectibleSummary[]>([])
 const selectedCountry = ref<Country | null>(null)
 const actionLoading = ref<string | false>(false)
 
-const visitedCount = computed(() => countries.value.filter(c => c.visited).length)
+const visitedCount = computed(() => (Array.isArray(countries.value) ? countries.value : []).filter(c => c.visited).length)
 
 function collectiblesAt(countryName: string): CollectibleSummary[] {
-  return collectibleSummary.value.filter(c => c.countryRequired === countryName)
+  return (Array.isArray(collectibleSummary.value) ? collectibleSummary.value : []).filter(c => c.countryRequired === countryName)
 }
 function ownedAt(countryName: string): number {
   return collectiblesAt(countryName).filter(c => c.alreadyOwned).length
@@ -429,7 +429,7 @@ const travelRouteTo = computed(() => {
 })
 
 function eventsForCountry(countryName: string): ActiveEvent[] {
-  return activeEvents.value.filter(e => e.country === countryName)
+  return (Array.isArray(activeEvents.value) ? activeEvents.value : []).filter(e => e.country === countryName)
 }
 
 function selectCountry(c: Country) {
@@ -446,9 +446,9 @@ async function loadAll() {
       api.get<CollectibleSummary[]>('/api/collectibles'),
     ])
     status.value = s
-    countries.value = c
-    activeEvents.value = ev
-    collectibleSummary.value = items
+    countries.value = Array.isArray(c) ? c : []
+    activeEvents.value = Array.isArray(ev) ? ev : []
+    collectibleSummary.value = Array.isArray(items) ? items : []
   } catch {
     toast.error('Daten konnten nicht geladen werden')
   }
@@ -458,7 +458,8 @@ async function depart(countryName: string) {
   actionLoading.value = countryName
   try {
     status.value = await api.post<TravelStatus>('/api/travel/depart', { countryName })
-    countries.value = await api.get<Country[]>('/api/travel/countries')
+    const updatedCountries = await api.get<Country[]>('/api/travel/countries')
+    countries.value = Array.isArray(updatedCountries) ? updatedCountries : []
     if (selectedCountry.value?.name === countryName) {
       selectedCountry.value = countries.value.find(c => c.name === countryName) ?? null
     }
@@ -475,7 +476,8 @@ async function returnHome() {
   actionLoading.value = 'home'
   try {
     status.value = await api.post<TravelStatus>('/api/travel/return-home')
-    countries.value = await api.get<Country[]>('/api/travel/countries')
+    const homeCountries = await api.get<Country[]>('/api/travel/countries')
+    countries.value = Array.isArray(homeCountries) ? homeCountries : []
     selectedCountry.value = null
     toast.success('Zurück zuhause in Deutschland.')
   } catch (e: any) {

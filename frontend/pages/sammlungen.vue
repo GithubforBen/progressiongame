@@ -313,21 +313,20 @@ const comparePlayerId = ref<number | null>(null)
 const compareCollections = ref<PublicCollection[]>([])
 const compareLoading = ref(false)
 
-const otherPlayers = computed(() => leaderboardPlayers.value.filter(p => !p.isMe))
+const otherPlayers = computed(() => (Array.isArray(leaderboardPlayers.value) ? leaderboardPlayers.value : []).filter(p => !p.isMe))
 const compareName = computed(() =>
-  leaderboardPlayers.value.find(p => p.playerId === comparePlayerId.value)?.username ?? ''
+  (Array.isArray(leaderboardPlayers.value) ? leaderboardPlayers.value : []).find(p => p.playerId === comparePlayerId.value)?.username ?? ''
 )
 const compareMap = computed<Record<string, PublicCollection>>(() =>
-  Object.fromEntries(compareCollections.value.map(c => [c.name, c]))
+  Object.fromEntries((Array.isArray(compareCollections.value) ? compareCollections.value : []).map(c => [c.name, c]))
 )
 
 async function loadCompareCollections(playerId: number) {
   comparePlayerId.value = playerId
   compareLoading.value = true
   try {
-    compareCollections.value = await api.get<PublicCollection[]>(
-      `/api/leaderboard/player/${playerId}/collections`
-    )
+    const result = await api.get<PublicCollection[]>(`/api/leaderboard/player/${playerId}/collections`)
+    compareCollections.value = Array.isArray(result) ? result : []
   } catch {
     toast.error('Vergleich konnte nicht geladen werden')
   } finally {
@@ -339,7 +338,8 @@ watch(activeTab, async (tab) => {
   if (tab === 'vergleichen' && leaderboardPlayers.value.length === 0) {
     leaderboardLoading.value = true
     try {
-      leaderboardPlayers.value = await api.get<LeaderboardPlayer[]>('/api/leaderboard')
+      const result = await api.get<LeaderboardPlayer[]>('/api/leaderboard')
+      leaderboardPlayers.value = Array.isArray(result) ? result : []
     } finally {
       leaderboardLoading.value = false
     }
@@ -395,8 +395,8 @@ async function loadData() {
       api.get<CollectibleItem[]>('/api/collections/items'),
       api.get<TravelStatus>('/api/travel/status'),
     ])
-    collections.value = cols
-    items.value = its
+    collections.value = Array.isArray(cols) ? cols : []
+    items.value = Array.isArray(its) ? its : []
     travelStatus.value = travel
   } catch {
     toast.error('Daten konnten nicht geladen werden')

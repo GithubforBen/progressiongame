@@ -394,13 +394,13 @@ const highlightCert = computed(() => route.query.highlight as string | undefined
 function getState(id: string): TreeNode['state'] {
   const p = progress.value
   if (!p) return id === 'GRUNDSCHULE' ? 'done' : 'locked'
-  if (p.completedStages.includes(id)) return 'done'
+  if ((p.completedStages ?? []).includes(id)) return 'done'
   if (MAIN_IDS.has(id)) {
     if (p.mainStage === id && p.mainStageMonthsRemaining > 0) return 'active'
-    return p.availableMainStages.some(s => s.stageKey === id) ? 'available' : 'locked'
+    return (p.availableMainStages ?? []).some(s => s.stageKey === id) ? 'available' : 'locked'
   }
   if (p.sideCert === id) return 'active'
-  return p.availableSideCerts.some(c => c.certKey === id) ? 'available' : 'locked'
+  return (p.availableSideCerts ?? []).some(c => c.certKey === id) ? 'available' : 'locked'
 }
 
 const allNodes = computed((): TreeNode[] =>
