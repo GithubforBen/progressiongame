@@ -420,6 +420,372 @@
         </div>
       </div>
     </div>
+
+    <!-- ===== ROULETTE ===== -->
+    <div v-if="activeTab === 'roulette'" class="space-y-4">
+
+      <!-- Wheel card -->
+      <div class="card flex flex-col items-center gap-4">
+        <div class="self-start">
+          <h3 class="text-base font-semibold text-white">Europäisches Roulette</h3>
+          <p class="text-xs text-gray-400">Einzelne Null (0–36). Einfach auf Zahlen oder Chancen setzen.</p>
+        </div>
+
+        <div class="relative w-52 h-52 flex items-center justify-center select-none">
+          <!-- Spinning wheel (conic-gradient sectors) -->
+          <div
+            class="absolute inset-0 rounded-full border-4 border-surface-600 overflow-hidden"
+            :style="{
+              background: `conic-gradient(
+                #166534 0deg 9.73deg,
+                #111 9.73deg 19.46deg,
+                #b91c1c 19.46deg 29.19deg,
+                #111 29.19deg 38.92deg,
+                #b91c1c 38.92deg 48.65deg,
+                #111 48.65deg 58.38deg,
+                #b91c1c 58.38deg 68.11deg,
+                #111 68.11deg 77.84deg,
+                #b91c1c 77.84deg 87.57deg,
+                #111 87.57deg 97.3deg,
+                #b91c1c 97.3deg 107.03deg,
+                #111 107.03deg 116.76deg,
+                #b91c1c 116.76deg 126.49deg,
+                #111 126.49deg 136.22deg,
+                #b91c1c 136.22deg 145.95deg,
+                #111 145.95deg 155.68deg,
+                #b91c1c 155.68deg 165.41deg,
+                #111 165.41deg 175.14deg,
+                #b91c1c 175.14deg 184.87deg,
+                #111 184.87deg 194.6deg,
+                #b91c1c 194.6deg 204.33deg,
+                #111 204.33deg 214.06deg,
+                #b91c1c 214.06deg 223.79deg,
+                #111 223.79deg 233.52deg,
+                #b91c1c 233.52deg 243.25deg,
+                #111 243.25deg 252.98deg,
+                #b91c1c 252.98deg 262.71deg,
+                #111 262.71deg 272.44deg,
+                #b91c1c 272.44deg 282.17deg,
+                #111 282.17deg 291.9deg,
+                #b91c1c 291.9deg 301.63deg,
+                #111 301.63deg 311.36deg,
+                #b91c1c 311.36deg 321.09deg,
+                #111 321.09deg 330.82deg,
+                #b91c1c 330.82deg 340.55deg,
+                #111 340.55deg 350.27deg,
+                #b91c1c 350.27deg 360deg
+              )`,
+              transform: `rotate(${rouletteWheelAngle}deg)`,
+              transition: rouletteSpinning ? 'none' : 'transform 0.9s cubic-bezier(0.17,0.67,0.12,0.99)'
+            }"
+          />
+          <!-- Outer ring border numbers -->
+          <div class="absolute inset-0 rounded-full border-4 border-yellow-700/40 pointer-events-none" />
+          <!-- Ball orbiting -->
+          <div
+            class="absolute w-3.5 h-3.5 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)] z-10"
+            :style="{
+              transform: `rotate(${-rouletteWheelAngle * 1.4}deg) translateX(88px)`,
+              transition: rouletteSpinning ? 'none' : 'transform 0.9s ease-out'
+            }"
+          />
+          <!-- Center hub -->
+          <div class="absolute w-14 h-14 rounded-full bg-surface-900 border-2 border-yellow-700/60 z-20 flex items-center justify-center shadow-lg">
+            <span
+              v-if="winningNumber !== null"
+              class="text-base font-black"
+              :class="rouletteNumberColor(winningNumber) === 'red' ? 'text-red-400' : rouletteNumberColor(winningNumber) === 'black' ? 'text-white' : 'text-green-400'"
+            >{{ winningNumber }}</span>
+            <span v-else class="text-gray-500 text-xl">🎡</span>
+          </div>
+        </div>
+
+        <!-- Winning announcement -->
+        <div v-if="winningNumber !== null" class="text-center">
+          <span
+            class="px-5 py-1.5 rounded-full text-sm font-bold border"
+            :class="rouletteNumberColor(winningNumber) === 'red'   ? 'bg-red-500/20 border-red-500/40 text-red-300' :
+                    rouletteNumberColor(winningNumber) === 'black' ? 'bg-white/10 border-white/20 text-white' :
+                    'bg-green-500/20 border-green-500/40 text-green-300'"
+          >Gewinnzahl: {{ winningNumber }}</span>
+        </div>
+      </div>
+
+      <!-- Chip selector -->
+      <div class="card">
+        <p class="text-xs text-gray-400 mb-2">Chip-Wert wählen</p>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="chip in chipOptions"
+            :key="chip"
+            class="w-12 h-12 rounded-full text-xs font-bold border-2 transition-all"
+            :class="selectedChip === chip
+              ? 'bg-accent border-accent text-white scale-110 shadow-[0_0_14px_rgba(212,50,31,0.5)]'
+              : 'bg-surface-700 border-surface-600 text-gray-300 hover:border-accent/50'"
+            :disabled="rouletteSpinning"
+            @click="selectedChip = chip"
+          >{{ chip >= 1000 ? (chip / 1000) + 'K' : chip }}</button>
+        </div>
+      </div>
+
+      <!-- Betting table -->
+      <div class="card overflow-x-auto">
+        <p class="text-xs text-gray-400 mb-3">Setze auf Zahlen — Klick auf eine Zahl = Plein (35:1)</p>
+
+        <!-- Number grid -->
+        <div class="roulette-table min-w-[340px]">
+
+          <!-- Zero — spans all 12 rows -->
+          <div
+            class="roulette-cell zero-cell"
+            :class="{ 'has-bet': betAmountFor('STRAIGHT', [0]), 'cell-winner': winningNumber === 0 }"
+            @click="addBet('STRAIGHT', [0])"
+          >
+            <span>0</span>
+            <span v-if="betAmountFor('STRAIGHT', [0])" class="chip-indicator">{{ betAmountFor('STRAIGHT', [0]) }}</span>
+          </div>
+
+          <!-- Numbers 1–36 in rows of 3 -->
+          <template v-for="row in 12" :key="'row-' + row">
+            <template v-for="col in 3" :key="'cell-' + row + '-' + col">
+              <div
+                class="roulette-cell number-cell"
+                :class="[
+                  rouletteNumberColor((row - 1) * 3 + col) === 'red' ? 'cell-red' : 'cell-black',
+                  winningNumber === (row - 1) * 3 + col ? 'cell-winner' : '',
+                  betAmountFor('STRAIGHT', [(row - 1) * 3 + col]) ? 'has-bet' : ''
+                ]"
+                @click="addBet('STRAIGHT', [(row - 1) * 3 + col])"
+              >
+                <span>{{ (row - 1) * 3 + col }}</span>
+                <span v-if="betAmountFor('STRAIGHT', [(row - 1) * 3 + col])" class="chip-indicator">
+                  {{ betAmountFor('STRAIGHT', [(row - 1) * 3 + col]) }}
+                </span>
+              </div>
+            </template>
+          </template>
+
+          <!-- Column 2:1 bets (right side) -->
+          <div class="roulette-cell column-cell" :class="{ 'has-bet': betAmountFor('COLUMN_1', []) }" @click="addBet('COLUMN_1', [])">
+            <span class="text-xs leading-tight text-center">2:1<br/><span class="text-[9px] text-gray-400">Kol.1</span></span>
+            <span v-if="betAmountFor('COLUMN_1', [])" class="chip-indicator">{{ betAmountFor('COLUMN_1', []) }}</span>
+          </div>
+          <div class="roulette-cell column-cell" :class="{ 'has-bet': betAmountFor('COLUMN_2', []) }" @click="addBet('COLUMN_2', [])">
+            <span class="text-xs leading-tight text-center">2:1<br/><span class="text-[9px] text-gray-400">Kol.2</span></span>
+            <span v-if="betAmountFor('COLUMN_2', [])" class="chip-indicator">{{ betAmountFor('COLUMN_2', []) }}</span>
+          </div>
+          <div class="roulette-cell column-cell" :class="{ 'has-bet': betAmountFor('COLUMN_3', []) }" @click="addBet('COLUMN_3', [])">
+            <span class="text-xs leading-tight text-center">2:1<br/><span class="text-[9px] text-gray-400">Kol.3</span></span>
+            <span v-if="betAmountFor('COLUMN_3', [])" class="chip-indicator">{{ betAmountFor('COLUMN_3', []) }}</span>
+          </div>
+
+          <!-- Dozen row -->
+          <div style="grid-column: 2 / 5; grid-row: 13;" class="grid grid-cols-3 gap-[2px]">
+            <div class="roulette-cell outside-cell" :class="{ 'has-bet': betAmountFor('DOZEN_1', []) }" @click="addBet('DOZEN_1', [])">
+              <span>1–12</span><span v-if="betAmountFor('DOZEN_1', [])" class="chip-indicator">{{ betAmountFor('DOZEN_1', []) }}</span>
+            </div>
+            <div class="roulette-cell outside-cell" :class="{ 'has-bet': betAmountFor('DOZEN_2', []) }" @click="addBet('DOZEN_2', [])">
+              <span>13–24</span><span v-if="betAmountFor('DOZEN_2', [])" class="chip-indicator">{{ betAmountFor('DOZEN_2', []) }}</span>
+            </div>
+            <div class="roulette-cell outside-cell" :class="{ 'has-bet': betAmountFor('DOZEN_3', []) }" @click="addBet('DOZEN_3', [])">
+              <span>25–36</span><span v-if="betAmountFor('DOZEN_3', [])" class="chip-indicator">{{ betAmountFor('DOZEN_3', []) }}</span>
+            </div>
+          </div>
+
+          <!-- Even-money row -->
+          <div style="grid-column: 2 / 5; grid-row: 14;" class="grid grid-cols-6 gap-[2px]">
+            <div class="roulette-cell outside-cell" :class="{ 'has-bet': betAmountFor('LOW', []) }" @click="addBet('LOW', [])">
+              <span class="text-[10px]">1–18</span><span v-if="betAmountFor('LOW', [])" class="chip-indicator">{{ betAmountFor('LOW', []) }}</span>
+            </div>
+            <div class="roulette-cell outside-cell" :class="{ 'has-bet': betAmountFor('EVEN', []) }" @click="addBet('EVEN', [])">
+              <span class="text-[10px]">Ger.</span><span v-if="betAmountFor('EVEN', [])" class="chip-indicator">{{ betAmountFor('EVEN', []) }}</span>
+            </div>
+            <div class="roulette-cell outside-cell cell-red" :class="{ 'has-bet': betAmountFor('RED', []) }" @click="addBet('RED', [])">
+              <span class="text-[10px]">Rot</span><span v-if="betAmountFor('RED', [])" class="chip-indicator">{{ betAmountFor('RED', []) }}</span>
+            </div>
+            <div class="roulette-cell outside-cell cell-black" :class="{ 'has-bet': betAmountFor('BLACK', []) }" @click="addBet('BLACK', [])">
+              <span class="text-[10px]">Schw.</span><span v-if="betAmountFor('BLACK', [])" class="chip-indicator">{{ betAmountFor('BLACK', []) }}</span>
+            </div>
+            <div class="roulette-cell outside-cell" :class="{ 'has-bet': betAmountFor('ODD', []) }" @click="addBet('ODD', [])">
+              <span class="text-[10px]">Ung.</span><span v-if="betAmountFor('ODD', [])" class="chip-indicator">{{ betAmountFor('ODD', []) }}</span>
+            </div>
+            <div class="roulette-cell outside-cell" :class="{ 'has-bet': betAmountFor('HIGH', []) }" @click="addBet('HIGH', [])">
+              <span class="text-[10px]">19–36</span><span v-if="betAmountFor('HIGH', [])" class="chip-indicator">{{ betAmountFor('HIGH', []) }}</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Combination bets panel -->
+        <div class="mt-5 space-y-4">
+          <p class="text-xs text-gray-500 uppercase tracking-wider">Kombinations-Einsätze</p>
+
+          <!-- Street bets -->
+          <div>
+            <p class="text-xs text-gray-400 mb-1.5">Street — 3 Zahlen (11:1)</p>
+            <div class="flex flex-wrap gap-1">
+              <button
+                v-for="row in 12" :key="'st-' + row"
+                class="px-2 py-1 text-[11px] rounded border transition-colors"
+                :class="betAmountFor('STREET', [(row-1)*3+1,(row-1)*3+2,(row-1)*3+3])
+                  ? 'bg-accent/20 border-accent/60 text-accent'
+                  : 'bg-surface-700 border-surface-600 text-gray-400 hover:border-accent/40'"
+                :disabled="rouletteSpinning"
+                @click="addBet('STREET', [(row-1)*3+1,(row-1)*3+2,(row-1)*3+3])"
+              >
+                {{ (row-1)*3+1 }}–{{ (row-1)*3+3 }}
+                <span v-if="betAmountFor('STREET', [(row-1)*3+1,(row-1)*3+2,(row-1)*3+3])" class="ml-0.5 text-accent/80">({{ betAmountFor('STREET', [(row-1)*3+1,(row-1)*3+2,(row-1)*3+3]) }})</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Six Line bets -->
+          <div>
+            <p class="text-xs text-gray-400 mb-1.5">Six Line — 6 Zahlen (5:1)</p>
+            <div class="flex flex-wrap gap-1">
+              <button
+                v-for="row in 11" :key="'sl-' + row"
+                class="px-2 py-1 text-[11px] rounded border transition-colors"
+                :class="betAmountFor('SIX_LINE', [(row-1)*3+1,(row-1)*3+2,(row-1)*3+3,(row-1)*3+4,(row-1)*3+5,(row-1)*3+6])
+                  ? 'bg-accent/20 border-accent/60 text-accent'
+                  : 'bg-surface-700 border-surface-600 text-gray-400 hover:border-accent/40'"
+                :disabled="rouletteSpinning"
+                @click="addBet('SIX_LINE', [(row-1)*3+1,(row-1)*3+2,(row-1)*3+3,(row-1)*3+4,(row-1)*3+5,(row-1)*3+6])"
+              >{{ (row-1)*3+1 }}–{{ (row-1)*3+6 }}</button>
+            </div>
+          </div>
+
+          <!-- Trio bets -->
+          <div>
+            <p class="text-xs text-gray-400 mb-1.5">Trio — 0+1+2 oder 0+2+3 (11:1)</p>
+            <div class="flex gap-2">
+              <button
+                class="px-3 py-1.5 text-[11px] rounded border transition-colors"
+                :class="betAmountFor('TRIO',[0,1,2]) ? 'bg-accent/20 border-accent/60 text-accent' : 'bg-surface-700 border-surface-600 text-gray-400 hover:border-accent/40'"
+                :disabled="rouletteSpinning" @click="addBet('TRIO',[0,1,2])"
+              >0-1-2 <span v-if="betAmountFor('TRIO',[0,1,2])" class="text-accent/80">({{ betAmountFor('TRIO',[0,1,2]) }})</span></button>
+              <button
+                class="px-3 py-1.5 text-[11px] rounded border transition-colors"
+                :class="betAmountFor('TRIO',[0,2,3]) ? 'bg-accent/20 border-accent/60 text-accent' : 'bg-surface-700 border-surface-600 text-gray-400 hover:border-accent/40'"
+                :disabled="rouletteSpinning" @click="addBet('TRIO',[0,2,3])"
+              >0-2-3 <span v-if="betAmountFor('TRIO',[0,2,3])" class="text-accent/80">({{ betAmountFor('TRIO',[0,2,3]) }})</span></button>
+            </div>
+          </div>
+
+          <!-- Split horizontal -->
+          <div>
+            <p class="text-xs text-gray-400 mb-1.5">Split — horizontal benachbart (17:1)</p>
+            <div class="flex flex-wrap gap-1">
+              <button
+                v-for="n in splitHorizontal" :key="'sh-' + n"
+                class="px-1.5 py-0.5 text-[10px] rounded border transition-colors"
+                :class="betAmountFor('SPLIT',[n, n+1]) ? 'bg-accent/20 border-accent/60 text-accent' : 'bg-surface-700 border-surface-600 text-gray-500 hover:border-accent/40'"
+                :disabled="rouletteSpinning"
+                @click="addBet('SPLIT',[n, n+1])"
+              >{{ n }}/{{ n+1 }}</button>
+            </div>
+          </div>
+
+          <!-- Split vertical -->
+          <div>
+            <p class="text-xs text-gray-400 mb-1.5">Split — vertikal benachbart (17:1)</p>
+            <div class="flex flex-wrap gap-1">
+              <button
+                v-for="n in splitVertical" :key="'sv-' + n"
+                class="px-1.5 py-0.5 text-[10px] rounded border transition-colors"
+                :class="betAmountFor('SPLIT',[n, n+3]) ? 'bg-accent/20 border-accent/60 text-accent' : 'bg-surface-700 border-surface-600 text-gray-500 hover:border-accent/40'"
+                :disabled="rouletteSpinning"
+                @click="addBet('SPLIT',[n, n+3])"
+              >{{ n }}/{{ n+3 }}</button>
+            </div>
+          </div>
+
+          <!-- Corner bets -->
+          <div>
+            <p class="text-xs text-gray-400 mb-1.5">Carré — Ecke 4 Zahlen (8:1)</p>
+            <div class="flex flex-wrap gap-1">
+              <button
+                v-for="c in cornerBets" :key="'cb-' + c[0]"
+                class="px-1.5 py-0.5 text-[10px] rounded border transition-colors"
+                :class="betAmountFor('CORNER', c) ? 'bg-accent/20 border-accent/60 text-accent' : 'bg-surface-700 border-surface-600 text-gray-500 hover:border-accent/40'"
+                :disabled="rouletteSpinning"
+                @click="addBet('CORNER', c)"
+              >{{ c[0] }}-{{ c[1] }}-{{ c[2] }}-{{ c[3] }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active bets summary -->
+      <div v-if="placedBets.length > 0" class="card space-y-2">
+        <div class="flex items-center justify-between">
+          <p class="text-sm font-semibold text-white">Platzierte Einsätze ({{ placedBets.length }})</p>
+          <button class="text-xs text-gray-500 hover:text-red-400 transition-colors" @click="clearBets">Alle löschen</button>
+        </div>
+        <div class="space-y-1 max-h-36 overflow-y-auto pr-1">
+          <div v-for="(bet, i) in placedBets" :key="i" class="flex items-center justify-between text-xs">
+            <span class="text-gray-300">{{ rouletteBetLabel(bet) }}</span>
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-white">{{ formatCurrency(bet.amount) }}</span>
+              <button class="text-gray-600 hover:text-red-400 text-base leading-none" @click="removeBet(i)">×</button>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-between text-sm pt-2 border-t border-surface-600">
+          <span class="text-gray-400">Gesamteinsatz</span>
+          <span class="font-bold text-white">{{ formatCurrency(totalPlacedBet) }}</span>
+        </div>
+      </div>
+
+      <!-- Spin button -->
+      <button
+        class="btn-primary w-full text-base py-3 font-semibold"
+        :disabled="rouletteSpinning || placedBets.length === 0"
+        @click="playRoulette"
+      >
+        {{ rouletteSpinning ? '🎡 Dreht...' : 'Drehen!' }}
+      </button>
+
+      <!-- Result -->
+      <div v-if="rouletteResult && !rouletteSpinning" class="card space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-base" :class="rouletteResult.netChange >= 0 ? 'text-green-300' : 'text-red-400'">
+            {{ rouletteResult.netChange >= 0 ? 'Gewonnen!' : 'Verloren' }}
+          </span>
+          <span class="font-bold text-lg font-mono" :class="rouletteResult.netChange >= 0 ? 'text-green-400' : 'text-red-400'">
+            {{ rouletteResult.netChange >= 0 ? '+' : '' }}{{ formatCurrency(rouletteResult.netChange) }}
+          </span>
+        </div>
+        <div class="space-y-1">
+          <div
+            v-for="(br, i) in rouletteResult.betResults"
+            :key="i"
+            class="flex justify-between text-xs"
+            :class="br.won ? 'text-green-300' : 'text-gray-500'"
+          >
+            <span>{{ rouletteBetLabel(br) }}</span>
+            <span class="font-mono">{{ br.won ? '+' + formatCurrency(br.payout - br.amount) : '-' + formatCurrency(br.amount) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payout table -->
+      <div class="card">
+        <h4 class="text-sm font-semibold text-gray-300 mb-3">Auszahlungstabelle</h4>
+        <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-gray-400">Plein (1 Zahl)</span><span class="text-white font-medium">35:1</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Cheval (2 Zahlen)</span><span class="text-white font-medium">17:1</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Street / Trio (3)</span><span class="text-white font-medium">11:1</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Carré (4 Zahlen)</span><span class="text-white font-medium">8:1</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Sixain (6 Zahlen)</span><span class="text-white font-medium">5:1</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Dutzend / Kolonne</span><span class="text-white font-medium">2:1</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Rot / Schwarz</span><span class="text-white font-medium">1:1</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Gerade / Ungerade</span><span class="text-white font-medium">1:1</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">1–18 / 19–36</span><span class="text-white font-medium">1:1</span></div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </template>
 
@@ -444,8 +810,9 @@ const tabs = [
   { id: 'blackjack', label: 'Blackjack',      icon: '🃏' },
   { id: 'poker',     label: 'Poker',          icon: '♠' },
   { id: 'texas',     label: "Hold'em",        icon: '🎴' },
+  { id: 'roulette',  label: 'Roulette',       icon: '🎡' },
 ]
-const activeTab = ref<'slots' | 'blackjack' | 'poker' | 'texas'>('slots')
+const activeTab = ref<'slots' | 'blackjack' | 'poker' | 'texas' | 'roulette'>('slots')
 
 // ── Types ─────────────────────────────────────────────────────────────────
 interface SlotResult { reels: string[]; outcome: string; betAmount: number; payout: number; netChange: number }
@@ -473,6 +840,16 @@ interface THState {
   playerDraws: DrawInfo[]
   payout: number | null
   netChange: number | null
+}
+
+interface RouletteBet { type: string; numbers: number[]; amount: number }
+interface RouletteResult {
+  winningNumber: number
+  winningColor: string
+  totalBet: number
+  totalPayout: number
+  netChange: number
+  betResults: { type: string; numbers: number[]; amount: number; won: boolean; payout: number }[]
 }
 
 // ── Slots ─────────────────────────────────────────────────────────────────
@@ -648,6 +1025,115 @@ function thResultLabel(status: string): string {
   return ({ WON: 'Gewonnen! 🏆', LOST: 'Verloren', PUSH: 'Unentschieden — Pot aufgeteilt' } as Record<string, string>)[status] ?? status
 }
 
+// ── Roulette ──────────────────────────────────────────────────────────────
+const rouletteSpinning   = ref(false)
+const rouletteResult     = ref<RouletteResult | null>(null)
+const placedBets         = ref<RouletteBet[]>([])
+const selectedChip       = ref(10)
+const chipOptions        = [1, 5, 10, 25, 50, 100, 500]
+const rouletteWheelAngle = ref(0)
+const winningNumber      = ref<number | null>(null)
+
+const totalPlacedBet = computed(() => placedBets.value.reduce((s, b) => s + b.amount, 0))
+
+const ROULETTE_RED = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36])
+
+function rouletteNumberColor(n: number): 'red' | 'black' | 'green' {
+  if (n === 0) return 'green'
+  return ROULETTE_RED.has(n) ? 'red' : 'black'
+}
+
+const splitHorizontal = computed(() =>
+  Array.from({length: 35}, (_, i) => i + 1).filter(n => n % 3 !== 0))
+
+const splitVertical = computed(() =>
+  Array.from({length: 33}, (_, i) => i + 1))
+
+const cornerBets = computed(() => {
+  const r: number[][] = []
+  for (let n = 1; n <= 33; n++) {
+    if ((n - 1) % 3 === 2) continue
+    r.push([n, n + 1, n + 3, n + 4])
+  }
+  return r
+})
+
+function betKey(type: string, numbers: number[]): string {
+  return type + ':' + [...numbers].sort((a, b) => a - b).join(',')
+}
+
+function betAmountFor(type: string, numbers: number[]): number | null {
+  const key = betKey(type, numbers)
+  return placedBets.value.find(b => betKey(b.type, b.numbers) === key)?.amount ?? null
+}
+
+function addBet(type: string, numbers: number[]) {
+  if (rouletteSpinning.value) return
+  if (totalPlacedBet.value + selectedChip.value > 10000) {
+    toast.error('Maximaleinsatz 10.000 € erreicht')
+    return
+  }
+  const sorted = [...numbers].sort((a, b) => a - b)
+  const key = betKey(type, sorted)
+  const existing = placedBets.value.find(b => betKey(b.type, b.numbers) === key)
+  if (existing) {
+    existing.amount += selectedChip.value
+  } else {
+    placedBets.value.push({ type, numbers: sorted, amount: selectedChip.value })
+  }
+}
+
+function removeBet(i: number) { placedBets.value.splice(i, 1) }
+function clearBets() { placedBets.value = [] }
+
+function rouletteBetLabel(bet: { type: string; numbers: number[] }): string {
+  const map: Record<string, string> = {
+    RED: 'Rot', BLACK: 'Schwarz', EVEN: 'Gerade', ODD: 'Ungerade',
+    LOW: '1–18', HIGH: '19–36',
+    DOZEN_1: 'Dutzend 1–12', DOZEN_2: 'Dutzend 13–24', DOZEN_3: 'Dutzend 25–36',
+    COLUMN_1: '1. Kolonne', COLUMN_2: '2. Kolonne', COLUMN_3: '3. Kolonne',
+  }
+  if (map[bet.type]) return map[bet.type]
+  const nums = bet.numbers.join('/')
+  return ({
+    STRAIGHT: `Plein ${nums}`,
+    SPLIT:    `Cheval ${nums}`,
+    STREET:   `Street ${nums}`,
+    CORNER:   `Carré ${nums}`,
+    SIX_LINE: `Sixain ${nums}`,
+    TRIO:     `Trio ${nums}`,
+  } as Record<string, string>)[bet.type] ?? bet.type
+}
+
+async function playRoulette() {
+  if (!placedBets.value.length) return
+  rouletteSpinning.value = true
+  rouletteResult.value = null
+  winningNumber.value = null
+
+  let spinInterval = setInterval(() => { rouletteWheelAngle.value += 8 }, 20)
+
+  try {
+    const result = await api.post<RouletteResult>('/api/gambling/roulette', { bets: placedBets.value })
+
+    await new Promise<void>(r => setTimeout(r, 1500))
+    clearInterval(spinInterval)
+    rouletteWheelAngle.value += 360 * 3
+    winningNumber.value = result.winningNumber
+
+    await new Promise<void>(r => setTimeout(r, 900))
+    rouletteResult.value = result
+    placedBets.value = []
+    await gameStore.fetchCharacter()
+  } catch (e: any) {
+    clearInterval(spinInterval)
+    const msg = e?.data?.message ?? e?.message ?? 'Fehler beim Roulette'
+    toast.error(msg)
+  } finally {
+    rouletteSpinning.value = false
+  }
+}
+
 // ── Labels & Helpers ───────────────────────────────────────────────────────
 const payoutTable = [
   { symbols: '7️⃣7️⃣7️⃣', label: 'JACKPOT', multiplier: '50×' },
@@ -698,5 +1184,70 @@ function handBadgeClass(result: string): string {
 .reel-spin {
   display: inline-block;
   animation: reelSpin 0.16s ease-in-out infinite;
+}
+
+/* ── Roulette ──────────────────────────────────────────────────────────── */
+.roulette-table {
+  display: grid;
+  grid-template-columns: 48px repeat(3, 1fr) 52px;
+  grid-template-rows: repeat(12, 40px) 36px 36px;
+  gap: 2px;
+}
+
+.roulette-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid rgb(var(--color-surface-600, 75 85 99) / 0.5);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  transition: filter 0.1s, transform 0.1s;
+}
+.roulette-cell:hover  { filter: brightness(1.25); }
+.roulette-cell:active { transform: scale(0.93); }
+
+.cell-red    { background: rgb(185 28 28 / 0.75); border-color: rgb(220 38 38 / 0.4); }
+.cell-black  { background: rgb(30 30 35 / 0.9);   border-color: rgb(75 85 99 / 0.5); }
+.zero-cell   { background: rgb(22 101 52 / 0.85); border-color: rgb(34 197 94 / 0.4); grid-column: 1; grid-row: 1 / 13; }
+.column-cell { grid-column: 5; background: rgb(30 30 35 / 0.6); }
+.outside-cell { background: rgb(30 30 35 / 0.6); font-size: 0.7rem; color: rgb(209 213 219); }
+
+.has-bet {
+  outline: 2px solid var(--accent, #d4321f);
+  outline-offset: -2px;
+}
+
+@keyframes winnerPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
+  50%      { box-shadow: 0 0 0 8px rgba(250, 204, 21, 0); }
+}
+.cell-winner {
+  outline: 3px solid rgb(250 204 21);
+  outline-offset: -2px;
+  filter: brightness(1.5);
+  animation: winnerPulse 0.7s ease-out 4;
+}
+
+.chip-indicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent, #d4321f);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
 </style>
