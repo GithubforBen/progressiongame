@@ -64,7 +64,7 @@ export const useGameStore = defineStore('game', {
 
   getters: {
     totalMonthlyExpenses: (state) =>
-      state.expenses.filter((e) => e.active).reduce((sum, e) => sum + e.amount, 0),
+      (Array.isArray(state.expenses) ? state.expenses : []).filter((e) => e.active).reduce((sum, e) => sum + e.amount, 0),
 
     formattedPlaytime: (state) => {
       const h = Math.floor(state.playtimeSeconds / 3600)
@@ -121,9 +121,10 @@ export const useGameStore = defineStore('game', {
     async fetchExpenses() {
       const config = useRuntimeConfig()
       const authStore = useAuthStore()
-      this.expenses = await $fetch<MonthlyExpense[]>(`${config.public.apiBase}/api/expenses`, {
+      const result = await $fetch<MonthlyExpense[]>(`${config.public.apiBase}/api/expenses`, {
         headers: { Authorization: `Bearer ${authStore.token}` },
       })
+      this.expenses = Array.isArray(result) ? result : []
     },
 
     async endTurn() {

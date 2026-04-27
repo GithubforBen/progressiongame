@@ -89,7 +89,7 @@
           </div>
           <div class="flex items-center justify-between">
             <span class="text-sm text-gray-400">Entdeckungsrisiko/Monat</span>
-            <span class="font-mono font-semibold" :class="detectionColor">{{ status.detectionChancePercent.toFixed(0) }}%</span>
+            <span class="font-mono font-semibold" :class="detectionColor">{{ (status.detectionChancePercent ?? 0).toFixed(0) }}%</span>
           </div>
           <div class="pt-1 border-t border-surface-700">
             <div class="flex items-center justify-between">
