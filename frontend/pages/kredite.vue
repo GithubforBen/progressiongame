@@ -272,7 +272,7 @@ async function loadAll() {
       api.get<SchufaBreakdown>('/api/loans/schufa-breakdown'),
     ])
     schufa.value = s
-    loans.value = l
+    loans.value = Array.isArray(l) ? l : []
     breakdown.value = b
   } catch {
     toast.error('Daten konnten nicht geladen werden')

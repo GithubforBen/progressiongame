@@ -269,7 +269,8 @@ const totalActiveExpenses = computed(() =>
 async function loadExpenses() {
   expensesLoading.value = true
   try {
-    expenses.value = await api.get<Expense[]>('/api/expenses')
+    const result = await api.get<Expense[]>('/api/expenses')
+    expenses.value = Array.isArray(result) ? result : []
   } catch {
     toast.error('Ausgaben konnten nicht geladen werden')
   } finally {

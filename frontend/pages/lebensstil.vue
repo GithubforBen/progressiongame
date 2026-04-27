@@ -96,7 +96,8 @@ const buying = ref<string | null>(null)
 async function loadCatalog() {
   loading.value = true
   try {
-    catalog.value = await api.get<LifestyleItem[]>('/api/lifestyle')
+    const res = await api.get<LifestyleItem[]>('/api/lifestyle')
+    catalog.value = Array.isArray(res) ? res : []
   } catch {
     toast.error('Lebensstil-Items konnten nicht geladen werden')
   } finally {

@@ -144,8 +144,8 @@ async function loadAll() {
       api.get<CatalogItem[]>('/api/real-estate'),
       api.get<PlayerProperty[]>('/api/real-estate/my'),
     ])
-    catalog.value = cat
-    myProperties.value = my
+    catalog.value = Array.isArray(cat) ? cat : []
+    myProperties.value = Array.isArray(my) ? my : []
   } catch {
     toast.error('Daten konnten nicht geladen werden')
   } finally {
