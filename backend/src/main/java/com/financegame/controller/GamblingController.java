@@ -3,6 +3,8 @@ package com.financegame.controller;
 import com.financegame.dto.BlackjackStateDto;
 import com.financegame.dto.GamblingBetRequest;
 import com.financegame.dto.PokerResultDto;
+import com.financegame.dto.RouletteRequest;
+import com.financegame.dto.RouletteResultDto;
 import com.financegame.dto.SlotResultDto;
 import com.financegame.dto.TexasHoldemActionRequest;
 import com.financegame.dto.TexasHoldemStateDto;
@@ -85,5 +87,15 @@ public class GamblingController {
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
         return gamblingService.actTexasHoldem(principal.id(), id, request.action(), request.amount());
+    }
+
+    // --- Roulette ---
+
+    @PostMapping("/roulette")
+    public RouletteResultDto playRoulette(
+        @Valid @RequestBody RouletteRequest request,
+        @AuthenticationPrincipal PlayerPrincipal principal
+    ) {
+        return gamblingService.playRoulette(principal.id(), request);
     }
 }
