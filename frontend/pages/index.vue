@@ -246,7 +246,8 @@ const barChartOptions = {
 onMounted(async () => {
   try {
     await gameStore.init()
-    snapshots.value = await api.get<Snapshot[]>('/api/stats/snapshots')
+    const snapshotResult = await api.get<Snapshot[]>('/api/stats/snapshots')
+    snapshots.value = Array.isArray(snapshotResult) ? snapshotResult : []
   } finally {
     loading.value = false
   }
