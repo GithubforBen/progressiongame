@@ -170,7 +170,8 @@ async function purchase(item: NeedsItem) {
 onMounted(async () => {
   loading.value = true
   try {
-    items.value = await api.get<NeedsItem[]>('/api/needs/items')
+    const result = await api.get<NeedsItem[]>('/api/needs/items')
+    items.value = Array.isArray(result) ? result : []
   } catch {
     toast.error('Items konnten nicht geladen werden')
   } finally {

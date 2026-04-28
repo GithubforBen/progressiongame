@@ -412,7 +412,8 @@ async function buy(item: CollectibleItem) {
     await api.post(`/api/collections/items/${item.id}/buy`)
     const idx = items.value.findIndex(i => i.id === item.id)
     if (idx !== -1) items.value[idx] = { ...items.value[idx], alreadyOwned: true, canBuy: false }
-    collections.value = await api.get<CollectionRow[]>('/api/collections')
+    const refreshed = await api.get<CollectionRow[]>('/api/collections')
+    collections.value = Array.isArray(refreshed) ? refreshed : []
     toast.success(`${item.name} gekauft!`)
     await gameStore.fetchCharacter()
   } catch (e: any) {
