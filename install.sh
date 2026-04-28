@@ -328,6 +328,10 @@ FRONTEND_PORT=${FRONTEND_PORT}
 # CORS: kommagetrennte Liste erlaubter Frontend-Ursprünge
 CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
 
+# Vertraue X-Forwarded-For nur, wenn ein vertrauenswürdiger Reverse-Proxy
+# (z. B. Cloudflare Tunnel) die echte Client-IP setzt.
+SECURITY_TRUST_FORWARDED_FOR=$([ "$USE_CLOUDFLARE" == "true" ] && echo "true" || echo "false")
+
 # API-URLs
 NUXT_PUBLIC_API_BASE=${BACKEND_PUBLIC_URL}
 NUXT_INTERNAL_API_BASE=http://backend:8080

@@ -33,6 +33,13 @@ server:
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
 
+security:
+  # Set to true ONLY when the app sits behind a trusted reverse proxy that
+  # rewrites X-Forwarded-For (e.g. Cloudflare Tunnel, nginx). When false the
+  # rate limiter and similar IP-based logic use the raw socket address, so an
+  # untrusted client cannot spoof its IP.
+  trust-forwarded-for: ${SECURITY_TRUST_FORWARDED_FOR:false}
+
 logging:
   level:
     com.financegame: INFO
