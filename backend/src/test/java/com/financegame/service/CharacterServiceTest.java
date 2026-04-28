@@ -45,12 +45,27 @@ class CharacterServiceTest {
     // ── deductCash ───────────────────────────────────────────────────────────
 
     @Test
-    void deductCash_insufficientFunds_throws400() {
+    void deductCash_belowOverdraftLimit_throws400() {
+        // Overdraft is allowed down to -5000; deducting 6000 from 50 would
+        // leave -5950, which exceeds the limit and must be rejected.
         when(characterRepository.findByPlayerId(1L)).thenReturn(Optional.of(characterWith(BigDecimal.valueOf(50))));
 
-        assertThatThrownBy(() -> service.deductCash(1L, BigDecimal.valueOf(100), "Test"))
+        assertThatThrownBy(() -> service.deductCash(1L, BigDecimal.valueOf(6000), "Test"))
             .isInstanceOf(ResponseStatusException.class)
             .hasMessageContaining("Nicht genug Geld");
+    }
+
+    @Test
+    void deductCash_withinOverdraft_succeeds() {
+        // Cash 50 minus 100 = -50, still within the -5000 overdraft window.
+        GameCharacter character = characterWith(BigDecimal.valueOf(50));
+        when(characterRepository.findByPlayerId(1L)).thenReturn(Optional.of(character));
+        when(characterRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        service.deductCash(1L, BigDecimal.valueOf(100), "Test");
+
+        assertThat(character.getCash()).isEqualByComparingTo("-50.00");
+        verify(characterRepository).save(character);
     }
 
     @Test
