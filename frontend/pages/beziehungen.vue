@@ -264,20 +264,20 @@ const selectedId = ref<string | null>(null)
 const actionLoading = ref<string | null>(null)
 
 const selected = computed(() =>
-  network.value?.persons.find(p => p.personId === selectedId.value) ?? null
+  network.value?.persons?.find(p => p.personId === selectedId.value) ?? null
 )
 
 const globalTimeUsed = computed(() => network.value?.globalTimeUsedThisMonth ?? 0)
 
 const edges = computed(() => {
   if (!network.value) return []
-  const ids = new Set(network.value.persons.map(p => p.personId))
-  return network.value.edges.filter(e => ids.has(e.sourcePersonId) && ids.has(e.targetPersonId))
+  const ids = new Set((network.value.persons ?? []).map(p => p.personId))
+  return (network.value.edges ?? []).filter(e => ids.has(e.sourcePersonId) && ids.has(e.targetPersonId))
 })
 
 const visibleGroups = computed(() => {
   if (!network.value) return []
-  const groupIds = new Set(network.value.persons.flatMap(p => p.groupId ? [p.groupId] : []))
+  const groupIds = new Set((network.value.persons ?? []).flatMap(p => p.groupId ? [p.groupId] : []))
   return (network.value.unlockedGroups ?? []).filter(g => groupIds.has(g.id))
 })
 
