@@ -2,14 +2,15 @@ package com.financegame.controller;
 
 import com.financegame.dto.CharacterDto;
 import com.financegame.dto.NeedsItemDto;
+import com.financegame.dto.PurchaseNeedRequest;
 import com.financegame.repository.NeedsItemRepository;
 import com.financegame.security.PlayerPrincipal;
 import com.financegame.service.CharacterService;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/needs")
@@ -30,10 +31,9 @@ public class NeedsController {
 
     @PostMapping("/purchase")
     public CharacterDto purchase(
-        @RequestBody Map<String, String> body,
+        @Valid @RequestBody PurchaseNeedRequest request,
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
-        String itemId = body.get("itemId");
-        return characterService.purchaseNeedItem(principal.id(), itemId);
+        return characterService.purchaseNeedItem(principal.id(), request.itemId());
     }
 }

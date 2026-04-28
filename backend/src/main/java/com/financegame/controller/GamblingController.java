@@ -83,7 +83,7 @@ public class GamblingController {
     @PostMapping("/texasholdem/{id}/action")
     public TexasHoldemStateDto actTexasHoldem(
         @PathVariable Long id,
-        @RequestBody TexasHoldemActionRequest request,
+        @Valid @RequestBody TexasHoldemActionRequest request,
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
         return gamblingService.actTexasHoldem(principal.id(), id, request.action(), request.amount());
