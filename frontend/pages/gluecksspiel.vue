@@ -92,7 +92,7 @@
           </div>
           <div class="mb-4">
             <p class="text-xs text-gray-400 mb-2">Du <span class="ml-1 text-white font-semibold">({{ bjGame.playerTotal }})</span>
-              <span v-if="bjGame.playerTotal === 21 && bjGame.playerCards.length === 2" class="ml-2 text-yellow-400 font-bold text-xs">BLACKJACK!</span>
+              <span v-if="bjGame.playerTotal === 21 && bjGame.playerCards?.length === 2" class="ml-2 text-yellow-400 font-bold text-xs">BLACKJACK!</span>
               <span v-else-if="bjGame.playerTotal > 21" class="ml-2 text-red-400 font-bold text-xs">BUST!</span>
             </p>
             <div class="flex gap-2 flex-wrap">
@@ -263,7 +263,7 @@
           <div class="flex gap-2 justify-center">
             <CardDisplay v-for="(card, i) in thGame.communityCards" :key="i" :card="card" />
             <div
-              v-for="i in (5 - thGame.communityCards.length)"
+              v-for="i in (5 - (thGame.communityCards?.length ?? 0))"
               :key="'empty-' + i"
               class="w-12 h-16 rounded-lg border border-dashed border-surface-600/50 opacity-30"
             />
@@ -879,7 +879,7 @@ async function playSlots() {
 
   try {
     const result = await api.post<SlotResult>('/api/gambling/slots', { bet: slotBet.value })
-    const finalSymbols = result.reels.map(r => slotSymbolMap[r] ?? r)
+    const finalSymbols = (result.reels ?? []).map(r => slotSymbolMap[r] ?? r)
 
     // Stop reels sequentially: 600ms, 1200ms, 1800ms after result
     for (let i = 0; i < 3; i++) {
@@ -926,7 +926,8 @@ async function bjStand() {
   catch (e: any) { toast.error(e?.data?.message ?? 'Fehler') }
   finally { bjLoading.value = false }
 }
-function calcHandTotal(cards: string[]): number {
+function calcHandTotal(cards: string[] | undefined): number {
+  if (!cards) return 0
   let total = 0, aces = 0
   for (const card of cards) {
     if (card === '??') continue

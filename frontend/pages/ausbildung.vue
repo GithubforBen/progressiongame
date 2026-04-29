@@ -146,7 +146,7 @@
                   <option v-for="opt in selectedDetail.availableStage.fieldOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
                 <p v-if="selectedField" class="text-xs text-gray-500">
-                  Dauer: {{ selectedDetail.availableStage.fieldOptions.find(o => o.value === selectedField)?.durationMonths ?? selectedDetail.availableStage.durationMonths }} Monate
+                  Dauer: {{ selectedDetail.availableStage.fieldOptions?.find(o => o.value === selectedField)?.durationMonths ?? selectedDetail.availableStage.durationMonths }} Monate
                 </p>
               </div>
               <button
@@ -480,9 +480,9 @@ const selectedDetail = computed((): SelectedDetail | null => {
   const p = progress.value
   const state = getState(key)
   if (MAIN_IDS.has(key)) {
-    return { id: key, label: STAGE_LABELS[key] ?? key, state, type: 'main', availableStage: p?.availableMainStages.find(s => s.stageKey === key) }
+    return { id: key, label: STAGE_LABELS[key] ?? key, state, type: 'main', availableStage: p?.availableMainStages?.find(s => s.stageKey === key) }
   }
-  const avail = p?.availableSideCerts.find(c => c.certKey === key)
+  const avail = p?.availableSideCerts?.find(c => c.certKey === key)
   return {
     id: key, label: SIDE_CERT_LABELS[key] ?? key,
     familyLabel: STATIC[key]?.familyLabel,
