@@ -97,7 +97,7 @@
               <p v-else class="text-sm text-gray-600">Kein Einkommen diesen Monat</p>
               <div class="mt-2 pt-2 border-t border-surface-700 flex justify-between">
                 <span class="text-sm font-medium text-gray-300">Brutto gesamt</span>
-                <span class="text-sm font-mono font-semibold text-green-400">{{ formatCurrency(result.grossIncome) }}</span>
+                <span class="text-sm font-mono font-semibold text-green-400">{{ formatCurrency(result.grossIncome ?? 0) }}</span>
               </div>
             </div>
 
@@ -113,7 +113,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-surface-700 flex justify-between">
                 <span class="text-sm font-medium text-gray-300">Ausgaben gesamt</span>
-                <span class="text-sm font-mono font-semibold text-red-400">−{{ formatCurrency(result.totalExpenses) }}</span>
+                <span class="text-sm font-mono font-semibold text-red-400">−{{ formatCurrency(result.totalExpenses ?? 0) }}</span>
               </div>
             </div>
 
@@ -134,7 +134,7 @@
           <div class="px-6 py-4 border-t border-surface-700 flex items-center justify-between">
             <div class="text-xs text-gray-500">
               Neuer Kontostand:
-              <span class="font-mono text-white font-semibold">{{ formatCurrency(result.character.cash) }}</span>
+              <span class="font-mono text-white font-semibold">{{ formatCurrency(result.character?.cash ?? 0) }}</span>
             </div>
             <button
               class="btn-primary disabled:opacity-40"
@@ -180,7 +180,7 @@ const bailAmount = computed(() => {
   const evaded = props.result.taxEvasionCaughtAmount ?? 0
   return Math.max(5000, evaded * 3)
 })
-const canAffordFlee = computed(() => (props.result.character.cash ?? 0) >= bailAmount.value)
+const canAffordFlee = computed(() => (props.result.character?.cash ?? 0) >= bailAmount.value)
 
 async function resolve(choice: 'JAIL' | 'FLEE') {
   if (resolvingCaught.value) return
@@ -193,7 +193,7 @@ async function resolve(choice: 'JAIL' | 'FLEE') {
   }
 }
 
-const netChange = computed(() => props.result.netChange)
+const netChange = computed(() => props.result.netChange ?? 0)
 const hasChartData = computed(() =>
   !!(props.result.incomeBreakdown?.length || props.result.expenseBreakdown?.length),
 )
