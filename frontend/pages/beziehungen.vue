@@ -96,7 +96,7 @@
     <!-- Detail Panel -->
     <div class="w-80 bg-surface-800 border-l border-white/10 flex flex-col overflow-hidden">
       <!-- Active boosts -->
-      <div v-if="network && network.activeBoosts.length" class="p-3 border-b border-white/10">
+      <div v-if="network?.activeBoosts?.length" class="p-3 border-b border-white/10">
         <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2">Aktive Beziehungs-Boosts</p>
         <div class="space-y-1">
           <div v-for="b in network.activeBoosts" :key="b.type" class="flex justify-between text-xs">
