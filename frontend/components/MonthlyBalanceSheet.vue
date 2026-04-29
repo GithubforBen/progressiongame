@@ -68,14 +68,14 @@
             <ClientOnly>
               <div v-if="hasChartData" class="grid grid-cols-2 gap-4">
                 <!-- Income chart -->
-                <div v-if="result.incomeBreakdown.length > 0">
+                <div v-if="result.incomeBreakdown?.length > 0">
                   <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider text-center mb-2">Einnahmen</p>
                   <div class="flex justify-center">
                     <canvas ref="incomeCanvas" width="180" height="180"></canvas>
                   </div>
                 </div>
                 <!-- Expense chart -->
-                <div v-if="result.expenseBreakdown.length > 0">
+                <div v-if="result.expenseBreakdown?.length > 0">
                   <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider text-center mb-2">Ausgaben</p>
                   <div class="flex justify-center">
                     <canvas ref="expenseCanvas" width="180" height="180"></canvas>
@@ -87,7 +87,7 @@
             <!-- Income breakdown -->
             <div>
               <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Einnahmen</h3>
-              <div v-if="result.incomeBreakdown.length" class="space-y-1.5">
+              <div v-if="result.incomeBreakdown?.length" class="space-y-1.5">
                 <div v-for="item in result.incomeBreakdown" :key="item.label"
                   class="flex items-center justify-between">
                   <span class="text-sm text-gray-300">{{ item.label }}</span>
@@ -118,7 +118,7 @@
             </div>
 
             <!-- Events -->
-            <div v-if="result.events.length">
+            <div v-if="result.events?.length">
               <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Ereignisse</h3>
               <ul class="space-y-1">
                 <li v-for="event in result.events" :key="event"
@@ -195,7 +195,7 @@ async function resolve(choice: 'JAIL' | 'FLEE') {
 
 const netChange = computed(() => props.result.netChange)
 const hasChartData = computed(() =>
-  props.result.incomeBreakdown.length > 0 || props.result.expenseBreakdown.length > 0,
+  !!(props.result.incomeBreakdown?.length || props.result.expenseBreakdown?.length),
 )
 
 const incomeCanvas = ref<HTMLCanvasElement | null>(null)
@@ -251,11 +251,11 @@ function createCharts() {
   if (!import.meta.client) return
   // Defer one tick to ensure canvas elements are mounted after v-if resolves
   nextTick(() => {
-    if (incomeCanvas.value && props.result.incomeBreakdown.length > 0) {
+    if (incomeCanvas.value && props.result.incomeBreakdown?.length > 0) {
       incomeChart?.destroy()
       incomeChart = buildDoughnut(incomeCanvas.value, props.result.incomeBreakdown, INCOME_COLORS)
     }
-    if (expenseCanvas.value && props.result.expenseBreakdown.length > 0) {
+    if (expenseCanvas.value && props.result.expenseBreakdown?.length > 0) {
       expenseChart?.destroy()
       expenseChart = buildDoughnut(expenseCanvas.value, props.result.expenseBreakdown, EXPENSE_COLORS)
     }
