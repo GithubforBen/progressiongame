@@ -7,6 +7,7 @@ import com.financegame.repository.CharacterRepository;
 import com.financegame.repository.InvestmentRepository;
 import com.financegame.repository.MonthlyExpenseRepository;
 import com.financegame.repository.NeedsItemRepository;
+import com.financegame.repository.PlayerNeedsUsageRepository;
 import com.financegame.repository.PlayerRealEstateRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,13 +34,14 @@ class CharacterServiceTest {
     @Mock InvestmentRepository investmentRepository;
     @Mock PlayerRealEstateRepository playerRealEstateRepository;
     @Mock NeedsItemRepository needsItemRepository;
+    @Mock PlayerNeedsUsageRepository playerNeedsUsageRepository;
     @Mock GameConfig gameConfig;
 
     CharacterService service;
 
     @BeforeEach
     void setUp() {
-        service = new CharacterService(characterRepository, monthlyExpenseRepository, investmentRepository, playerRealEstateRepository, needsItemRepository, gameConfig);
+        service = new CharacterService(characterRepository, monthlyExpenseRepository, investmentRepository, playerRealEstateRepository, needsItemRepository, playerNeedsUsageRepository, gameConfig);
     }
 
     // ── deductCash ───────────────────────────────────────────────────────────

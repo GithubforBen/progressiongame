@@ -28,7 +28,8 @@ public record TexasHoldemStateDto(
         List<String> cards,
         String handName,
         boolean winner,
-        String personality
+        String personality,
+        String riskProfile
     ) {}
 
     public record ActionEntry(

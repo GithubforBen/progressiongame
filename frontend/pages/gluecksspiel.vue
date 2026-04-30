@@ -238,9 +238,13 @@
                 :class="actorActionMap['BOT_' + bot.index]?.startsWith('Fold') ? 'bg-red-500/20 text-red-300' : actorActionMap['BOT_' + bot.index]?.startsWith('Raise') ? 'bg-accent/20 text-accent' : 'bg-white/10 text-gray-300'"
               >{{ actorActionMap['BOT_' + bot.index] }}</div>
 
-              <p class="text-xs font-medium mb-1.5" :class="bot.folded ? 'text-gray-600' : bot.winner ? 'text-red-400' : activeActor === 'BOT_' + bot.index ? 'text-accent' : 'text-gray-400'">
+              <p class="text-xs font-medium mb-0.5" :class="bot.folded ? 'text-gray-600' : bot.winner ? 'text-red-400' : activeActor === 'BOT_' + bot.index ? 'text-accent' : 'text-gray-400'">
                 {{ bot.personality || ('Bot ' + (bot.index + 1)) }}
               </p>
+              <span v-if="bot.riskProfile && !bot.folded" class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded mb-1"
+                :class="bot.riskProfile === 'LOW' ? 'bg-green-900/40 text-green-400' : bot.riskProfile === 'HIGH' ? 'bg-red-900/40 text-red-400' : 'bg-yellow-900/40 text-yellow-400'">
+                {{ bot.riskProfile === 'LOW' ? 'Konservativ' : bot.riskProfile === 'HIGH' ? 'Risikoreich' : 'Ausgewogen' }}
+              </span>
               <div class="flex gap-1 justify-center">
                 <CardDisplay v-for="(card, j) in bot.cards" :key="j" :card="card" />
               </div>
@@ -821,7 +825,7 @@ interface PokerResult { playerCards: string[]; aiCards: string[]; playerHandName
 
 interface ActionEntry { actor: string; actionType: string; amount: number | null }
 interface DrawInfo { type: string; outs: number; probability: number; description: string }
-interface BotInfo { index: number; folded: boolean; cards: string[]; handName: string | null; winner: boolean; personality: string }
+interface BotInfo { index: number; folded: boolean; cards: string[]; handName: string | null; winner: boolean; personality: string; riskProfile: string }
 interface THState {
   sessionId: number
   playerCards: string[]

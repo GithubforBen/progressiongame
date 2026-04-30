@@ -616,28 +616,19 @@ public class GamblingService {
         List<List<String>> botCards = new ArrayList<>();
         for (int i = 0; i < 4; i++) botCards.add(new ArrayList<>(List.of(deck.remove(0), deck.remove(0))));
 
-        // Randomly assign difficulties: always 2× EASY, 1× MEDIUM, 1× HARD
-        List<String> diffPool = new ArrayList<>(List.of("EASY", "EASY", "MEDIUM", "HARD"));
-        Collections.shuffle(diffPool, new Random(ThreadLocalRandom.current().nextLong()));
-
-        // Pick a personality label per difficulty (not revealing the level)
+        // Pick 4 personalities randomly: guarantee at least 1 LOW-risk and 1 HIGH-risk
         Random rng = ThreadLocalRandom.current();
-        List<String> personalities = new ArrayList<>();
-        String[] easyNames  = {"Draufgänger", "Glücksspieler", "Risikofreak"};
-        String[] medNames   = {"Stratege", "Bedächtiger", "Kalkulierer"};
-        String[] hardNames  = {"Profi", "Haifisch", "Eiskalter"};
-        for (String d : diffPool) {
-            personalities.add(switch (d) {
-                case "EASY" -> easyNames[rng.nextInt(easyNames.length)];
-                case "HARD" -> hardNames[rng.nextInt(hardNames.length)];
-                default     -> medNames[rng.nextInt(medNames.length)];
-            });
-        }
+        List<BotPersonality> lowPool  = PERSONALITIES.stream().filter(p -> "LOW".equals(p.riskProfile())).toList();
+        List<BotPersonality> highPool = PERSONALITIES.stream().filter(p -> "HIGH".equals(p.riskProfile())).toList();
+        List<BotPersonality> chosen = new ArrayList<>();
+        chosen.add(lowPool.get(rng.nextInt(lowPool.size())));
+        chosen.add(highPool.get(rng.nextInt(highPool.size())));
+        while (chosen.size() < 4) chosen.add(PERSONALITIES.get(rng.nextInt(PERSONALITIES.size())));
+        Collections.shuffle(chosen, rng);
 
-        // One random bot is "stubborn" — will always call, never fold, regardless of raises
-        int stubbornIndex = rng.nextInt(4);
-        List<Boolean> stubborn = new ArrayList<>(List.of(false, false, false, false));
-        stubborn.set(stubbornIndex, true);
+        List<String> personalityKeys = chosen.stream().map(BotPersonality::name).collect(Collectors.toList());
+        List<String> riskProfiles    = chosen.stream().map(BotPersonality::riskProfile).collect(Collectors.toList());
+        List<String> personalities   = new ArrayList<>(personalityKeys);
 
         TexasHoldemState state = new TexasHoldemState();
         state.deck = deck;
@@ -649,9 +640,9 @@ public class GamblingService {
         state.initialBet = bet;
         state.botFolded = new ArrayList<>(List.of(false, false, false, false));
         state.street = "PREFLOP";
-        state.botDifficulties = diffPool;
+        state.botPersonalityKeys = personalityKeys;
+        state.botRiskProfiles = riskProfiles;
         state.botPersonalities = personalities;
-        state.botStubborn = stubborn;
         state.currentStreetBet = BigDecimal.ZERO;
         state.playerStreetBet = BigDecimal.ZERO;
         state.botStreetBets = new ArrayList<>(List.of(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
@@ -727,10 +718,11 @@ public class GamblingService {
         for (int i = 0; i < 4; i++) {
             if (state.botFolded.get(i)) continue;
             BigDecimal botOwed = state.currentStreetBet.subtract(state.botStreetBets.get(i)).max(BigDecimal.ZERO);
-            double strength = estimateBotStrength(state.botCards.get(i), state.communityCards);
-            String diff = state.botDifficulties.get(i);
-            boolean isStubborn = state.botStubborn != null && state.botStubborn.get(i);
-            String botAction = decideBotAction(diff, strength, botOwed, state.pot, state.initialBet, state.raisesThisStreet, isStubborn);
+            String pKey = (state.botPersonalityKeys != null) ? state.botPersonalityKeys.get(i) : "Kalkulierer";
+            BotPersonality personality = findPersonality(pKey);
+            double equity = estimateBotStrength(state.botCards.get(i), state.communityCards, state.deck);
+            String botAction = decideBotAction(personality, equity, botOwed, state.pot,
+                state.initialBet, state.raisesThisStreet, state.street);
 
             switch (botAction) {
                 case "FOLD":
@@ -738,12 +730,14 @@ public class GamblingService {
                     log.add(new TexasHoldemStateDto.ActionEntry("BOT_" + i, "FOLD", BigDecimal.ZERO));
                     break;
                 case "RAISE":
-                    BigDecimal raiseAmt = botOwed.add(state.initialBet);
-                    state.pot = state.pot.add(raiseAmt);
-                    state.botStreetBets.set(i, state.botStreetBets.get(i).add(raiseAmt));
+                    boolean isBluff = equity < 0.35;
+                    BigDecimal raiseSize = calculateBotRaiseAmount(personality, equity, state.pot, state.initialBet, isBluff);
+                    BigDecimal raiseCost = botOwed.add(raiseSize);
+                    state.pot = state.pot.add(raiseCost);
+                    state.botStreetBets.set(i, state.botStreetBets.get(i).add(raiseCost));
                     state.currentStreetBet = state.botStreetBets.get(i);
                     state.raisesThisStreet++;
-                    log.add(new TexasHoldemStateDto.ActionEntry("BOT_" + i, "RAISE", raiseAmt));
+                    log.add(new TexasHoldemStateDto.ActionEntry("BOT_" + i, "RAISE", raiseCost));
                     break;
                 case "CALL":
                     if (botOwed.compareTo(BigDecimal.ZERO) > 0) {
@@ -849,13 +843,14 @@ public class GamblingService {
         List<TexasHoldemStateDto.BotInfo> bots = new ArrayList<>();
         for (int i = 0; i < 4; i++) {
             String personality = state.botPersonalities != null ? state.botPersonalities.get(i) : "Bot " + (i+1);
+            String risk        = state.botRiskProfiles  != null ? state.botRiskProfiles.get(i)  : "MEDIUM";
             if (state.botFolded.get(i)) {
-                bots.add(new TexasHoldemStateDto.BotInfo(i, true, List.of("??", "??"), null, false, personality));
+                bots.add(new TexasHoldemStateDto.BotInfo(i, true, List.of("??", "??"), null, false, personality, risk));
             } else {
                 List<String> ba = new ArrayList<>(state.botCards.get(i)); ba.addAll(community);
                 List<Integer> botKey = bestHandKeyFrom(ba);
                 bots.add(new TexasHoldemStateDto.BotInfo(i, false, new ArrayList<>(state.botCards.get(i)),
-                    pokerHandName(botKey.get(0)), compareHandKeys(botKey, playerKey) > 0, personality));
+                    pokerHandName(botKey.get(0)), compareHandKeys(botKey, playerKey) > 0, personality, risk));
             }
         }
         BigDecimal netChange = payout.subtract(state.playerStake);
@@ -867,34 +862,59 @@ public class GamblingService {
     }
 
     // ── Bot AI ─────────────────────────────────────────────────────────
-    private String decideBotAction(String difficulty, double strength, BigDecimal toCall,
-            BigDecimal pot, BigDecimal initialBet, int raisesThisStreet, boolean stubborn) {
+    private String decideBotAction(BotPersonality p, double equity, BigDecimal toCall,
+            BigDecimal pot, BigDecimal initialBet, int raisesThisStreet, String street) {
         Random rng = ThreadLocalRandom.current();
         boolean hasToCall = toCall.compareTo(BigDecimal.ZERO) > 0;
         boolean canRaise  = raisesThisStreet < 4;
 
-        // Stubborn bot: always calls/checks, never folds — goes to the bitter end
-        if (stubborn) {
-            if (canRaise && strength >= 0.70) return "RAISE";
+        if ("PREFLOP".equals(street)) {
+            // VPIP/PFR-based preflop decision
+            double foldTh  = 1.0 - p.vpip();
+            double raiseTh = foldTh + p.vpip() * p.pfrRatio();
+            if (!hasToCall && equity < foldTh) return "CHECK";
+            if (hasToCall  && equity < foldTh) return "FOLD";
+            if (canRaise   && equity > raiseTh) return "RAISE";
             return hasToCall ? "CALL" : "CHECK";
         }
 
-        double foldTh, callTh, raiseTh, bluff;
-        switch (difficulty) {
-            case "EASY" -> { foldTh = 0.28; callTh = 0.42; raiseTh = 0.76; bluff = 0.12; }
-            case "HARD" -> { foldTh = 0.18; callTh = 0.30; raiseTh = 0.54; bluff = 0.07; }
-            default      -> { foldTh = 0.28; callTh = 0.38; raiseTh = 0.65; bluff = 0.05; }
+        // Postflop: equity vs pot odds
+        double potOdds = hasToCall
+            ? toCall.doubleValue() / (pot.doubleValue() + toCall.doubleValue())
+            : 0.0;
+
+        // Bluff with very weak hand (missed draw texture)
+        if (canRaise && equity < 0.35 && rng.nextDouble() < p.bluffFrequency()) return "RAISE";
+
+        // Facing a bet: fold if not getting correct price, adjusted by personality
+        if (hasToCall) {
+            double foldThreshold = potOdds + p.foldToBet() * 0.15;
+            if (equity < foldThreshold) return "FOLD";
         }
-        // HARD bots use pot odds to loosen calling range
-        if ("HARD".equals(difficulty) && hasToCall) {
-            double potOdds = toCall.doubleValue() / (pot.doubleValue() + toCall.doubleValue());
-            if (potOdds < 0.22) foldTh -= 0.06;
-        }
-        if (canRaise && rng.nextDouble() < bluff) return "RAISE";
-        if (canRaise && strength >= raiseTh)      return "RAISE";
-        if (strength >= callTh)                    return "CALL";
-        if (hasToCall && strength < foldTh)        return "FOLD";
-        return hasToCall ? "CALL" : "CHECK";
+
+        // Value raise when equity is strong enough (aggressive personalities raise more often)
+        double raiseTh = Math.max(0.52, 0.82 - p.aggressionFactor() * 0.07);
+        if (canRaise && equity > raiseTh) return "RAISE";
+
+        // EV check: call if profitable, else fold/check
+        double ev = equity * pot.doubleValue() - (1.0 - equity) * toCall.doubleValue();
+        if (ev >= 0.0 || !hasToCall) return hasToCall ? "CALL" : "CHECK";
+        return "FOLD";
+    }
+
+    private BigDecimal calculateBotRaiseAmount(BotPersonality p, double equity,
+            BigDecimal pot, BigDecimal initialBet, boolean isBluff) {
+        Random rng = ThreadLocalRandom.current();
+        double fraction;
+        if (isBluff)            fraction = 0.60 + rng.nextDouble() * 0.10;
+        else if (equity > 0.80) fraction = 0.80 + rng.nextDouble() * 0.20;
+        else if (equity > 0.65) fraction = 0.55 + rng.nextDouble() * 0.25;
+        else                    fraction = 0.38 + rng.nextDouble() * 0.22;
+        // Aggressive personalities bet bigger
+        fraction = Math.min(1.8, fraction * (0.75 + p.aggressionFactor() * 0.09));
+        BigDecimal amount = pot.multiply(BigDecimal.valueOf(fraction))
+            .setScale(2, RoundingMode.HALF_UP);
+        return amount.max(initialBet);
     }
 
     // ── Street advance ─────────────────────────────────────────────────
@@ -912,17 +932,48 @@ public class GamblingService {
         };
     }
 
-    // ── Hand strength estimator for bots ───────────────────────────────
-    private double estimateBotStrength(List<String> hole, List<String> community) {
-        if (community.isEmpty()) {
-            int r1 = cardRank(hole.get(0).charAt(0)), r2 = cardRank(hole.get(1).charAt(0));
-            double base = (r1 + r2 - 4.0) / 24.0;
-            if (r1 == r2) base += 0.30;
-            if (hole.get(0).charAt(1) == hole.get(1).charAt(1)) base += 0.08;
-            return Math.min(1.0, base);
+    // ── Equity estimators for bots ─────────────────────────────────────
+    private double estimateBotStrength(List<String> hole, List<String> community, List<String> deck) {
+        if (community.isEmpty()) return estimatePreflopEquity(hole);
+        return estimatePostflopEquity(hole, community, deck);
+    }
+
+    private double estimatePreflopEquity(List<String> hole) {
+        int r1 = cardRank(hole.get(0).charAt(0)), r2 = cardRank(hole.get(1).charAt(0));
+        boolean suited    = hole.get(0).charAt(1) == hole.get(1).charAt(1);
+        boolean paired    = r1 == r2;
+        boolean connected = !paired && Math.abs(r1 - r2) <= 2;
+        int hi = Math.max(r1, r2), lo = Math.min(r1, r2);
+        double base = 0.40 * (hi - 2.0) / 12.0 + 0.20 * (lo - 2.0) / 12.0;
+        if (paired)    base += 0.22;
+        if (suited)    base += 0.05;
+        if (connected) base += 0.04;
+        return Math.min(1.0, Math.max(0.0, base));
+    }
+
+    private double estimatePostflopEquity(List<String> hole, List<String> community, List<String> deck) {
+        // Monte Carlo: 80 random completions of the board vs one random opponent
+        int wins = 0;
+        final int TRIALS = 80;
+        List<String> available = new ArrayList<>(deck);
+        Random rng = ThreadLocalRandom.current();
+        Collections.shuffle(available, rng);
+        int pool = available.size();
+        for (int t = 0; t < TRIALS; t++) {
+            // Re-shuffle every 20 trials for variety
+            if (t > 0 && t % 20 == 0) Collections.shuffle(available, rng);
+            int idx = 0;
+            List<String> simBoard = new ArrayList<>(community);
+            while (simBoard.size() < 5 && idx < pool) simBoard.add(available.get(idx++));
+            if (idx + 1 >= pool) break; // not enough cards to give villain 2
+            List<String> villainHole = List.of(available.get(idx), available.get(idx + 1));
+            List<String> myAll  = new ArrayList<>(hole);    myAll.addAll(simBoard);
+            List<String> vilAll = new ArrayList<>(villainHole); vilAll.addAll(simBoard);
+            int cmp = compareHandKeys(bestHandKeyFrom(myAll), bestHandKeyFrom(vilAll));
+            if (cmp > 0)      wins += 2;
+            else if (cmp == 0) wins += 1; // tie counts as half win
         }
-        List<String> all = new ArrayList<>(hole); all.addAll(community);
-        return bestHandRankFrom(all) / 9.0;
+        return wins / (2.0 * TRIALS);
     }
 
     // ── Best 5-card hand from N cards (full tiebreaker key) ────────────
@@ -1037,7 +1088,8 @@ public class GamblingService {
         List<TexasHoldemStateDto.BotInfo> bots = new ArrayList<>();
         for (int i = 0; i < 4; i++) {
             String pers = state.botPersonalities != null ? state.botPersonalities.get(i) : "Bot " + (i+1);
-            bots.add(new TexasHoldemStateDto.BotInfo(i, state.botFolded.get(i), List.of("??", "??"), null, false, pers));
+            String risk = state.botRiskProfiles  != null ? state.botRiskProfiles.get(i)  : "MEDIUM";
+            bots.add(new TexasHoldemStateDto.BotInfo(i, state.botFolded.get(i), List.of("??", "??"), null, false, pers, risk));
         }
         BigDecimal toCall = state.currentStreetBet.subtract(state.playerStreetBet).max(BigDecimal.ZERO);
         BigDecimal raiseCost = toCall.add(state.initialBet);
@@ -1056,7 +1108,8 @@ public class GamblingService {
         List<TexasHoldemStateDto.BotInfo> bots = new ArrayList<>();
         for (int i = 0; i < 4; i++) {
             String pers = state.botPersonalities != null ? state.botPersonalities.get(i) : "Bot " + (i+1);
-            bots.add(new TexasHoldemStateDto.BotInfo(i, state.botFolded.get(i), List.of("??", "??"), null, false, pers));
+            String risk = state.botRiskProfiles  != null ? state.botRiskProfiles.get(i)  : "MEDIUM";
+            bots.add(new TexasHoldemStateDto.BotInfo(i, state.botFolded.get(i), List.of("??", "??"), null, false, pers, risk));
         }
         BigDecimal netChange = payout.subtract(state.playerStake);
         return new TexasHoldemStateDto(
@@ -1068,16 +1121,12 @@ public class GamblingService {
 
     // ── Backward compat: init missing fields on old sessions ───────────
     private void initMissingTHFields(TexasHoldemState s) {
-        if (s.currentStreetBet == null) s.currentStreetBet = BigDecimal.ZERO;
-        if (s.playerStreetBet  == null) s.playerStreetBet  = BigDecimal.ZERO;
-        if (s.botStreetBets    == null) s.botStreetBets     = new ArrayList<>(List.of(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
-        if (s.botDifficulties  == null) s.botDifficulties   = new ArrayList<>(List.of("MEDIUM","MEDIUM","MEDIUM","MEDIUM"));
-        if (s.botPersonalities == null) s.botPersonalities  = new ArrayList<>(List.of("Bot 1","Bot 2","Bot 3","Bot 4"));
-        if (s.botStubborn      == null) {
-            List<Boolean> sb = new ArrayList<>(List.of(false, false, false, false));
-            sb.set(ThreadLocalRandom.current().nextInt(4), true);
-            s.botStubborn = sb;
-        }
+        if (s.currentStreetBet  == null) s.currentStreetBet  = BigDecimal.ZERO;
+        if (s.playerStreetBet   == null) s.playerStreetBet   = BigDecimal.ZERO;
+        if (s.botStreetBets     == null) s.botStreetBets      = new ArrayList<>(List.of(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
+        if (s.botPersonalities  == null) s.botPersonalities   = new ArrayList<>(List.of("Bot 1","Bot 2","Bot 3","Bot 4"));
+        if (s.botPersonalityKeys == null) s.botPersonalityKeys = new ArrayList<>(List.of("Kalkulierer","Kalkulierer","Kalkulierer","Kalkulierer"));
+        if (s.botRiskProfiles   == null) s.botRiskProfiles    = new ArrayList<>(List.of("MEDIUM","MEDIUM","MEDIUM","MEDIUM"));
     }
 
     private String serializeTHState(TexasHoldemState state) {
@@ -1087,6 +1136,36 @@ public class GamblingService {
     private TexasHoldemState deserializeTHState(String json) {
         try { return objectMapper.readValue(json, TexasHoldemState.class); }
         catch (JsonProcessingException e) { throw new RuntimeException(e); }
+    }
+
+    // ======================== BOT PERSONALITIES ========================
+
+    private record BotPersonality(
+        String name,
+        double vpip,             // preflop play frequency (0.0-1.0)
+        double pfrRatio,         // raise% / vpip% (aggressiveness preflop)
+        double aggressionFactor, // postflop raise/call ratio (0.5-4.5)
+        double bluffFrequency,   // bluff tendency with weak hand (0.0-0.5)
+        double foldToBet,        // fold-to-bet tendency (0.0-0.9)
+        String riskProfile       // "LOW" / "MEDIUM" / "HIGH" for display
+    ) {}
+
+    private static final List<BotPersonality> PERSONALITIES = List.of(
+        new BotPersonality("Bedächtiger",    0.14, 0.86, 1.5, 0.05, 0.72, "LOW"),
+        new BotPersonality("Stratege",       0.22, 0.82, 2.6, 0.16, 0.56, "MEDIUM"),
+        new BotPersonality("Kalkulierer",    0.26, 0.78, 2.9, 0.22, 0.50, "MEDIUM"),
+        new BotPersonality("Eiskalter",      0.28, 0.75, 3.1, 0.27, 0.46, "MEDIUM"),
+        new BotPersonality("Haifisch",       0.38, 0.74, 3.3, 0.33, 0.37, "HIGH"),
+        new BotPersonality("Draufgänger",    0.56, 0.72, 4.2, 0.50, 0.22, "HIGH"),
+        new BotPersonality("Glücksspieler",  0.52, 0.18, 0.6, 0.07, 0.16, "MEDIUM"),
+        new BotPersonality("Risikofreak",    0.60, 0.42, 2.0, 0.43, 0.27, "HIGH")
+    );
+
+    private BotPersonality findPersonality(String name) {
+        return PERSONALITIES.stream()
+            .filter(p -> p.name().equals(name))
+            .findFirst()
+            .orElse(PERSONALITIES.get(2)); // Kalkulierer as neutral fallback
     }
 
     // ======================== INNER STATE CLASSES ========================
@@ -1118,8 +1197,11 @@ public class GamblingService {
         public int raisesThisStreet;
         public boolean awaitingPlayerResponse;
         // Bot metadata
+        public List<String> botPersonalityKeys;  // personality name → lookup in PERSONALITIES
+        public List<String> botRiskProfiles;     // LOW / MEDIUM / HIGH for frontend
+        public List<String> botPersonalities;    // display names (same as keys currently)
+        // Legacy fields kept nullable for backward-compat with old serialized sessions
         public List<String> botDifficulties;
-        public List<String> botPersonalities;
         public List<Boolean> botStubborn;
         public TexasHoldemState() {}
     }
