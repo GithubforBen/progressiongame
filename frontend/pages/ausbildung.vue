@@ -1,5 +1,5 @@
 <template>
-  <div class="-m-6 flex" style="height: calc(100vh - 3.5rem)">
+  <div class="-m-3 sm:-m-6 flex" style="height: calc(100vh - 3.5rem)">
 
     <!-- Skill-tree viewport -->
     <div
