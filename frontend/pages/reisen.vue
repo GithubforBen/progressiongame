@@ -1,8 +1,8 @@
 <template>
-  <div class="-m-6 flex flex-col" style="height: calc(100vh - 3.5rem)">
+  <div class="-m-3 sm:-m-6 flex flex-col" style="height: calc(100vh - 3.5rem)">
 
     <!-- Top bar -->
-    <div class="flex items-center gap-4 px-6 py-3 bg-surface-800 border-b border-surface-700 flex-shrink-0">
+    <div class="flex items-center gap-2 sm:gap-4 px-3 sm:px-6 py-3 bg-surface-800 border-b border-surface-700 flex-shrink-0 overflow-x-auto">
       <h2 class="text-base font-bold text-white">Reisen</h2>
 
       <!-- Current location badge -->
