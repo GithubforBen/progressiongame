@@ -6,7 +6,9 @@ public record LeaderboardEntryDto(
     int rank,
     Long playerId,
     String username,
-    BigDecimal netWorth,
+    BigDecimal netWorth,       // gross: cash + investments + real estate
+    BigDecimal totalDebt,      // sum of active loan amounts_remaining
+    BigDecimal adjustedNetWorth, // netWorth - totalDebt (used for ranking)
     BigDecimal monthlyIncome,
     int completedCollections,
     int currentTurn,

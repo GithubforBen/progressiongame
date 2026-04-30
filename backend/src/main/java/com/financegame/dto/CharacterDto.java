@@ -20,6 +20,7 @@ public record CharacterDto(
     BigDecimal cumulativeEvadedTaxes,
     int jailMonthsRemaining,
     int exileMonthsRemaining,
+    int finanzamtAuditMonthsRemaining,
     boolean victoryAchieved,
     BigDecimal personalBestNetWorth
 ) {
@@ -41,6 +42,7 @@ public record CharacterDto(
             c.getCumulativeEvadedTaxes(),
             c.getJailMonthsRemaining(),
             c.getExileMonthsRemaining(),
+            c.getFinanzamtAuditMonthsRemaining(),
             c.isVictoryAchieved(),
             c.getPersonalBestNetWorth()
         );

@@ -268,16 +268,16 @@ public class GamblingService {
         List<String> playerCards = new ArrayList<>(deck.subList(0, 5));
         List<String> aiCards = new ArrayList<>(deck.subList(5, 10));
 
-        int playerRank = evaluatePokerHand(playerCards);
-        int aiRank = evaluatePokerHand(aiCards);
+        List<Integer> playerKey = evaluatePokerHandKey(playerCards);
+        List<Integer> aiKey     = evaluatePokerHandKey(aiCards);
+        int cmp = compareHandKeys(playerKey, aiKey);
 
         BigDecimal payout;
         String result;
-        if (playerRank > aiRank) {
-            // Win: 5% rake → total return = bet * 1.95
+        if (cmp > 0) {
             payout = bet.multiply(new BigDecimal("1.95")).setScale(2, RoundingMode.HALF_UP);
             result = "WON";
-        } else if (playerRank == aiRank) {
+        } else if (cmp == 0) {
             payout = bet;
             result = "PUSH";
         } else {
@@ -292,8 +292,8 @@ public class GamblingService {
         return new PokerResultDto(
             playerCards,
             aiCards,
-            pokerHandName(playerRank),
-            pokerHandName(aiRank),
+            pokerHandName(playerKey.get(0)),
+            pokerHandName(aiKey.get(0)),
             result,
             bet,
             payout,
@@ -513,7 +513,12 @@ public class GamblingService {
         };
     }
 
-    int evaluatePokerHand(List<String> cards) {
+    /**
+     * Returns a lexicographically comparable hand key: [handRank, tiebreaker1, tiebreaker2, ...].
+     * handRank 0=High Card … 9=Royal Flush. Tiebreakers follow the standard poker rules
+     * (primary value, secondary value, then kickers high-to-low).
+     */
+    List<Integer> evaluatePokerHandKey(List<String> cards) {
         int[] ranks = cards.stream().mapToInt(c -> cardRank(c.charAt(0))).sorted().toArray();
         Map<Character, Long> suitFreq = cards.stream()
             .collect(Collectors.groupingBy(c -> c.charAt(1), Collectors.counting()));
@@ -521,24 +526,66 @@ public class GamblingService {
             .collect(Collectors.groupingBy(r -> r, Collectors.counting()));
 
         boolean isFlush = suitFreq.values().stream().anyMatch(v -> v == 5);
-        boolean isStraight = (ranks[4] - ranks[0] == 4 && rankFreq.size() == 5)
-            // Ace-low straight: A-2-3-4-5
-            || (ranks[4] == 14 && ranks[3] == 5 && ranks[2] == 4 && ranks[1] == 3 && ranks[0] == 2);
+        boolean isAceLow = ranks[4] == 14 && ranks[3] == 5 && ranks[2] == 4 && ranks[1] == 3 && ranks[0] == 2;
+        boolean isStraight = isAceLow || (ranks[4] - ranks[0] == 4 && rankFreq.size() == 5);
+        int straightHigh = isAceLow ? 5 : ranks[4];
 
-        long pairs = rankFreq.values().stream().filter(v -> v == 2).count();
+        long pairs   = rankFreq.values().stream().filter(v -> v == 2).count();
         boolean hasThree = rankFreq.values().stream().anyMatch(v -> v == 3);
         boolean hasFour  = rankFreq.values().stream().anyMatch(v -> v == 4);
 
-        if (isFlush && isStraight && ranks[4] == 14 && ranks[3] == 13) return 9; // Royal Flush
-        if (isFlush && isStraight) return 8;  // Straight Flush
-        if (hasFour) return 7;                // Vierling
-        if (hasThree && pairs == 1) return 6; // Full House
-        if (isFlush) return 5;
-        if (isStraight) return 4;
-        if (hasThree) return 3;               // Drilling
-        if (pairs == 2) return 2;             // Zwei Paare
-        if (pairs == 1) return 1;             // Ein Paar
-        return 0;                             // Highcard
+        // Sort card ranks: frequency DESC, then rank value DESC (for tiebreaker order)
+        List<Integer> byFreqDesc = rankFreq.entrySet().stream()
+            .sorted((a, b) -> a.getValue().equals(b.getValue())
+                ? b.getKey().compareTo(a.getKey())
+                : b.getValue().compareTo(a.getValue()))
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
+
+        if (isFlush && isStraight) {
+            // Royal Flush = A-high straight flush
+            return straightHigh == 14 ? List.of(9, 14) : List.of(8, straightHigh);
+        }
+        if (hasFour)              return prependRank(7, byFreqDesc); // quad + kicker
+        if (hasThree && pairs==1) return prependRank(6, byFreqDesc); // trips + pair
+        if (isFlush) {
+            // Compare all 5 cards high → low
+            List<Integer> key = new ArrayList<>();
+            key.add(5);
+            for (int i = ranks.length - 1; i >= 0; i--) key.add(ranks[i]);
+            return key;
+        }
+        if (isStraight)           return List.of(4, straightHigh);
+        if (hasThree)             return prependRank(3, byFreqDesc); // trips + 2 kickers
+        if (pairs == 2)           return prependRank(2, byFreqDesc); // high pair, low pair, kicker
+        if (pairs == 1)           return prependRank(1, byFreqDesc); // pair + 3 kickers
+        // High card: all 5 ranks high → low
+        List<Integer> key = new ArrayList<>();
+        key.add(0);
+        for (int i = ranks.length - 1; i >= 0; i--) key.add(ranks[i]);
+        return key;
+    }
+
+    // Backward-compatible wrapper (returns hand rank 0–9 only)
+    int evaluatePokerHand(List<String> cards) {
+        return evaluatePokerHandKey(cards).get(0);
+    }
+
+    private List<Integer> prependRank(int handRank, List<Integer> tiebreakers) {
+        List<Integer> key = new ArrayList<>();
+        key.add(handRank);
+        key.addAll(tiebreakers);
+        return key;
+    }
+
+    /** Lexicographic comparison: positive if a > b, 0 if equal, negative if a < b. */
+    private int compareHandKeys(List<Integer> a, List<Integer> b) {
+        int len = Math.min(a.size(), b.size());
+        for (int i = 0; i < len; i++) {
+            int c = Integer.compare(a.get(i), b.get(i));
+            if (c != 0) return c;
+        }
+        return Integer.compare(a.size(), b.size());
     }
 
     private String pokerHandName(int rank) {
@@ -755,29 +802,33 @@ public class GamblingService {
         List<String> community = state.communityCards;
         List<String> playerAll = new ArrayList<>(state.playerCards);
         playerAll.addAll(community);
-        int playerRank = bestHandRankFrom(playerAll);
-        String playerHandName = pokerHandName(playerRank);
+        List<Integer> playerKey  = bestHandKeyFrom(playerAll);
+        String playerHandName = pokerHandName(playerKey.get(0));
 
-        int maxBotRank = -1;
+        // Find the best bot key across all active bots
+        List<Integer> bestBotKey = List.of(-1);
         for (int i = 0; i < 4; i++) {
             if (!state.botFolded.get(i)) {
                 List<String> ba = new ArrayList<>(state.botCards.get(i));
                 ba.addAll(community);
-                maxBotRank = Math.max(maxBotRank, bestHandRankFrom(ba));
+                List<Integer> botKey = bestHandKeyFrom(ba);
+                if (compareHandKeys(botKey, bestBotKey) > 0) bestBotKey = botKey;
             }
         }
 
+        int cmp = compareHandKeys(playerKey, bestBotKey);
         BigDecimal payout;
         String result;
-        if (playerRank > maxBotRank) {
+        if (cmp > 0) {
             payout = state.pot.multiply(new BigDecimal("0.95")).setScale(2, RoundingMode.HALF_UP);
             result = "WON";
-        } else if (playerRank == maxBotRank) {
+        } else if (cmp == 0) {
+            // Count bots that tie exactly with the player's hand key
             long tied = 0;
             for (int i = 0; i < 4; i++) {
                 if (!state.botFolded.get(i)) {
                     List<String> ba = new ArrayList<>(state.botCards.get(i)); ba.addAll(community);
-                    if (bestHandRankFrom(ba) == playerRank) tied++;
+                    if (compareHandKeys(bestHandKeyFrom(ba), playerKey) == 0) tied++;
                 }
             }
             payout = state.pot.multiply(new BigDecimal("0.95"))
@@ -802,8 +853,9 @@ public class GamblingService {
                 bots.add(new TexasHoldemStateDto.BotInfo(i, true, List.of("??", "??"), null, false, personality));
             } else {
                 List<String> ba = new ArrayList<>(state.botCards.get(i)); ba.addAll(community);
-                int rank = bestHandRankFrom(ba);
-                bots.add(new TexasHoldemStateDto.BotInfo(i, false, new ArrayList<>(state.botCards.get(i)), pokerHandName(rank), rank > playerRank, personality));
+                List<Integer> botKey = bestHandKeyFrom(ba);
+                bots.add(new TexasHoldemStateDto.BotInfo(i, false, new ArrayList<>(state.botCards.get(i)),
+                    pokerHandName(botKey.get(0)), compareHandKeys(botKey, playerKey) > 0, personality));
             }
         }
         BigDecimal netChange = payout.subtract(state.playerStake);
@@ -873,17 +925,26 @@ public class GamblingService {
         return bestHandRankFrom(all) / 9.0;
     }
 
-    // ── Best 5-card hand from N cards ──────────────────────────────────
-    private int bestHandRankFrom(List<String> cards) {
-        if (cards.size() == 5) return evaluatePokerHand(cards);
-        int best = 0, n = cards.size();
+    // ── Best 5-card hand from N cards (full tiebreaker key) ────────────
+    private List<Integer> bestHandKeyFrom(List<String> cards) {
+        if (cards.size() == 5) return evaluatePokerHandKey(cards);
+        List<Integer> best = List.of(-1);
+        int n = cards.size();
         for (int i = 0; i < n-4; i++)
           for (int j = i+1; j < n-3; j++)
             for (int k = j+1; k < n-2; k++)
               for (int l = k+1; l < n-1; l++)
-                for (int m = l+1; m < n; m++)
-                    best = Math.max(best, evaluatePokerHand(List.of(cards.get(i),cards.get(j),cards.get(k),cards.get(l),cards.get(m))));
+                for (int m = l+1; m < n; m++) {
+                    List<Integer> key = evaluatePokerHandKey(
+                        List.of(cards.get(i), cards.get(j), cards.get(k), cards.get(l), cards.get(m)));
+                    if (compareHandKeys(key, best) > 0) best = key;
+                }
         return best;
+    }
+
+    // Backward-compatible wrapper (returns best hand rank 0–9 only)
+    private int bestHandRankFrom(List<String> cards) {
+        return bestHandKeyFrom(cards).get(0);
     }
 
     // ── Player hand description ─────────────────────────────────────────

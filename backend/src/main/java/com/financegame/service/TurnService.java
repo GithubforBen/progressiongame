@@ -114,12 +114,32 @@ public class TurnService {
         List<String> events = new ArrayList<>();
         List<TurnResultDto.LineItem> incomeBreakdown = new ArrayList<>();
         List<TurnResultDto.LineItem> expenseBreakdown = new ArrayList<>();
+        List<TurnResultDto.StatChange> stressBreakdown = new ArrayList<>();
+
+        // --- Pre-check: Finanzamt audit for players abusing the multi-job stress bug ---
+        {
+            List<PlayerJob> auditJobs = playerJobRepository.findActiveByPlayerId(playerId);
+            int auditTotalStress = auditJobs.stream().mapToInt(pj -> pj.getJob().getStressPerMonth()).sum();
+            if (auditTotalStress >= 100 && !character.isBurnoutActive()
+                    && character.getFinanzamtAuditMonthsRemaining() == 0) {
+                BigDecimal seized = character.getCash()
+                    .multiply(new BigDecimal("0.25")).setScale(2, RoundingMode.HALF_UP)
+                    .max(BigDecimal.ZERO);
+                character.setCash(character.getCash().subtract(seized));
+                character.setFinanzamtAuditMonthsRemaining(14);
+                character.setTaxEvasionActive(false);
+                events.add("🔍 ÜBERPRÜFUNG DURCH DAS FINANZAMT: Verdacht auf Steuervergehen durch "
+                    + "mehrfache Beschäftigung! " + seized + " € Vermögen beschlagnahmt. "
+                    + "Steuerhinterziehung für 14 Monate gesperrt.");
+            }
+        }
 
         // --- 0. Jail / Exile ticks ---
         boolean inJail = character.getJailMonthsRemaining() > 0;
         if (inJail) {
             character.setJailMonthsRemaining(character.getJailMonthsRemaining() - 1);
             character.setStress(Math.min(100, character.getStress() + 15));
+            stressBreakdown.add(new TurnResultDto.StatChange("Haft", +15));
             character.setHappiness(Math.max(0, character.getHappiness() - 10));
             events.add("🔒 Du sitzt in Haft. " + character.getJailMonthsRemaining() + " Monate verbleiben.");
             if (character.getJailMonthsRemaining() == 0) {
@@ -232,14 +252,23 @@ public class TurnService {
             events.add("Kontoüberziehung! Schufa -10, Zinsen: " + interest + " €");
         }
 
-        // --- 5b. Random events ---
-        randomEventService.applyRandomEvents(playerId, character, events);
+        // --- 7. Stress-Basis setzen (Jobs) — muss VOR allen Reduktionen laufen ---
+        updateStress(character, playerId, events, stressBreakdown);
 
-        // --- 6. Needs decay (hunger/energy/happiness) ---
-        applyNeedsDecay(character, playerId);
+        // --- 5b. Random events ---
+        int stressPreEvents = character.getStress();
+        randomEventService.applyRandomEvents(playerId, character, events);
+        int stressEventDelta = character.getStress() - stressPreEvents;
+        if (stressEventDelta != 0) {
+            stressBreakdown.add(new TurnResultDto.StatChange("Zufallsereignis", stressEventDelta));
+        }
+
+        // --- 6. Needs decay (hunger/energy/happiness) + Lifestyle/Krankenkasse ---
+        applyNeedsDecay(character, playerId, stressBreakdown);
 
         // --- 6b. Advance social relationships + apply stat boosts ---
         socialService.advanceSocials(playerId);
+        int stressPreSocial = character.getStress();
         for (SocialService.ActiveBoostDto boost : socialService.getActiveBoosts(playerId)) {
             switch (boost.type()) {
                 case "HAPPINESS_PER_TURN" -> character.setHappiness(clamp(character.getHappiness() + (int) boost.totalValue()));
@@ -249,20 +278,31 @@ public class TurnService {
                 default -> {} // other boost types applied elsewhere
             }
         }
+        int stressSocialDelta = character.getStress() - stressPreSocial;
+        if (stressSocialDelta != 0) {
+            stressBreakdown.add(new TurnResultDto.StatChange("Beziehungs-Boosts", stressSocialDelta));
+        }
 
         // --- 6c. Collection bonuses: stat phase (HAPPINESS_BONUS, SCHUFA_BONUS) ---
+        int stressPreCollection = character.getStress();
         for (CollectionService.ActiveBonus bonus : collectionBonuses) {
             CollectionBonusApplier applier = bonusApplierMap.get(bonus.bonusType());
             if (applier != null) {
                 applier.applyStats(character, bonus.bonusValue());
             }
         }
+        int stressCollectionDelta = character.getStress() - stressPreCollection;
+        if (stressCollectionDelta != 0) {
+            stressBreakdown.add(new TurnResultDto.StatChange("Sammlungs-Boni", stressCollectionDelta));
+        }
 
         // --- 6d. Critical needs events: Burnout & Depression ---
+        int stressPreCritical = character.getStress();
         applyNeedsCriticalEvents(character, playerId, events);
-
-        // --- 7. Stress from active jobs ---
-        updateStress(character, playerId);
+        int stressCriticalDelta = character.getStress() - stressPreCritical;
+        if (stressCriticalDelta != 0) {
+            stressBreakdown.add(new TurnResultDto.StatChange("Burnout/Depression", stressCriticalDelta));
+        }
 
         // --- 8. Increment months worked & education ---
         advanceEducation(playerId, currentTurn, events);
@@ -285,6 +325,14 @@ public class TurnService {
         }
         if (drift != 0) {
             character.setSchufaScore(LoanService.clampSchufa(schufa + drift));
+        }
+
+        // --- 8f. Decrement Finanzamt audit counter ---
+        if (character.getFinanzamtAuditMonthsRemaining() > 0) {
+            character.setFinanzamtAuditMonthsRemaining(character.getFinanzamtAuditMonthsRemaining() - 1);
+            if (character.getFinanzamtAuditMonthsRemaining() == 0) {
+                events.add("✅ Finanzamt-Überprüfung abgeschlossen. Steuerhinterziehung wieder möglich.");
+            }
         }
 
         // --- 9. Advance turn counter & persist character ---
@@ -321,7 +369,8 @@ public class TurnService {
             expenseBreakdown,
             events,
             taxEvasionCaught,
-            taxEvasionCaughtAmount
+            taxEvasionCaughtAmount,
+            stressBreakdown
         );
     }
 
@@ -439,7 +488,8 @@ public class TurnService {
         return total;
     }
 
-    private void applyNeedsDecay(GameCharacter character, Long playerId) {
+    private void applyNeedsDecay(GameCharacter character, Long playerId,
+                                 List<TurnResultDto.StatChange> stressBreakdown) {
         List<MonthlyExpense> activeExpenses = monthlyExpenseRepository.findActiveByPlayerId(playerId);
         boolean hasFoodExpense = activeExpenses.stream().anyMatch(e -> "ESSEN".equals(e.getCategory()));
 
@@ -453,18 +503,25 @@ public class TurnService {
         activeExpenses.stream()
             .filter(e -> "KRANKENVERSICHERUNG".equals(e.getCategory()))
             .findFirst().ifPresent(kv -> {
-                int stressReduction = 0;
-                if (kv.getAmount().compareTo(new BigDecimal("400")) >= 0) stressReduction = 10;
-                else if (kv.getAmount().compareTo(new BigDecimal("250")) >= 0) stressReduction = 5;
-                if (stressReduction > 0) {
-                    character.setStress(clamp(character.getStress() - stressReduction));
+                int reduction = 0;
+                if (kv.getAmount().compareTo(new BigDecimal("400")) >= 0) reduction = 10;
+                else if (kv.getAmount().compareTo(new BigDecimal("250")) >= 0) reduction = 5;
+                if (reduction > 0) {
+                    character.setStress(clamp(character.getStress() - reduction));
+                    stressBreakdown.add(new TurnResultDto.StatChange(
+                        "Krankenversicherung (" + kv.getAmount() + " €/Monat)", -reduction));
                 }
             });
 
-        // Lifestyle item stress reduction
+        // Lifestyle item stress reduction (logged per item)
         lifestyleService.getOwnedCatalogItems(playerId).forEach(item -> {
             if (item.getStressReductionMonth() > 0) {
+                int before = character.getStress();
                 character.setStress(clamp(character.getStress() - item.getStressReductionMonth()));
+                int actual = character.getStress() - before;
+                if (actual != 0) {
+                    stressBreakdown.add(new TurnResultDto.StatChange(item.getName(), actual));
+                }
             }
         });
     }
@@ -504,17 +561,67 @@ public class TurnService {
 
         if (character.isBurnoutActive() && character.getStress() < bo.getRecoveryThreshold()) {
             character.setBurnoutActive(false);
-            events.add("Du hast dich vom Burnout erholt. Du kannst wieder arbeiten.");
+            monthlyExpenseRepository.findByPlayerId(playerId).stream()
+                .filter(e -> "THERAPIE".equals(e.getCategory()))
+                .forEach(e -> monthlyExpenseRepository.delete(e.getId()));
+            events.add("Du hast dich vom Burnout erholt. Therapie nicht mehr notwendig. Du kannst wieder arbeiten.");
         }
     }
 
-    private void updateStress(GameCharacter character, Long playerId) {
+    private void updateStress(GameCharacter character, Long playerId,
+                              List<String> events, List<TurnResultDto.StatChange> stressBreakdown) {
         List<PlayerJob> activeJobs = playerJobRepository.findActiveByPlayerId(playerId);
         if (activeJobs.isEmpty()) {
+            int prev = character.getStress();
             character.setStress(clamp(character.getStress() - 10));
-        } else {
-            int totalStress = activeJobs.stream().mapToInt(pj -> pj.getJob().getStressPerMonth()).sum();
+            stressBreakdown.add(new TurnResultDto.StatChange("Keine Jobs (Entspannung)", character.getStress() - prev));
+            return;
+        }
+        int totalStress = activeJobs.stream().mapToInt(pj -> pj.getJob().getStressPerMonth()).sum();
+        if (totalStress >= 100 && !character.isBurnoutActive()) {
+            character.setBurnoutActive(true);
+            GameConfig.BurnoutConfig bo = gameConfig.getBurnout();
+            int prev = character.getStress();
+            character.setStress(bo.getStressReset());
+            BigDecimal monthlyIncome = activeJobs.stream()
+                .map(pj -> pj.getJob().getSalary())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            activeJobs.forEach(pj -> {
+                pj.setActive(false);
+                playerJobRepository.save(pj);
+            });
+            BigDecimal penalty = BigDecimal.valueOf(bo.getHospitalPenalty());
+            if (character.getCash().compareTo(penalty) >= 0) {
+                character.setCash(character.getCash().subtract(penalty));
+            }
+            stressBreakdown.add(new TurnResultDto.StatChange(
+                "BURNOUT — Jobs erzeugten " + totalStress + "/100 Stress", character.getStress() - prev));
+            boolean hasTherapie = monthlyExpenseRepository.findByPlayerId(playerId).stream()
+                .anyMatch(e -> "THERAPIE".equals(e.getCategory()));
+            if (!hasTherapie && monthlyIncome.compareTo(BigDecimal.ZERO) > 0) {
+                MonthlyExpense therapie = new MonthlyExpense();
+                therapie.setPlayerId(playerId);
+                therapie.setCategory("THERAPIE");
+                therapie.setLabel("Therapie (Burnout-Pflicht)");
+                therapie.setAmount(monthlyIncome.divide(BigDecimal.valueOf(3), 2, RoundingMode.HALF_UP));
+                therapie.setActive(true);
+                therapie.setMandatory(true);
+                monthlyExpenseRepository.save(therapie);
+                events.add("BURNOUT: Zu viele Jobs — maximaler Stresslevel überschritten! "
+                    + "Alle Jobs verloren. Krankenhaus: -" + bo.getHospitalPenalty()
+                    + " €. Pflicht-Therapie hinzugefügt: " + therapie.getAmount() + " €/Monat.");
+            } else {
+                events.add("BURNOUT: Zu viele Jobs — maximaler Stresslevel überschritten! "
+                    + "Alle Jobs verloren. Krankenhaus: -" + bo.getHospitalPenalty() + " €.");
+            }
+        } else if (!character.isBurnoutActive()) {
+            String jobNames = activeJobs.stream()
+                .map(pj -> pj.getJob().getName())
+                .collect(Collectors.joining(", "));
+            int prev = character.getStress();
             character.setStress(clamp(totalStress));
+            stressBreakdown.add(new TurnResultDto.StatChange(
+                "Jobs (" + jobNames + "): " + totalStress + "/100", character.getStress() - prev));
         }
     }
 

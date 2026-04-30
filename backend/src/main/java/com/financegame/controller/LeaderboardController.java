@@ -34,18 +34,24 @@ public class LeaderboardController {
         @SuppressWarnings("unchecked")
         List<Object[]> rows = em.createNativeQuery(
             "SELECT p.id, p.username, c.net_worth, c.current_turn, " +
-            "       COALESCE(ms.total_income, 0) AS monthly_income " +
+            "       COALESCE(ms.total_income, 0) AS monthly_income, " +
+            "       COALESCE(loans.total_debt, 0) AS total_debt " +
             "FROM players p " +
             "JOIN characters c ON c.player_id = p.id " +
             "LEFT JOIN (" +
             "    SELECT DISTINCT ON (player_id) player_id, total_income " +
             "    FROM monthly_snapshots ORDER BY player_id, turn DESC" +
-            ") ms ON ms.player_id = p.id"
+            ") ms ON ms.player_id = p.id " +
+            "LEFT JOIN (" +
+            "    SELECT player_id, SUM(amount_remaining) AS total_debt " +
+            "    FROM player_loans WHERE status = 'ACTIVE' GROUP BY player_id" +
+            ") loans ON loans.player_id = p.id"
         ).getResultList();
 
-        // Sort in Java to avoid DB-specific ORDER BY CASE issues
+        // Sort in Java: netWorth sort uses (net_worth - debt), income sort uses monthly income
         Comparator<Object[]> comparator = "netWorth".equals(sort)
-            ? Comparator.comparing(r -> ((BigDecimal) r[2]), Comparator.reverseOrder())
+            ? Comparator.comparing((Object[] r) -> ((BigDecimal) r[2]).subtract((BigDecimal) r[5]),
+                Comparator.reverseOrder())
             : Comparator.comparing(r -> ((BigDecimal) r[4]), Comparator.reverseOrder());
         rows.sort(comparator);
 
@@ -55,15 +61,19 @@ public class LeaderboardController {
         List<LeaderboardEntryDto> result = new ArrayList<>();
         int rank = 1;
         for (Object[] row : rows) {
-            Long playerId = ((Number) row[0]).longValue();
-            String username = (String) row[1];
+            Long playerId      = ((Number) row[0]).longValue();
+            String username    = (String) row[1];
             BigDecimal netWorth = (BigDecimal) row[2];
-            int currentTurn = ((Number) row[3]).intValue();
+            int currentTurn   = ((Number) row[3]).intValue();
             BigDecimal monthlyIncome = row[4] != null ? (BigDecimal) row[4] : BigDecimal.ZERO;
+            BigDecimal totalDebt     = row[5] != null ? (BigDecimal) row[5] : BigDecimal.ZERO;
+            BigDecimal adjustedNetWorth = netWorth.subtract(totalDebt);
             int completed = completedMap.getOrDefault(playerId, 0);
             result.add(new LeaderboardEntryDto(
-                rank++, playerId, username, netWorth, monthlyIncome,
-                completed, currentTurn, playerId.equals(principal.id())
+                rank++, playerId, username,
+                netWorth, totalDebt, adjustedNetWorth,
+                monthlyIncome, completed, currentTurn,
+                playerId.equals(principal.id())
             ));
         }
         return result;

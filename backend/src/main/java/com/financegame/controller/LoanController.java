@@ -1,5 +1,6 @@
 package com.financegame.controller;
 
+import com.financegame.dto.LoanCapacityDto;
 import com.financegame.dto.LoanDto;
 import com.financegame.dto.SchufaBreakdownDto;
 import com.financegame.dto.SchufaDto;
@@ -38,6 +39,14 @@ public class LoanController {
         return loanService.getSchufaBreakdown(principal.id());
     }
 
+    @GetMapping("/capacity")
+    public LoanCapacityDto getCapacity(
+        @RequestParam(defaultValue = "120") int termMonths,
+        @AuthenticationPrincipal PlayerPrincipal principal
+    ) {
+        return loanService.getCapacity(principal.id(), termMonths);
+    }
+
     @PostMapping("/take")
     @ResponseStatus(HttpStatus.CREATED)
     public LoanDto takeLoan(
@@ -45,5 +54,13 @@ public class LoanController {
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
         return loanService.takeLoan(principal.id(), req);
+    }
+
+    @PostMapping("/{loanId}/payoff")
+    public LoanDto payOffLoan(
+        @PathVariable Long loanId,
+        @AuthenticationPrincipal PlayerPrincipal principal
+    ) {
+        return loanService.payOffLoan(principal.id(), loanId);
     }
 }

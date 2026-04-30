@@ -32,6 +32,9 @@ public class NeedsItem {
     @Column(name = "depression_reduction", nullable = false)
     private boolean depressionReduction = false;
 
+    @Column(name = "cooldown_turns", nullable = false)
+    private int cooldownTurns = 1;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -55,4 +58,7 @@ public class NeedsItem {
 
     public boolean isDepressionReduction() { return depressionReduction; }
     public void setDepressionReduction(boolean depressionReduction) { this.depressionReduction = depressionReduction; }
+
+    public int getCooldownTurns() { return cooldownTurns; }
+    public void setCooldownTurns(int cooldownTurns) { this.cooldownTurns = cooldownTurns; }
 }

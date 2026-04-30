@@ -11,6 +11,7 @@ import com.financegame.entity.GameCharacter;
 import com.financegame.entity.Investment;
 import com.financegame.entity.Stock;
 import com.financegame.repository.InvestmentRepository;
+import com.financegame.repository.StockPriceHistoryRepository;
 import com.financegame.repository.StockRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -27,17 +28,20 @@ public class InvestmentService {
 
     private final InvestmentRepository investmentRepository;
     private final StockRepository stockRepository;
+    private final StockPriceHistoryRepository historyRepository;
     private final CharacterService characterService;
     private final GameContextFactory gameContextFactory;
     private final ApplicationEventPublisher eventPublisher;
 
     public InvestmentService(InvestmentRepository investmentRepository,
                               StockRepository stockRepository,
+                              StockPriceHistoryRepository historyRepository,
                               CharacterService characterService,
                               GameContextFactory gameContextFactory,
                               ApplicationEventPublisher eventPublisher) {
         this.investmentRepository = investmentRepository;
         this.stockRepository = stockRepository;
+        this.historyRepository = historyRepository;
         this.characterService = characterService;
         this.gameContextFactory = gameContextFactory;
         this.eventPublisher = eventPublisher;
@@ -61,7 +65,10 @@ public class InvestmentService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                 "Aktie nicht gefunden: " + ticker));
 
-        BigDecimal totalCost = stock.getCurrentPrice()
+        BigDecimal price = historyRepository
+            .findLatestPriceByStockIdAndPlayerId(stock.getId(), playerId)
+            .orElse(stock.getCurrentPrice());
+        BigDecimal totalCost = price
             .multiply(quantity)
             .setScale(2, RoundingMode.HALF_UP);
 

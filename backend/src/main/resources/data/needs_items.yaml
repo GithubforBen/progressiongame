@@ -7,6 +7,7 @@ needsItems:
     happinessEffect: 0
     stressEffect: -2
     depressionReduction: false
+    cooldownTurns: 1         # once per month
 
   - id: "KAFFEE"
     name: "Kaffee"
@@ -16,6 +17,7 @@ needsItems:
     happinessEffect: 5
     stressEffect: 3
     depressionReduction: false
+    cooldownTurns: 1
 
   - id: "EIS"
     name: "Eis"
@@ -25,6 +27,7 @@ needsItems:
     happinessEffect: 12
     stressEffect: -5
     depressionReduction: false
+    cooldownTurns: 1
 
   - id: "FAST_FOOD"
     name: "Fast Food"
@@ -34,6 +37,7 @@ needsItems:
     happinessEffect: 5
     stressEffect: 0
     depressionReduction: false
+    cooldownTurns: 1
 
   - id: "PIZZA"
     name: "Pizza"
@@ -43,6 +47,7 @@ needsItems:
     happinessEffect: 10
     stressEffect: -5
     depressionReduction: false
+    cooldownTurns: 1
 
   - id: "RESTAURANT"
     name: "Restaurantbesuch"
@@ -52,6 +57,7 @@ needsItems:
     happinessEffect: 20
     stressEffect: -10
     depressionReduction: false
+    cooldownTurns: 2         # every other month
 
   - id: "SPORT"
     name: "Sport (Fitnessstudio)"
@@ -61,6 +67,7 @@ needsItems:
     happinessEffect: 15
     stressEffect: -20
     depressionReduction: false
+    cooldownTurns: 1
 
   - id: "SPAZIERGANG"
     name: "Spaziergang im Park"
@@ -70,6 +77,7 @@ needsItems:
     happinessEffect: 10
     stressEffect: -10
     depressionReduction: false
+    cooldownTurns: 1
 
   - id: "KINO"
     name: "Kinobesuch"
@@ -79,6 +87,7 @@ needsItems:
     happinessEffect: 20
     stressEffect: -15
     depressionReduction: false
+    cooldownTurns: 1
 
   - id: "KONZERT"
     name: "Konzert-Ticket"
@@ -88,6 +97,7 @@ needsItems:
     happinessEffect: 35
     stressEffect: -20
     depressionReduction: false
+    cooldownTurns: 3         # big event — once per quarter
 
   - id: "URLAUB_TAG"
     name: "Urlaubstag"
@@ -97,6 +107,7 @@ needsItems:
     happinessEffect: 30
     stressEffect: -25
     depressionReduction: false
+    cooldownTurns: 3         # once per quarter
 
   - id: "THERAPIE"
     name: "Therapie-Sitzung"
@@ -106,6 +117,7 @@ needsItems:
     happinessEffect: 20
     stressEffect: -25
     depressionReduction: true
+    cooldownTurns: 1         # monthly therapy is realistic
 
   - id: "MASSAGE"
     name: "Massage"
@@ -115,6 +127,7 @@ needsItems:
     happinessEffect: 15
     stressEffect: -30
     depressionReduction: false
+    cooldownTurns: 2
 
   - id: "BUCH"
     name: "Buch lesen"
@@ -124,6 +137,7 @@ needsItems:
     happinessEffect: 12
     stressEffect: -8
     depressionReduction: false
+    cooldownTurns: 1
 
   - id: "VIDEOSPIEL"
     name: "Videospiel"
@@ -133,6 +147,7 @@ needsItems:
     happinessEffect: 25
     stressEffect: -12
     depressionReduction: false
+    cooldownTurns: 2         # expensive item — not every month
 
   - id: "SAUNA"
     name: "Sauna"
@@ -142,6 +157,7 @@ needsItems:
     happinessEffect: 15
     stressEffect: -25
     depressionReduction: false
+    cooldownTurns: 2
 
   - id: "SHOPPEN"
     name: "Shopping-Tour"
@@ -151,6 +167,7 @@ needsItems:
     happinessEffect: 25
     stressEffect: -5
     depressionReduction: false
+    cooldownTurns: 2
 
   - id: "MEDITATION"
     name: "Meditations-App (Monat)"
@@ -160,6 +177,7 @@ needsItems:
     happinessEffect: 8
     stressEffect: -15
     depressionReduction: false
+    cooldownTurns: 1
 
   - id: "SCHLAFEN"
     name: "Ausschlafen (freier Tag)"
@@ -169,6 +187,7 @@ needsItems:
     happinessEffect: 5
     stressEffect: -10
     depressionReduction: false
+    cooldownTurns: 1
 
   - id: "PARTY"
     name: "Party-Nacht"
@@ -178,3 +197,4 @@ needsItems:
     happinessEffect: 35
     stressEffect: -15
     depressionReduction: false
+    cooldownTurns: 2         # not every month

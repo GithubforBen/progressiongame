@@ -240,8 +240,8 @@ public class GameDataLoaderService implements ApplicationRunner {
         for (Map<String, Object> item : items) {
             em.createNativeQuery("""
                 INSERT INTO needs_items (id, name, price, hunger_effect, energy_effect,
-                    happiness_effect, stress_effect, depression_reduction)
-                VALUES (:id, :name, :price, :hunger, :energy, :happiness, :stress, :depress)
+                    happiness_effect, stress_effect, depression_reduction, cooldown_turns)
+                VALUES (:id, :name, :price, :hunger, :energy, :happiness, :stress, :depress, :cooldown)
                 ON CONFLICT (id) DO UPDATE SET
                     name                = EXCLUDED.name,
                     price               = EXCLUDED.price,
@@ -249,7 +249,8 @@ public class GameDataLoaderService implements ApplicationRunner {
                     energy_effect       = EXCLUDED.energy_effect,
                     happiness_effect    = EXCLUDED.happiness_effect,
                     stress_effect       = EXCLUDED.stress_effect,
-                    depression_reduction= EXCLUDED.depression_reduction
+                    depression_reduction= EXCLUDED.depression_reduction,
+                    cooldown_turns      = EXCLUDED.cooldown_turns
                 """)
                 .setParameter("id", item.get("id"))
                 .setParameter("name", item.get("name"))
@@ -259,6 +260,7 @@ public class GameDataLoaderService implements ApplicationRunner {
                 .setParameter("happiness", toInt(item.get("happinessEffect")))
                 .setParameter("stress", toInt(item.get("stressEffect")))
                 .setParameter("depress", Boolean.TRUE.equals(item.get("depressionReduction")))
+                .setParameter("cooldown", toInt(item.getOrDefault("cooldownTurns", 1)))
                 .executeUpdate();
         }
         return items.size();

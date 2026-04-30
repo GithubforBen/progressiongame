@@ -5,11 +5,13 @@ import com.financegame.dto.CharacterDto;
 import com.financegame.entity.GameCharacter;
 import com.financegame.entity.Investment;
 import com.financegame.entity.NeedsItem;
+import com.financegame.entity.PlayerNeedsUsage;
 import com.financegame.entity.PlayerRealEstate;
 import com.financegame.repository.CharacterRepository;
 import com.financegame.repository.InvestmentRepository;
 import com.financegame.repository.MonthlyExpenseRepository;
 import com.financegame.repository.NeedsItemRepository;
+import com.financegame.repository.PlayerNeedsUsageRepository;
 import com.financegame.repository.PlayerRealEstateRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -31,6 +33,7 @@ public class CharacterService {
     private final InvestmentRepository investmentRepository;
     private final PlayerRealEstateRepository playerRealEstateRepository;
     private final NeedsItemRepository needsItemRepository;
+    private final PlayerNeedsUsageRepository playerNeedsUsageRepository;
     private final GameConfig gameConfig;
 
     public CharacterService(CharacterRepository characterRepository,
@@ -38,12 +41,14 @@ public class CharacterService {
                             InvestmentRepository investmentRepository,
                             PlayerRealEstateRepository playerRealEstateRepository,
                             NeedsItemRepository needsItemRepository,
+                            PlayerNeedsUsageRepository playerNeedsUsageRepository,
                             GameConfig gameConfig) {
         this.characterRepository = characterRepository;
         this.monthlyExpenseRepository = monthlyExpenseRepository;
         this.investmentRepository = investmentRepository;
         this.playerRealEstateRepository = playerRealEstateRepository;
         this.needsItemRepository = needsItemRepository;
+        this.playerNeedsUsageRepository = playerNeedsUsageRepository;
         this.gameConfig = gameConfig;
     }
 
@@ -136,6 +141,19 @@ public class CharacterService {
 
         GameCharacter character = findOrThrow(playerId);
 
+        // Cooldown check
+        if (item.getCooldownTurns() > 0) {
+            playerNeedsUsageRepository.findByPlayerAndItem(playerId, itemId).ifPresent(usage -> {
+                int turnsAgo = character.getCurrentTurn() - usage.getLastUsedTurn();
+                if (turnsAgo < item.getCooldownTurns()) {
+                    int remaining = item.getCooldownTurns() - turnsAgo;
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "'" + item.getName() + "' ist noch " + remaining
+                        + (remaining == 1 ? " Monat" : " Monate") + " gesperrt.");
+                }
+            });
+        }
+
         if (item.getPrice().compareTo(BigDecimal.ZERO) > 0) {
             if (character.getCash().compareTo(item.getPrice()) < 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nicht genug Geld");
@@ -151,6 +169,13 @@ public class CharacterService {
         if (item.isDepressionReduction() && character.getDepressionMonthsRemaining() > 0) {
             character.setDepressionMonthsRemaining(character.getDepressionMonthsRemaining() - 1);
         }
+
+        // Update usage tracker
+        PlayerNeedsUsage usage = playerNeedsUsageRepository
+            .findByPlayerAndItem(playerId, itemId)
+            .orElseGet(() -> new PlayerNeedsUsage(playerId, itemId, character.getCurrentTurn()));
+        usage.setLastUsedTurn(character.getCurrentTurn());
+        playerNeedsUsageRepository.save(usage);
 
         characterRepository.save(character);
         return CharacterDto.from(character);

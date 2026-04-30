@@ -42,7 +42,8 @@ public class TaxEvasionService {
         int jailMonthsRemaining,
         int exileMonthsRemaining,
         boolean caughtPending,
-        BigDecimal bailAmount
+        BigDecimal bailAmount,
+        int finanzamtAuditMonthsRemaining
     ) {}
 
     public StatusDto getStatus(Long playerId) {
@@ -57,7 +58,8 @@ public class TaxEvasionService {
             c.getJailMonthsRemaining(),
             c.getExileMonthsRemaining(),
             c.isTaxEvasionCaughtPending(),
-            bail
+            bail,
+            c.getFinanzamtAuditMonthsRemaining()
         );
     }
 
@@ -75,6 +77,11 @@ public class TaxEvasionService {
         if (c.getJailMonthsRemaining() > 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "Im Gefängnis kannst du keine Steuern hinterziehen.");
+        }
+        if (!c.isTaxEvasionActive() && c.getFinanzamtAuditMonthsRemaining() > 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Steuerhinterziehung gesperrt: Finanzamt-Überprüfung läuft noch "
+                + c.getFinanzamtAuditMonthsRemaining() + " Monate.");
         }
         c.setTaxEvasionActive(!c.isTaxEvasionActive());
         characterRepository.save(c);

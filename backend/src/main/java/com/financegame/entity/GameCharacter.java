@@ -62,6 +62,9 @@ public class GameCharacter {
     @Column(name = "total_jail_months_served", nullable = false)
     private int totalJailMonthsServed = 0;
 
+    @Column(name = "finanzamt_audit_months_remaining", nullable = false)
+    private int finanzamtAuditMonthsRemaining = 0;
+
     @Column(name = "victory_achieved", nullable = false)
     private boolean victoryAchieved = false;
 
@@ -123,6 +126,9 @@ public class GameCharacter {
 
     public int getTotalJailMonthsServed() { return totalJailMonthsServed; }
     public void setTotalJailMonthsServed(int totalJailMonthsServed) { this.totalJailMonthsServed = totalJailMonthsServed; }
+
+    public int getFinanzamtAuditMonthsRemaining() { return finanzamtAuditMonthsRemaining; }
+    public void setFinanzamtAuditMonthsRemaining(int v) { this.finanzamtAuditMonthsRemaining = v; }
 
     public boolean isVictoryAchieved() { return victoryAchieved; }
     public void setVictoryAchieved(boolean victoryAchieved) { this.victoryAchieved = victoryAchieved; }
