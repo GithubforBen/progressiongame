@@ -3,6 +3,7 @@ package com.financegame.service;
 import com.financegame.config.GameConfig;
 import com.financegame.domain.GameContext;
 import com.financegame.domain.condition.MinSchufaCondition;
+import com.financegame.domain.events.LoanPaidOffEvent;
 import com.financegame.domain.events.LoanTakenEvent;
 import com.financegame.dto.LoanCapacityDto;
 import com.financegame.dto.LoanDto;
