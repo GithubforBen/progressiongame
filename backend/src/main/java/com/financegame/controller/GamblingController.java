@@ -2,6 +2,7 @@ package com.financegame.controller;
 
 import com.financegame.dto.BlackjackStateDto;
 import com.financegame.dto.GamblingBetRequest;
+import com.financegame.dto.PlinkoResultDto;
 import com.financegame.dto.PokerResultDto;
 import com.financegame.dto.RouletteRequest;
 import com.financegame.dto.RouletteResultDto;
@@ -68,6 +69,16 @@ public class GamblingController {
         @AuthenticationPrincipal PlayerPrincipal principal
     ) {
         return gamblingService.playPoker(principal.id(), request.bet());
+    }
+
+    // --- Plinko ---
+
+    @PostMapping("/plinko")
+    public PlinkoResultDto playPlinko(
+        @Valid @RequestBody GamblingBetRequest request,
+        @AuthenticationPrincipal PlayerPrincipal principal
+    ) {
+        return gamblingService.playPlinko(principal.id(), request.bet());
     }
 
     // --- Texas Hold'em ---
