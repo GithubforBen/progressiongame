@@ -128,57 +128,65 @@
       </div>
     </div>
 
-    <!-- ===== POKER ===== -->
-    <div v-if="activeTab === 'poker'" class="space-y-4">
-      <div class="card">
-        <h3 class="text-base font-semibold text-white mb-1">Poker (5-Karten)</h3>
-        <p class="text-xs text-gray-400 mb-4">Vereinfachtes 5-Karten-Poker gegen eine KI. Gewinn = 1,95× Einsatz (5% Rake).</p>
+    <!-- ===== PLINKO ===== -->
+    <div v-if="activeTab === 'plinko'" class="space-y-4">
+      <div class="card overflow-x-auto">
+        <h3 class="text-base font-semibold text-white mb-1">Plinko</h3>
+        <p class="text-xs text-gray-400 mb-4">Ball fällt durch 8 Reihen Stifte. House Edge ~4,3%. Randspalten zahlen bis zu 10×.</p>
 
-        <div v-if="pokerResult">
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <p class="text-xs text-gray-400 mb-2">Deine Hand <span class="ml-1 badge" :class="handBadgeClass(pokerResult.result)">{{ pokerResult.playerHandName }}</span></p>
-              <div class="flex gap-1.5 flex-wrap">
-                <CardDisplay v-for="(card, i) in pokerResult.playerCards" :key="i" :card="card" />
-              </div>
-            </div>
-            <div>
-              <p class="text-xs text-gray-400 mb-2">KI-Hand <span class="ml-1 badge bg-white/10 text-gray-300">{{ pokerResult.aiHandName }}</span></p>
-              <div class="flex gap-1.5 flex-wrap">
-                <CardDisplay v-for="(card, i) in pokerResult.aiCards" :key="i" :card="card" />
-              </div>
-            </div>
+        <PlinkoBoard
+          :animating="plinkoAnimating"
+          :path="plinkoPending?.path ?? null"
+          :winning-slot="plinkoResult?.slot ?? null"
+          class="mb-5"
+          @done="onPlinkoDone"
+        />
+
+        <div class="flex gap-3 items-center mb-4">
+          <div class="flex-1">
+            <label class="text-xs text-gray-400 mb-1 block">Einsatz (€)</label>
+            <input v-model.number="plinkoBet" type="number" min="1" max="10000" class="input w-full" :disabled="plinkoAnimating" />
           </div>
-          <div class="p-4 rounded-lg border" :class="resultBgClass(pokerResult.result)">
-            <div class="flex items-center justify-between">
-              <span class="font-semibold" :class="resultTextClass(pokerResult.result)">{{ pokerResultLabel(pokerResult.result) }}</span>
-              <span class="font-bold text-lg" :class="pokerResult.netChange >= 0 ? 'text-green-400' : 'text-red-400'">
-                {{ pokerResult.netChange >= 0 ? '+' : '' }}{{ formatCurrency(pokerResult.netChange) }}
-              </span>
-            </div>
+          <div class="flex gap-2 items-end">
+            <button v-for="quick in [10, 50, 100, 500]" :key="quick" class="btn-secondary text-xs px-2 py-1" :disabled="plinkoAnimating" @click="plinkoBet = quick">{{ quick }}</button>
           </div>
-          <button class="btn-secondary mt-3 text-sm w-full" @click="pokerResult = null">Nochmal spielen</button>
         </div>
-        <div v-else>
-          <div class="flex gap-3 items-center mb-4">
-            <div class="flex-1">
-              <label class="text-xs text-gray-400 mb-1 block">Einsatz (€)</label>
-              <input v-model.number="pokerBet" type="number" min="1" max="10000" class="input w-full" />
-            </div>
-            <div class="flex gap-2 items-end">
-              <button v-for="quick in [10, 50, 100]" :key="quick" class="btn-secondary text-xs px-2 py-1" @click="pokerBet = quick">{{ quick }}</button>
-            </div>
+
+        <button
+          class="btn-primary w-full py-3 text-base"
+          :disabled="plinkoAnimating || plinkoLoading || !plinkoBet || plinkoBet < 1"
+          @click="playPlinko"
+        >
+          {{ plinkoAnimating ? 'Ball fällt...' : plinkoLoading ? 'Server würfelt...' : 'Ball loslassen!' }}
+        </button>
+
+        <div
+          v-if="plinkoResult && !plinkoAnimating"
+          class="mt-4 p-4 rounded-lg border"
+          :class="plinkoResult.netChange >= 0 ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'"
+        >
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-sm" :class="plinkoResult.netChange >= 0 ? 'text-green-300' : 'text-red-400'">
+              Slot {{ plinkoResult.slot }} — {{ plinkoResult.multiplier }}× Multiplikator
+            </span>
+            <span class="font-bold text-lg font-mono" :class="plinkoResult.netChange >= 0 ? 'text-green-400' : 'text-red-400'">
+              {{ plinkoResult.netChange >= 0 ? '+' : '' }}{{ formatCurrency(plinkoResult.netChange) }}
+            </span>
           </div>
-          <button class="btn-primary w-full py-3 text-base" :disabled="pokerLoading || !pokerBet || pokerBet < 1" @click="playPoker">
-            {{ pokerLoading ? 'Karten werden gemischt...' : 'Karten ausgeben' }}
-          </button>
         </div>
       </div>
 
       <div class="card">
-        <h4 class="text-sm font-semibold text-gray-300 mb-3">Handreihenfolge (schwächste → stärkste)</h4>
-        <div class="flex flex-wrap gap-2 text-xs">
-          <span v-for="hand in handRankings" :key="hand" class="px-2 py-1 rounded bg-white/5 text-gray-300">{{ hand }}</span>
+        <h4 class="text-sm font-semibold text-gray-300 mb-3">Multiplikatoren (Slot 0 → 8)</h4>
+        <div class="flex justify-between gap-1 text-xs text-center">
+          <div
+            v-for="(m, i) in [10, 4, 1.5, 0.5, 0.2, 0.5, 1.5, 4, 10]"
+            :key="i"
+            class="flex-1 py-1.5 rounded font-mono font-semibold"
+            :class="m >= 4 ? 'bg-yellow-500/20 text-yellow-300' : m >= 1 ? 'bg-blue-500/15 text-blue-300' : 'bg-surface-700 text-gray-500'"
+          >
+            {{ m }}×
+          </div>
         </div>
       </div>
     </div>
@@ -812,16 +820,16 @@ onMounted(async () => { await gameStore.init() })
 const tabs = [
   { id: 'slots',     label: 'Slots',         icon: '🎰' },
   { id: 'blackjack', label: 'Blackjack',      icon: '🃏' },
-  { id: 'poker',     label: 'Poker',          icon: '♠' },
+  { id: 'plinko',    label: 'Plinko',         icon: '🎯' },
   { id: 'texas',     label: "Hold'em",        icon: '🎴' },
   { id: 'roulette',  label: 'Roulette',       icon: '🎡' },
 ]
-const activeTab = ref<'slots' | 'blackjack' | 'poker' | 'texas' | 'roulette'>('slots')
+const activeTab = ref<'slots' | 'blackjack' | 'plinko' | 'texas' | 'roulette'>('slots')
 
 // ── Types ─────────────────────────────────────────────────────────────────
 interface SlotResult { reels: string[]; outcome: string; betAmount: number; payout: number; netChange: number }
 interface BjState { sessionId: number; playerCards: string[]; dealerCards: string[]; playerTotal: number; dealerVisible: number; status: string; betAmount: number; payout: number; netChange: number }
-interface PokerResult { playerCards: string[]; aiCards: string[]; playerHandName: string; aiHandName: string; result: string; betAmount: number; payout: number; netChange: number }
+interface PlinkoResult { path: boolean[]; slot: number; multiplier: number; betAmount: number; payout: number; netChange: number }
 
 interface ActionEntry { actor: string; actionType: string; amount: number | null }
 interface DrawInfo { type: string; outs: number; probability: number; description: string }
@@ -945,16 +953,36 @@ function calcHandTotal(cards: string[] | undefined): number {
   return total
 }
 
-// ── Poker ─────────────────────────────────────────────────────────────────
-const pokerBet = ref(10)
-const pokerLoading = ref(false)
-const pokerResult = ref<PokerResult | null>(null)
+// ── Plinko ────────────────────────────────────────────────────────────────
+const plinkoBet = ref(10)
+const plinkoLoading = ref(false)
+const plinkoAnimating = ref(false)
+const plinkoResult = ref<PlinkoResult | null>(null)
+const plinkoPending = ref<PlinkoResult | null>(null)
 
-async function playPoker() {
-  pokerLoading.value = true
-  try { pokerResult.value = await api.post<PokerResult>('/api/gambling/poker', { bet: pokerBet.value }); await gameStore.fetchCharacter() }
-  catch (e: any) { toast.error(e?.data?.message ?? 'Fehler beim Spielen') }
-  finally { pokerLoading.value = false }
+async function playPlinko() {
+  if (plinkoAnimating.value) return
+  plinkoLoading.value = true
+  plinkoResult.value = null
+  plinkoPending.value = null
+  try {
+    const r = await api.post<PlinkoResult>('/api/gambling/plinko', { bet: plinkoBet.value })
+    await gameStore.fetchCharacter()
+    plinkoPending.value = r
+    plinkoAnimating.value = true
+  } catch (e: any) {
+    toast.error(e?.data?.message ?? 'Fehler beim Spielen')
+  } finally {
+    plinkoLoading.value = false
+  }
+}
+
+function onPlinkoDone() {
+  plinkoAnimating.value = false
+  plinkoResult.value = plinkoPending.value
+  if (plinkoResult.value && plinkoResult.value.netChange >= 0) {
+    toast.success(`${plinkoResult.value.multiplier}× — ${formatCurrency(plinkoResult.value.payout)}`)
+  }
 }
 
 // ── Texas Hold'em ──────────────────────────────────────────────────────────
@@ -1147,16 +1175,12 @@ const payoutTable = [
   { symbols: 'Zwei gleiche', label: 'Kleiner Gewinn', multiplier: '1,5×' },
   { symbols: 'Keine Übereinstimmung', label: 'Verlust', multiplier: '0×' },
 ]
-const handRankings = ['Highcard', 'Ein Paar', 'Zwei Paare', 'Drilling', 'Straight', 'Flush', 'Full House', 'Vierling', 'Straight Flush', 'Royal Flush']
 
 function outcomeLabel(outcome: string): string {
   return ({ JACKPOT: 'JACKPOT!', BIG_WIN: 'Großer Gewinn!', WIN: 'Gewinn!', SMALL_WIN: 'Kleiner Gewinn!', LOSS: 'Verloren' } as Record<string, string>)[outcome] ?? outcome
 }
 function bjResultLabel(status: string): string {
   return ({ WON: 'Gewonnen!', LOST: 'Verloren', PUSH: 'Unentschieden' } as Record<string, string>)[status] ?? status
-}
-function pokerResultLabel(result: string): string {
-  return ({ WON: 'Gewonnen!', LOST: 'Verloren', PUSH: 'Unentschieden (Split Pot)' } as Record<string, string>)[result] ?? result
 }
 function resultBorderClass(key: string): string {
   if (['JACKPOT', 'BIG_WIN', 'WIN', 'WON'].includes(key)) return 'border-green-500/50'
@@ -1172,11 +1196,6 @@ function resultTextClass(key: string): string {
   if (['JACKPOT', 'BIG_WIN', 'WIN', 'WON'].includes(key)) return 'text-green-300'
   if (['SMALL_WIN', 'PUSH'].includes(key)) return 'text-yellow-300'
   return 'text-red-400'
-}
-function handBadgeClass(result: string): string {
-  if (result === 'WON') return 'bg-green-500/20 text-green-300'
-  if (result === 'PUSH') return 'bg-yellow-500/20 text-yellow-300'
-  return 'bg-red-500/20 text-red-400'
 }
 </script>
 

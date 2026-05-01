@@ -3,6 +3,7 @@ package com.financegame.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financegame.dto.BlackjackStateDto;
+import com.financegame.dto.PlinkoResultDto;
 import com.financegame.dto.PokerResultDto;
 import com.financegame.dto.RouletteRequest;
 import com.financegame.dto.RouletteResultDto;
@@ -297,6 +298,45 @@ public class GamblingService {
             payout,
             payout.subtract(bet)
         );
+    }
+
+    // ======================== PLINKO ========================
+    // 8 rows, 9 slots (0–8). Multipliers are symmetric around center.
+    // Expected value ≈ 0.957 (~4.3% house edge).
+
+    private static final BigDecimal[] PLINKO_MULTIPLIERS = {
+        new BigDecimal("10.0"),
+        new BigDecimal("4.0"),
+        new BigDecimal("1.5"),
+        new BigDecimal("0.5"),
+        new BigDecimal("0.2"),
+        new BigDecimal("0.5"),
+        new BigDecimal("1.5"),
+        new BigDecimal("4.0"),
+        new BigDecimal("10.0")
+    };
+
+    @Transactional
+    public PlinkoResultDto playPlinko(Long playerId, BigDecimal bet) {
+        validateBet(bet);
+        characterService.deductCash(playerId, bet, "Plinko");
+
+        List<Boolean> path = new ArrayList<>(8);
+        int slot = 0;
+        for (int i = 0; i < 8; i++) {
+            boolean goRight = ThreadLocalRandom.current().nextBoolean();
+            path.add(goRight);
+            if (goRight) slot++;
+        }
+
+        BigDecimal multiplier = PLINKO_MULTIPLIERS[slot];
+        BigDecimal payout = bet.multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+
+        if (payout.compareTo(BigDecimal.ZERO) > 0) {
+            characterService.addCash(playerId, payout);
+        }
+
+        return new PlinkoResultDto(path, slot, multiplier, bet, payout, payout.subtract(bet));
     }
 
     // ======================== ROULETTE ========================
