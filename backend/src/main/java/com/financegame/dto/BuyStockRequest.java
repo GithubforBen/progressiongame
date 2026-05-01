@@ -1,6 +1,5 @@
 package com.financegame.dto;
 
-import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,6 +17,5 @@ public record BuyStockRequest(
 
     @NotNull(message = "Menge ist erforderlich")
     @DecimalMin(value = "0.000001", message = "Menge muss groesser als 0 sein")
-    @DecimalMax(value = "1000000.00", message = "Menge darf maximal 1.000.000 betragen")
     BigDecimal quantity
 ) {}

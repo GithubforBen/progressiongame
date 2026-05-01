@@ -1,6 +1,5 @@
 package com.financegame.dto;
 
-import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -19,6 +18,5 @@ public record AddExpenseRequest(
 
     @NotNull(message = "Betrag ist erforderlich")
     @DecimalMin(value = "0.01", message = "Betrag muss groesser als 0 sein")
-    @DecimalMax(value = "100000.00", message = "Betrag darf maximal 100.000 betragen")
     BigDecimal amount
 ) {}

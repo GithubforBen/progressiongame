@@ -1,6 +1,5 @@
 package com.financegame.dto;
 
-import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -14,7 +13,6 @@ public record TexasHoldemActionRequest(
     String action,
 
     @DecimalMin(value = "0.00", message = "Betrag darf nicht negativ sein")
-    @DecimalMax(value = "10000000.00", message = "Betrag zu hoch")
     BigDecimal amount
 
 ) {}
