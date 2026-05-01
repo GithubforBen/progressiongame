@@ -24,7 +24,6 @@ public record RouletteRequest(
 
         @NotNull
         @DecimalMin(value = "1.00", message = "Mindesteinsatz pro Wette: 1,00 €")
-        @DecimalMax(value = "10000.00", message = "Maximaleinsatz pro Wette: 10.000,00 €")
         BigDecimal amount
 
     ) {}

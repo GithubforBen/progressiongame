@@ -29,7 +29,6 @@ public class GamblingService {
     private static final BigDecimal MAX_BET = new BigDecimal("10000.00");
 
     // ── Roulette constants ─────────────────────────────────────────────────
-    private static final BigDecimal ROULETTE_MAX_TOTAL = new BigDecimal("10000.00");
     private static final Set<Integer> RED_NUMBERS = Set.of(
         1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36);
     private static final Set<Integer> BLACK_NUMBERS = Set.of(
@@ -312,11 +311,6 @@ public class GamblingService {
             validateRouletteBet(b);
             totalBet = totalBet.add(b.amount());
         }
-        if (totalBet.compareTo(ROULETTE_MAX_TOTAL) > 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Gesamteinsatz darf 10.000 € nicht überschreiten");
-        }
-
         characterService.deductCash(playerId, totalBet, "Roulette");
 
         int winning = ThreadLocalRandom.current().nextInt(37);
