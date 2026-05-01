@@ -910,11 +910,12 @@ public class GamblingService {
         else if (equity > 0.80) fraction = 0.80 + rng.nextDouble() * 0.20;
         else if (equity > 0.65) fraction = 0.55 + rng.nextDouble() * 0.25;
         else                    fraction = 0.38 + rng.nextDouble() * 0.22;
-        // Aggressive personalities bet bigger
-        fraction = Math.min(1.8, fraction * (0.75 + p.aggressionFactor() * 0.09));
+        fraction = Math.min(0.75, fraction * (0.75 + p.aggressionFactor() * 0.09));
         BigDecimal amount = pot.multiply(BigDecimal.valueOf(fraction))
             .setScale(2, RoundingMode.HALF_UP);
-        return amount.max(initialBet);
+        // Cap at 5× initialBet so the player can always afford to respond
+        BigDecimal cap = initialBet.multiply(BigDecimal.valueOf(5));
+        return amount.max(initialBet).min(cap);
     }
 
     // ── Street advance ─────────────────────────────────────────────────
