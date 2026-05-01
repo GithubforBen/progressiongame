@@ -1,6 +1,5 @@
 package com.financegame.dto;
 
-import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -16,7 +15,6 @@ public record TakeLoanRequest(
 
     @NotNull(message = "Betrag ist erforderlich")
     @DecimalMin(value = "1000.00", message = "Mindestbetrag: 1.000 €")
-    @DecimalMax(value = "10000000.00", message = "Maximalbetrag: 10.000.000 €")
     BigDecimal amount,
 
     @Min(value = 6, message = "Laufzeit muss mindestens 6 Monate betragen")

@@ -26,7 +26,6 @@ import java.util.stream.IntStream;
 public class GamblingService {
 
     private static final BigDecimal MIN_BET = new BigDecimal("1.00");
-    private static final BigDecimal MAX_BET = new BigDecimal("10000.00");
 
     // ── Roulette constants ─────────────────────────────────────────────────
     private static final Set<Integer> RED_NUMBERS = Set.of(
@@ -461,9 +460,6 @@ public class GamblingService {
     private void validateBet(BigDecimal bet) {
         if (bet == null || bet.compareTo(MIN_BET) < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mindesteinsatz ist 1 €");
-        }
-        if (bet.compareTo(MAX_BET) > 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximaleinsatz ist 10.000 €");
         }
     }
 
