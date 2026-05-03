@@ -321,7 +321,7 @@ public class GamblingService {
         validateBet(bet);
         characterService.deductCash(playerId, bet, "Plinko");
 
-        int ballCount = Math.min((int) Math.floor(bet.doubleValue() / 10.0), 500);
+        int ballCount = Math.min(bet.intValue(), 500);
         if (ballCount < 1) ballCount = 1;
         BigDecimal ballValue = bet.divide(BigDecimal.valueOf(ballCount), 2, RoundingMode.HALF_UP);
 

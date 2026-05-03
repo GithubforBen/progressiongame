@@ -130,64 +130,72 @@
 
     <!-- ===== PLINKO ===== -->
     <div v-if="activeTab === 'plinko'" class="space-y-4">
-      <div class="card overflow-x-auto">
+
+      <!-- Board card -->
+      <div class="card">
         <div class="flex items-start justify-between mb-1">
           <h3 class="text-base font-semibold text-white">Plinko</h3>
           <span class="text-xs text-gray-500">House Edge ~4,3%</span>
         </div>
-        <p class="text-xs text-gray-400 mb-4">Bälle fallen durch 8 Reihen Stifte. Randspalten zahlen bis zu 10×.</p>
+        <p class="text-xs text-gray-400 mb-3">Bälle fallen durch 8 Reihen Stifte. Randspalten zahlen bis zu 10×.</p>
 
         <PlinkoBoard
-          :animating="plinkoAnimating"
-          :balls="plinkoPending?.balls ?? null"
-          class="mb-5"
-          @done="onPlinkoDone"
+          :queue="plinkoQueue"
+          class="mb-4"
+          @group-done="onPlinkoGroupDone"
+          @ball-landed="onBallLanded"
         />
 
-        <!-- Bet info bar -->
-        <div v-if="plinkoBet >= 1" class="mb-3 px-3 py-2 rounded-lg bg-surface-700/60 border border-surface-600/40 text-xs flex items-center justify-between">
+        <!-- Bet info -->
+        <div v-if="plinkoBet >= 1" class="mb-3 px-3 py-1.5 rounded-lg bg-white/4 border border-white/8 text-xs flex items-center justify-between">
           <span class="text-gray-400">Bälle:</span>
           <span class="font-semibold text-white font-mono">{{ plinkoBallCount }} × {{ formatCurrency(plinkoBallValue) }}/Ball</span>
         </div>
 
-        <div class="flex gap-3 items-center mb-4">
+        <!-- Bet input -->
+        <div class="flex gap-2 items-center mb-3">
           <div class="flex-1">
             <label class="text-xs text-gray-400 mb-1 block">Einsatz (€)</label>
-            <input v-model.number="plinkoBet" type="number" min="1" class="input w-full" :disabled="plinkoAnimating" />
+            <input v-model.number="plinkoBet" type="number" min="1" class="input w-full" />
           </div>
-          <div class="flex gap-2 items-end flex-wrap">
-            <button v-for="quick in [10, 50, 100, 300, 1000, 5000]" :key="quick" class="btn-secondary text-xs px-2 py-1" :disabled="plinkoAnimating" @click="plinkoBet = quick">{{ quick }}</button>
+          <div class="flex gap-1.5 items-end flex-wrap">
+            <button v-for="q in [10, 50, 100, 300, 500]" :key="q" class="btn-secondary text-xs px-2 py-1" @click="plinkoBet = q">{{ q }}</button>
           </div>
         </div>
 
         <button
           class="btn-primary w-full py-3 text-base font-semibold"
-          :disabled="plinkoAnimating || plinkoLoading || !plinkoBet || plinkoBet < 1"
+          :disabled="plinkoLoading || !plinkoBet || plinkoBet < 1"
           @click="playPlinko"
         >
-          <span v-if="plinkoAnimating">{{ plinkoPending?.ballCount ?? '?' }} Bälle fallen...</span>
-          <span v-else-if="plinkoLoading">Server berechnet...</span>
+          <span v-if="plinkoLoading">Server berechnet...</span>
           <span v-else>{{ plinkoBallCount }} {{ plinkoBallCount === 1 ? 'Ball' : 'Bälle' }} loslassen!</span>
         </button>
+      </div>
 
-        <div
-          v-if="plinkoResult && !plinkoAnimating"
-          class="mt-4 p-4 rounded-lg border"
-          :class="plinkoResult.netChange >= 0 ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'"
-        >
-          <div class="flex items-center justify-between mb-2">
-            <span class="font-semibold text-sm" :class="plinkoResult.netChange >= 0 ? 'text-green-300' : 'text-red-400'">
-              {{ plinkoResult.ballCount }} Bälle × {{ formatCurrency(plinkoResult.ballValue) }}
+      <!-- Live feed -->
+      <div v-if="plinkoFeed.length > 0" class="card p-0 overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-surface-600/40 flex items-center justify-between">
+          <span class="text-xs font-semibold text-gray-300">Ergebnis-Feed</span>
+          <button class="text-xs text-gray-600 hover:text-gray-400 transition-colors" @click="plinkoFeed.splice(0)">Leeren</button>
+        </div>
+        <div class="feed-scroll">
+          <div
+            v-for="entry in plinkoFeed"
+            :key="entry.key"
+            class="feed-row"
+            :class="entry.netChange >= 0 ? 'feed-win' : 'feed-loss'"
+          >
+            <span class="feed-dot" :style="{ background: entry.color }" />
+            <span class="feed-mult">{{ entry.multiplier }}×</span>
+            <span class="feed-payout" :class="entry.netChange >= 0 ? 'text-green-400' : 'text-red-400'">
+              {{ entry.netChange >= 0 ? '+' : '' }}{{ formatCurrency(entry.netChange) }}
             </span>
-            <span class="font-bold text-lg font-mono" :class="plinkoResult.netChange >= 0 ? 'text-green-400' : 'text-red-400'">
-              {{ plinkoResult.netChange >= 0 ? '+' : '' }}{{ formatCurrency(plinkoResult.netChange) }}
-            </span>
-          </div>
-          <div class="text-xs text-gray-500">
-            Ausgezahlt: {{ formatCurrency(plinkoResult.totalPayout) }}
+            <span class="feed-time">{{ entry.time }}</span>
           </div>
         </div>
       </div>
+
     </div>
 
     <!-- ===== TEXAS HOLD'EM ===== -->
@@ -954,15 +962,33 @@ function calcHandTotal(cards: string[] | undefined): number {
 }
 
 // ── Plinko ────────────────────────────────────────────────────────────────
-const plinkoBet = ref(10)
-const plinkoLoading = ref(false)
-const plinkoAnimating = ref(false)
-const plinkoResult = ref<PlinkoResult | null>(null)
-const plinkoPending = ref<PlinkoResult | null>(null)
+const plinkoBet      = ref(10)
+const plinkoLoading  = ref(false)
+
+interface PlinkoQueueItem {
+  id:         number
+  balls:      PlinkoBallResult[]
+  ballValue:  number
+  betAmount:  number
+  totalPayout: number
+  netChange:  number
+}
+interface FeedEntry {
+  key:        number
+  multiplier: number
+  netChange:  number
+  color:      string
+  time:       string
+}
+
+const plinkoQueue  = ref<PlinkoQueueItem[]>([])
+const plinkoFeed   = ref<FeedEntry[]>([])
+let   plinkoIdSeq  = 0
+let   feedKeySeq   = 0
 
 const plinkoBallCount = computed(() => {
   const bet = plinkoBet.value ?? 0
-  return Math.max(1, Math.min(500, Math.floor(bet / 10)))
+  return Math.max(1, Math.min(500, Math.floor(bet / 1)))
 })
 const plinkoBallValue = computed(() => {
   const bet = plinkoBet.value ?? 0
@@ -971,15 +997,19 @@ const plinkoBallValue = computed(() => {
 })
 
 async function playPlinko() {
-  if (plinkoAnimating.value) return
   plinkoLoading.value = true
-  plinkoResult.value = null
-  plinkoPending.value = null
   try {
     const r = await api.post<PlinkoResult>('/api/gambling/plinko', { bet: plinkoBet.value })
     await gameStore.fetchCharacter()
-    plinkoPending.value = r
-    plinkoAnimating.value = true
+    plinkoIdSeq++
+    plinkoQueue.value.push({
+      id: plinkoIdSeq,
+      balls: r.balls,
+      ballValue: r.ballValue,
+      betAmount: r.betAmount,
+      totalPayout: r.totalPayout,
+      netChange: r.netChange,
+    })
   } catch (e: any) {
     toast.error(e?.data?.message ?? 'Fehler beim Spielen')
   } finally {
@@ -987,15 +1017,27 @@ async function playPlinko() {
   }
 }
 
-function onPlinkoDone() {
-  plinkoAnimating.value = false
-  plinkoResult.value = plinkoPending.value
-  if (plinkoResult.value) {
-    const r = plinkoResult.value
-    if (r.netChange >= 0) {
-      toast.success(`${r.ballCount} Bälle — +${formatCurrency(r.netChange)}`)
-    }
-  }
+function onPlinkoGroupDone(id: number) {
+  const item = plinkoQueue.value.find(q => q.id === id)
+  if (!item) return
+  if (item.netChange >= 0) toast.success(`${item.balls.length} Bälle — +${formatCurrency(item.netChange)}`)
+  plinkoQueue.value = plinkoQueue.value.filter(q => q.id !== id)
+}
+
+function onBallLanded(groupId: number, slot: number, multiplier: number, color: string) {
+  const item = plinkoQueue.value.find(q => q.id === groupId)
+  if (!item) return
+  const payout    = item.ballValue * multiplier
+  const netChange = payout - item.ballValue
+  feedKeySeq++
+  plinkoFeed.value.unshift({
+    key:        feedKeySeq,
+    multiplier,
+    netChange,
+    color,
+    time:       new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+  })
+  if (plinkoFeed.value.length > 60) plinkoFeed.value.splice(60)
 }
 
 // ── Texas Hold'em ──────────────────────────────────────────────────────────
@@ -1218,6 +1260,48 @@ function resultTextClass(key: string): string {
 </script>
 
 <style scoped>
+/* ── Plinko feed ───────────────────────────────────────────────────────── */
+.feed-scroll {
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.feed-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.72rem;
+  transition: background 0.15s;
+}
+.feed-row:last-child { border-bottom: none; }
+.feed-win  { background: rgba(34, 197, 94, 0.04); }
+.feed-loss { background: rgba(239, 68, 68, 0.04); }
+.feed-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.feed-mult {
+  width: 36px;
+  font-weight: 700;
+  font-family: "JetBrains Mono", monospace;
+  color: rgba(255,255,255,0.75);
+  flex-shrink: 0;
+}
+.feed-payout {
+  flex: 1;
+  font-weight: 700;
+  font-family: "JetBrains Mono", monospace;
+}
+.feed-time {
+  color: rgba(255,255,255,0.25);
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
 @keyframes reelSpin {
   0%   { transform: translateY(-60%) scale(0.8); opacity: 0.4; }
   50%  { transform: translateY(0)    scale(1.1); opacity: 1; }
