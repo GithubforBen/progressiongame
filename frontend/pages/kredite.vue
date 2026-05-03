@@ -78,7 +78,8 @@
         <div
           v-for="loan in loans.filter(l => l.status === 'ACTIVE')"
           :key="loan.id"
-          class="p-4 rounded-lg bg-white/5 border border-white/10"
+          class="p-4 rounded-lg bg-white/5 border border-white/10 transition-colors"
+          :class="payingOff === loan.id ? 'border-green-500/30 bg-green-500/5' : ''"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="flex-1">
@@ -103,6 +104,28 @@
                 class="h-full rounded-full bg-red-400/70"
                 :style="{ width: (loan.amountRemaining / loan.amountBorrowed * 100) + '%' }"
               />
+            </div>
+          </div>
+
+          <!-- Sofort tilgen -->
+          <div class="mt-3 pt-3 border-t border-white/8">
+            <div v-if="canAfford(loan)" class="flex items-center gap-3">
+              <button
+                class="flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-colors border"
+                :class="payingOff === loan.id
+                  ? 'bg-green-500/20 border-green-500/40 text-green-300 cursor-wait'
+                  : 'bg-white/5 border-white/15 text-white hover:bg-green-500/15 hover:border-green-500/40 hover:text-green-300'"
+                :disabled="payingOff !== null"
+                @click="payOff(loan)"
+              >
+                <span v-if="payingOff === loan.id">Wird getilgt...</span>
+                <span v-else>Sofort tilgen — {{ formatCurrency(loan.amountRemaining) }}</span>
+              </button>
+              <span class="text-xs text-green-400/70">+5 SCHUFA</span>
+            </div>
+            <div v-else class="flex items-center gap-2 text-xs text-gray-500">
+              <span class="text-amber-500/70">⚠</span>
+              Nicht genug Guthaben (fehlen {{ formatCurrency(loan.amountRemaining - (gameStore.character?.cash ?? 0)) }})
             </div>
           </div>
         </div>
@@ -232,6 +255,7 @@ const schufa = ref<Schufa | null>(null)
 const breakdown = ref<SchufaBreakdown | null>(null)
 const loans = ref<Loan[]>([])
 const submitting = ref(false)
+const payingOff = ref<number | null>(null)
 
 const form = ref({ label: '', amount: 10000, termMonths: 24 })
 
@@ -276,6 +300,25 @@ async function loadAll() {
     breakdown.value = b
   } catch {
     toast.error('Daten konnten nicht geladen werden')
+  }
+}
+
+function canAfford(loan: Loan): boolean {
+  return (gameStore.character?.cash ?? 0) >= loan.amountRemaining
+}
+
+async function payOff(loan: Loan) {
+  if (payingOff.value !== null) return
+  payingOff.value = loan.id
+  try {
+    const updated = await api.post<Loan>(`/api/loans/${loan.id}/payoff`, {})
+    loans.value = loans.value.map(l => l.id === updated.id ? updated : l)
+    toast.success(`${loan.label} vollständig getilgt! SCHUFA +5`)
+    await Promise.all([gameStore.fetchCharacter(), loadAll()])
+  } catch (e: any) {
+    toast.error(e?.data?.message ?? 'Tilgung fehlgeschlagen')
+  } finally {
+    payingOff.value = null
   }
 }
 
