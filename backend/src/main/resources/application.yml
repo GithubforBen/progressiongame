@@ -67,7 +67,7 @@ game:
 
   burnout:
     stress-trigger: 100
-    stress-reset: 50
+    stress-reset: 70
     recovery-threshold: 40
     hospital-penalty: 100
 
