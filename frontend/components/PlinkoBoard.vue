@@ -100,7 +100,7 @@ function getCtx() {
 }
 
 // ── Geometry ───────────────────────────────────────────────────────────────
-function pegX(r: number, c: number) { return CANVAS_W / 2 + (c - r / 2) * H_SPACING }
+function pegX(r: number, c: number) { return CANVAS_W / 2 + (c - (r + 1) / 2) * H_SPACING }
 function pegY(r: number)             { return TOP_PAD + r * V_SPACING }
 function slotCX(i: number)           { return CANVAS_W / 2 + (i - ROWS / 2) * H_SPACING }
 
