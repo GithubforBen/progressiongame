@@ -321,22 +321,32 @@ public class GamblingService {
         validateBet(bet);
         characterService.deductCash(playerId, bet, "Plinko");
 
-        List<Boolean> path = new ArrayList<>(8);
-        int slot = 0;
-        for (int i = 0; i < 8; i++) {
-            boolean goRight = ThreadLocalRandom.current().nextBoolean();
-            path.add(goRight);
-            if (goRight) slot++;
+        int ballCount = Math.min((int) Math.floor(bet.doubleValue() / 10.0), 500);
+        if (ballCount < 1) ballCount = 1;
+        BigDecimal ballValue = bet.divide(BigDecimal.valueOf(ballCount), 2, RoundingMode.HALF_UP);
+
+        List<PlinkoResultDto.BallResult> balls = new ArrayList<>(ballCount);
+        BigDecimal totalPayout = BigDecimal.ZERO;
+
+        for (int b = 0; b < ballCount; b++) {
+            List<Boolean> path = new ArrayList<>(8);
+            int slot = 0;
+            for (int i = 0; i < 8; i++) {
+                boolean goRight = ThreadLocalRandom.current().nextBoolean();
+                path.add(goRight);
+                if (goRight) slot++;
+            }
+            BigDecimal multiplier = PLINKO_MULTIPLIERS[slot];
+            BigDecimal payout = ballValue.multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+            totalPayout = totalPayout.add(payout);
+            balls.add(new PlinkoResultDto.BallResult(path, slot, multiplier, payout));
         }
 
-        BigDecimal multiplier = PLINKO_MULTIPLIERS[slot];
-        BigDecimal payout = bet.multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
-
-        if (payout.compareTo(BigDecimal.ZERO) > 0) {
-            characterService.addCash(playerId, payout);
+        if (totalPayout.compareTo(BigDecimal.ZERO) > 0) {
+            characterService.addCash(playerId, totalPayout);
         }
 
-        return new PlinkoResultDto(path, slot, multiplier, bet, payout, payout.subtract(bet));
+        return new PlinkoResultDto(balls, ballCount, ballValue, bet, totalPayout, totalPayout.subtract(bet));
     }
 
     // ======================== ROULETTE ========================
