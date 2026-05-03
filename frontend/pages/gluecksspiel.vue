@@ -988,7 +988,7 @@ let   feedKeySeq   = 0
 
 const plinkoBallCount = computed(() => {
   const bet = plinkoBet.value ?? 0
-  return Math.max(1, Math.min(500, Math.floor(bet / 1)))
+  return Math.max(1, Math.min(500, Math.floor(bet)))
 })
 const plinkoBallValue = computed(() => {
   const bet = plinkoBet.value ?? 0

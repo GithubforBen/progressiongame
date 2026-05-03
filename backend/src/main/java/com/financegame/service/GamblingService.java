@@ -301,19 +301,29 @@ public class GamblingService {
     }
 
     // ======================== PLINKO ========================
-    // 8 rows, 9 slots (0–8). Multipliers are symmetric around center.
-    // Expected value ≈ 0.957 (~4.3% house edge).
+    // 16 rows, 17 slots (0–16). Multipliers symmetric around center.
+    // EV ≈ 0.942 (~5.8% house edge).
+
+    private static final int PLINKO_ROWS = 16;
 
     private static final BigDecimal[] PLINKO_MULTIPLIERS = {
-        new BigDecimal("10.0"),
-        new BigDecimal("4.0"),
+        new BigDecimal("500"),
+        new BigDecimal("100"),
+        new BigDecimal("20"),
+        new BigDecimal("8"),
+        new BigDecimal("3"),
         new BigDecimal("1.5"),
         new BigDecimal("0.5"),
+        new BigDecimal("0.4"),
         new BigDecimal("0.2"),
+        new BigDecimal("0.4"),
         new BigDecimal("0.5"),
         new BigDecimal("1.5"),
-        new BigDecimal("4.0"),
-        new BigDecimal("10.0")
+        new BigDecimal("3"),
+        new BigDecimal("8"),
+        new BigDecimal("20"),
+        new BigDecimal("100"),
+        new BigDecimal("500")
     };
 
     @Transactional
@@ -329,9 +339,9 @@ public class GamblingService {
         BigDecimal totalPayout = BigDecimal.ZERO;
 
         for (int b = 0; b < ballCount; b++) {
-            List<Boolean> path = new ArrayList<>(8);
+            List<Boolean> path = new ArrayList<>(PLINKO_ROWS);
             int slot = 0;
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < PLINKO_ROWS; i++) {
                 boolean goRight = ThreadLocalRandom.current().nextBoolean();
                 path.add(goRight);
                 if (goRight) slot++;
