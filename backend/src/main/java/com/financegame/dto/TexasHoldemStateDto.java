@@ -12,6 +12,7 @@ public record TexasHoldemStateDto(
     BigDecimal initialBet,
     BigDecimal toCall,
     BigDecimal raiseCost,
+    BigDecimal maxRaise,          // max total raise-by per action = initialBet × 15; null when game is over
     List<BotInfo> bots,
     String street,
     String status,

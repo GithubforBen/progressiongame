@@ -120,6 +120,7 @@ const victoryItems = [
   { id: 'SUPERCAR', icon: '🚗', label: 'Supercar-Sammlung erworben (€50M)' },
   { id: 'SUPER_YACHT', icon: '🛥️', label: 'Super-Yacht erworben (€500M)' },
   { id: 'SPACE_STATION', icon: '🛸', label: 'Raumstation erworben (€100B)' },
+  { id: 'ALL_COLLECTIBLES', icon: '🗂️', label: 'Alle Sammlerstücke gesammelt' },
 ]
 
 function confirmReset() {

@@ -18,7 +18,7 @@
     <!-- Nav -->
     <nav class="flex-1 px-1.5 py-2.5 overflow-y-auto overflow-x-hidden">
       <div
-        v-for="(group, gi) in [...NAV_GROUPS, ...victoryNavGroup]"
+        v-for="(group, gi) in [...NAV_GROUPS, ...victoryNavGroup, ...adminNavGroup]"
         :key="gi"
         :class="compact ? 'mb-1.5' : 'mb-1'"
       >
@@ -123,6 +123,7 @@ const ICONS: Record<string, string> = {
   Trophy:          '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>',
   Crown:           '<path d="M11.562 3.266a1 1 0 0 1 .876 0L22 8l-4 13H6L2 8z"/><path d="M12 12v9"/><path d="M12 3v3"/><path d="m9 16.998-.9-3"/><path d="m15 17 .9-3"/>',
   Settings:        '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  ShieldAlert:     '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/>',
 }
 
 const NAV_GROUPS = [
@@ -171,6 +172,11 @@ const NAV_GROUPS = [
 
 const victoryNavGroup = computed(() => gameStore.character?.victoryAchieved
   ? [{ label: '', items: [{ path: '/sieg', label: '🏆 Sieg', icon: 'Crown' }] }]
+  : []
+)
+
+const adminNavGroup = computed(() => authStore.isAdmin
+  ? [{ label: 'Admin', items: [{ path: '/admin', label: 'Admin', icon: 'ShieldAlert' }] }]
   : []
 )
 

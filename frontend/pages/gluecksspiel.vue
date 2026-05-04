@@ -345,19 +345,22 @@
         <div v-else-if="!thLoading" class="space-y-3">
           <!-- Raise amount row -->
           <div class="flex gap-2 items-center">
-            <label class="text-xs text-gray-500 whitespace-nowrap">Erhöhen um:</label>
+            <div class="flex flex-col">
+              <label class="text-xs text-gray-500 whitespace-nowrap">Erhöhen um:</label>
+              <span class="text-xs text-gray-600 whitespace-nowrap">Max: {{ formatCurrency(thGame.maxRaise ?? thGame.initialBet * 15) }}</span>
+            </div>
             <input
               v-model.number="thRaiseAmount"
               type="number"
               :min="thGame.initialBet"
-              :max="gameStore.character?.cash ?? 0"
+              :max="thGame.maxRaise ?? thGame.initialBet * 15"
               class="input flex-1 text-sm py-1.5"
             />
             <button
               v-for="mult in [2, 5, 10]"
               :key="mult"
               class="btn-secondary text-xs px-2 py-1.5 whitespace-nowrap"
-              @click="thRaiseAmount = Math.floor(thGame.initialBet * mult)"
+              @click="thRaiseAmount = Math.min(Math.floor(thGame.initialBet * mult), thGame.maxRaise ?? thGame.initialBet * 15)"
             >{{ mult }}×</button>
           </div>
           <!-- Action buttons row -->
@@ -375,14 +378,14 @@
             </button>
             <button
               class="btn-primary py-3 text-sm font-semibold"
-              :disabled="thRaiseAmount < thGame.initialBet"
+              :disabled="thRaiseAmount < thGame.initialBet || thRaiseAmount > (thGame.maxRaise ?? thGame.initialBet * 15)"
               @click="thAct('RAISE', thRaiseAmount)"
             >Erhöhen<br><span class="text-xs font-normal opacity-80">+{{ formatCurrency(thRaiseAmount) }}</span></button>
             <button
               class="py-3 text-sm font-bold rounded-lg border transition-colors"
               style="background: rgba(234,179,8,0.12); border-color: rgba(234,179,8,0.35); color: #fbbf24;"
               @click="thAllIn"
-            >All In<br><span class="text-xs font-normal opacity-80">{{ formatCurrency(gameStore.character?.cash ?? 0) }}</span></button>
+            >All In<br><span class="text-xs font-normal opacity-80">{{ formatCurrency(Math.min(gameStore.character?.cash ?? 0, thGame.maxRaise ?? thGame.initialBet * 15)) }}</span></button>
           </div>
         </div>
         <div v-else class="flex items-center justify-center py-5 gap-2 text-sm text-gray-500">
@@ -851,6 +854,7 @@ interface THState {
   initialBet: number
   toCall: number
   raiseCost: number
+  maxRaise: number | null
   bots: BotInfo[]
   street: string
   status: string
@@ -1093,9 +1097,10 @@ async function thAct(action: string, amount?: number) {
 async function thAllIn() {
   const cash = gameStore.character?.cash ?? 0
   if (cash <= 0) return
-  // raiseBy = all remaining cash minus what's needed to call first
   const toCall = thGame.value?.toCall ?? 0
-  const raiseBy = Math.max(cash - toCall, thGame.value?.initialBet ?? 0)
+  const maxRaise = thGame.value?.maxRaise ?? (thGame.value?.initialBet ?? 0) * 15
+  // raiseBy = all remaining cash minus call amount, capped at maxRaise
+  const raiseBy = Math.min(Math.max(cash - toCall, thGame.value?.initialBet ?? 0), maxRaise)
   await thAct('RAISE', raiseBy)
 }
 

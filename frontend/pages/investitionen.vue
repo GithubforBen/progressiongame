@@ -100,18 +100,21 @@
           class="rounded-lg border transition-colors"
           :class="stock.locked
             ? 'border-white/5 bg-surface-800/50 opacity-60 cursor-not-allowed'
+            : stock.delisted
+            ? 'border-red-900/30 bg-red-950/20 opacity-70 cursor-pointer'
             : selectedStock?.id === stock.id
             ? 'border-accent/50 bg-accent/5 cursor-pointer'
             : 'border-white/5 bg-white/3 hover:bg-white/5 cursor-pointer'"
           @click="!stock.locked && selectStock(stock)"
           @dblclick="stock.locked && goToUnlock(stock.requiredCert)"
-          :title="stock.locked ? 'Doppelklick – Ausbildung ansehen' : ''"
+          :title="stock.locked ? 'Doppelklick – Ausbildung ansehen' : stock.delisted ? 'Insolvent – wartet auf Rückkehr an die Börse' : ''"
         >
           <div class="flex items-center gap-3 p-3">
             <!-- Ticker badge -->
             <div class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
-                 :class="stock.locked ? 'bg-surface-700' : stockTypeColor(stock.type).split(' ')[0]">
+                 :class="stock.locked ? 'bg-surface-700' : stock.delisted ? 'bg-red-900/40' : stockTypeColor(stock.type).split(' ')[0]">
               <span v-if="stock.locked" class="text-lg">🔒</span>
+              <span v-else-if="stock.delisted" class="text-xs font-bold text-red-400">{{ stock.ticker }}</span>
               <span v-else class="text-xs font-bold" :class="stockTypeColor(stock.type).split(' ')[1]">
                 {{ stock.ticker }}
               </span>
@@ -119,20 +122,24 @@
             <!-- Info -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
-                <p class="font-medium text-sm" :class="stock.locked ? 'text-gray-500' : 'text-white'">{{ stock.name }}</p>
-                <span class="text-xs px-1.5 py-0.5 rounded" :class="stock.locked ? 'bg-surface-700 text-gray-600' : stockTypeColor(stock.type)">
+                <p class="font-medium text-sm" :class="stock.locked ? 'text-gray-500' : stock.delisted ? 'text-red-300' : 'text-white'">{{ stock.name }}</p>
+                <span v-if="stock.delisted" class="text-xs px-1.5 py-0.5 rounded bg-red-900/50 text-red-400 font-semibold">
+                  INSOLVENT
+                </span>
+                <span v-else class="text-xs px-1.5 py-0.5 rounded" :class="stock.locked ? 'bg-surface-700 text-gray-600' : stockTypeColor(stock.type)">
                   {{ stockTypeLabel(stock.type) }}
                 </span>
               </div>
               <p v-if="stock.locked" class="text-gray-600 text-xs">
                 Benötigt: {{ certLabel(stock.requiredCert) }} · Doppelklick für Ausbildung
               </p>
+              <p v-else-if="stock.delisted" class="text-red-500/70 text-xs">Vom Markt genommen · Rückkehr möglich</p>
               <p v-else class="text-gray-500 text-xs">Klicken für Preischart</p>
             </div>
             <!-- Price -->
             <div class="text-right flex-shrink-0">
-              <p class="font-semibold" :class="stock.locked ? 'text-gray-600' : 'text-white'">{{ formatCurrency(stock.currentPrice) }}</p>
-              <p v-if="!stock.locked && stock.priceChangePct !== null" class="text-xs font-medium"
+              <p class="font-semibold" :class="stock.locked ? 'text-gray-600' : stock.delisted ? 'text-red-400/70 line-through' : 'text-white'">{{ formatCurrency(stock.currentPrice) }}</p>
+              <p v-if="!stock.locked && !stock.delisted && stock.priceChangePct !== null" class="text-xs font-medium"
                  :class="stock.priceChangePct >= 0 ? 'text-green-400' : 'text-red-400'">
                 {{ stock.priceChangePct >= 0 ? '▲' : '▼' }}
                 {{ Math.abs(stock.priceChangePct) }}%
@@ -140,7 +147,7 @@
             </div>
           </div>
 
-          <!-- Expanded: Chart + Buy form (only for unlocked) -->
+          <!-- Expanded: Chart + Buy form (only for unlocked, non-delisted) -->
           <div v-if="!stock.locked && selectedStock?.id === stock.id" class="border-t border-white/5 p-3 space-y-3">
             <!-- Mini price chart -->
             <div v-if="(stock.history?.length ?? 0) >= 2" class="h-32">
@@ -150,8 +157,8 @@
             </div>
             <p v-else class="text-gray-500 text-xs">Nicht genug Preisdaten für einen Chart.</p>
 
-            <!-- Buy form -->
-            <div class="flex items-end gap-3">
+            <!-- Buy form (hidden when delisted) -->
+            <div v-if="!stock.delisted" class="flex items-end gap-3">
               <div class="flex-1">
                 <label class="block text-xs text-gray-400 mb-1">Menge kaufen</label>
                 <input
@@ -174,6 +181,9 @@
               >
                 {{ buyLoading ? 'Kaufe...' : 'Kaufen' }}
               </button>
+            </div>
+            <div v-else class="text-center py-2 text-red-400/70 text-xs">
+              Handel nicht möglich – Aktie ist insolvent. Warte auf Rückkehr an die Börse.
             </div>
             <p v-if="buyError" class="text-red-400 text-xs">{{ buyError }}</p>
           </div>
@@ -210,7 +220,7 @@ interface PricePoint { price: number; turn: number }
 interface Stock {
   id: number; name: string; ticker: string; type: string
   currentPrice: number; priceChangePct: number | null; history: PricePoint[]
-  requiredCert: string | null; locked: boolean
+  requiredCert: string | null; locked: boolean; delisted: boolean
 }
 interface Investment {
   id: number; type: string; name: string; stockId: number | null
@@ -253,7 +263,8 @@ const filteredStocks = computed(() => {
     const q = stockSearch.value.toLowerCase()
     list = list.filter(s => s.name.toLowerCase().includes(q) || s.ticker.toLowerCase().includes(q))
   }
-  return list
+  // Delisted stocks appear at the bottom
+  return [...list.filter(s => !s.delisted), ...list.filter(s => s.delisted)]
 })
 
 function stockTypeLabel(type: string): string {

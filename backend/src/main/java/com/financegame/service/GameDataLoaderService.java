@@ -278,8 +278,8 @@ public class GameDataLoaderService implements ApplicationRunner {
 
         for (Map<String, Object> stock : stocks) {
             em.createNativeQuery("""
-                INSERT INTO stocks (name, ticker, type, current_price, required_cert)
-                VALUES (:name, :ticker, :type, :price, :cert)
+                INSERT INTO stocks (name, ticker, type, current_price, initial_price, required_cert)
+                VALUES (:name, :ticker, :type, :price, :price, :cert)
                 ON CONFLICT (ticker) DO UPDATE SET
                     name          = EXCLUDED.name,
                     type          = EXCLUDED.type,

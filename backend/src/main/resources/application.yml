@@ -26,6 +26,9 @@ jwt:
   secret: ${JWT_SECRET}
   expiration-ms: 86400000
 
+admin:
+  username: ${ADMIN_USERNAME:}
+
 server:
   port: 8080
   forward-headers-strategy: framework
@@ -58,6 +61,25 @@ game:
     REIT: 0.08
     DIVIDEND_STOCK: 0.08
     NORMAL: 0.15
+
+  # Mean-reversion speed (θ) per stock type — higher = stronger pull toward initial price
+  stock-reversion-speed:
+    BOND: 0.15
+    ETF: 0.12
+    DIVIDEND_STOCK: 0.10
+    REIT: 0.10
+    NORMAL: 0.08
+    FUTURES: 0.08
+    WARRANT: 0.05
+    SHORT: 0.05
+    LEVERAGE: 0.04
+    CRYPTO: 0.03
+    MEME: 0.02
+
+  stock-delisting:
+    threshold-fraction: 0.10   # delist when price drops to 10% of initial
+    min-delist-turns: 6        # minimum months before relist is possible
+    relist-chance-per-turn: 0.20  # 20% chance per month after min wait
 
   needs:
     hunger-decay-base: 15

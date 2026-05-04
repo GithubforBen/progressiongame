@@ -17,6 +17,8 @@ import java.util.Map;
 public class GameConfig {
 
     private Map<String, Double> stockVolatility = new HashMap<>();
+    private Map<String, Double> stockReversionSpeed = new HashMap<>();
+    private StockDelistingConfig stockDelisting = new StockDelistingConfig();
     private NeedsConfig needs = new NeedsConfig();
     private BurnoutConfig burnout = new BurnoutConfig();
     private DepressionConfig depression = new DepressionConfig();
@@ -28,6 +30,19 @@ public class GameConfig {
     // -------------------------------------------------------------------------
     // Nested config classes
     // -------------------------------------------------------------------------
+
+    public static class StockDelistingConfig {
+        private double thresholdFraction = 0.10;
+        private int minDelistTurns = 6;
+        private double relistChancePerTurn = 0.20;
+
+        public double getThresholdFraction() { return thresholdFraction; }
+        public void setThresholdFraction(double v) { this.thresholdFraction = v; }
+        public int getMinDelistTurns() { return minDelistTurns; }
+        public void setMinDelistTurns(int v) { this.minDelistTurns = v; }
+        public double getRelistChancePerTurn() { return relistChancePerTurn; }
+        public void setRelistChancePerTurn(double v) { this.relistChancePerTurn = v; }
+    }
 
     public static class NeedsConfig {
         private int hungerDecayBase = 15;
@@ -151,6 +166,12 @@ public class GameConfig {
 
     public Map<String, Double> getStockVolatility() { return stockVolatility; }
     public void setStockVolatility(Map<String, Double> v) { this.stockVolatility = v; }
+
+    public Map<String, Double> getStockReversionSpeed() { return stockReversionSpeed; }
+    public void setStockReversionSpeed(Map<String, Double> v) { this.stockReversionSpeed = v; }
+
+    public StockDelistingConfig getStockDelisting() { return stockDelisting; }
+    public void setStockDelisting(StockDelistingConfig v) { this.stockDelisting = v; }
 
     public NeedsConfig getNeeds() { return needs; }
     public void setNeeds(NeedsConfig v) { this.needs = v; }

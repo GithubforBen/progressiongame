@@ -734,9 +734,10 @@ public class GamblingService {
         BigDecimal playerOwed = state.currentStreetBet.subtract(state.playerStreetBet).max(BigDecimal.ZERO);
 
         if ("RAISE".equals(action)) {
-            // raiseBy = the amount raised above the call; minimum = initialBet
+            // raiseBy = the amount raised above the call; minimum = initialBet, maximum = initialBet × 15
+            BigDecimal maxRaiseBy = state.initialBet.multiply(BigDecimal.valueOf(15));
             BigDecimal raiseBy = (customAmount != null && customAmount.compareTo(state.initialBet) >= 0)
-                ? customAmount.setScale(2, RoundingMode.HALF_UP)
+                ? customAmount.min(maxRaiseBy).setScale(2, RoundingMode.HALF_UP)
                 : state.initialBet;
             BigDecimal cost = playerOwed.add(raiseBy);
             if (cost.compareTo(BigDecimal.ZERO) > 0) {
@@ -906,7 +907,7 @@ public class GamblingService {
         BigDecimal netChange = payout.subtract(state.playerStake);
         return new TexasHoldemStateDto(session.getId(), state.playerCards, community,
             state.pot, state.playerStake, state.initialBet,
-            BigDecimal.ZERO, state.initialBet,
+            BigDecimal.ZERO, state.initialBet, null,
             bots, "SHOWDOWN", result, false, log,
             playerHandName, List.of(), payout, netChange);
     }
@@ -1144,10 +1145,11 @@ public class GamblingService {
         }
         BigDecimal toCall = state.currentStreetBet.subtract(state.playerStreetBet).max(BigDecimal.ZERO);
         BigDecimal raiseCost = toCall.add(state.initialBet);
+        BigDecimal maxRaise = state.initialBet.multiply(BigDecimal.valueOf(15));
         return new TexasHoldemStateDto(
             session.getId(), state.playerCards, state.communityCards,
             state.pot, state.playerStake, state.initialBet,
-            toCall, raiseCost, bots, state.street, "IN_PROGRESS",
+            toCall, raiseCost, maxRaise, bots, state.street, "IN_PROGRESS",
             state.awaitingPlayerResponse, log,
             describeCurrentHand(state.playerCards, state.communityCards),
             detectDraws(state.playerCards, state.communityCards),
@@ -1166,7 +1168,7 @@ public class GamblingService {
         return new TexasHoldemStateDto(
             session.getId(), state.playerCards, state.communityCards,
             state.pot, state.playerStake, state.initialBet,
-            BigDecimal.ZERO, state.initialBet, bots, state.street, result,
+            BigDecimal.ZERO, state.initialBet, null, bots, state.street, result,
             false, log, null, List.of(), payout, netChange);
     }
 

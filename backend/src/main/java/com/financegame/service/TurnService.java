@@ -37,6 +37,7 @@ public class TurnService {
     private final PlayerTravelRepository playerTravelRepository;
     private final ActiveEventRepository activeEventRepository;
     private final CollectibleRepository collectibleRepository;
+    private final PlayerCollectibleRepository playerCollectibleRepository;
     private final RandomEventService randomEventService;
     private final RelationshipService relationshipService;
     private final PlayerRealEstateRepository playerRealEstateRepository;
@@ -63,6 +64,7 @@ public class TurnService {
         PlayerTravelRepository playerTravelRepository,
         ActiveEventRepository activeEventRepository,
         CollectibleRepository collectibleRepository,
+        PlayerCollectibleRepository playerCollectibleRepository,
         RandomEventService randomEventService,
         RelationshipService relationshipService,
         PlayerRealEstateRepository playerRealEstateRepository,
@@ -86,6 +88,7 @@ public class TurnService {
         this.playerTravelRepository = playerTravelRepository;
         this.activeEventRepository = activeEventRepository;
         this.collectibleRepository = collectibleRepository;
+        this.playerCollectibleRepository = playerCollectibleRepository;
         this.randomEventService = randomEventService;
         this.relationshipService = relationshipService;
         this.playerRealEstateRepository = playerRealEstateRepository;
@@ -796,10 +799,19 @@ public class TurnService {
         if (character.isVictoryAchieved()) return;
         if (character.getNetWorth().compareTo(VICTORY_NET_WORTH) < 0) return;
 
-        java.util.Set<String> ownedIds = lifestyleService.getOwnedCatalogItems(playerId)
+        java.util.Set<String> ownedLifestyle = lifestyleService.getOwnedCatalogItems(playerId)
             .stream().map(com.financegame.entity.LifestyleItemCatalog::getId)
             .collect(java.util.stream.Collectors.toSet());
-        if (!ownedIds.containsAll(VICTORY_ITEMS)) return;
+        if (!ownedLifestyle.containsAll(VICTORY_ITEMS)) return;
+
+        // All collectibles must be owned
+        java.util.Set<Long> allCollectibleIds = collectibleRepository.findAll()
+            .stream().map(com.financegame.entity.Collectible::getId)
+            .collect(java.util.stream.Collectors.toSet());
+        java.util.Set<Long> ownedCollectibleIds = playerCollectibleRepository.findByPlayerId(playerId)
+            .stream().map(com.financegame.entity.PlayerCollectible::getCollectibleId)
+            .collect(java.util.stream.Collectors.toSet());
+        if (!ownedCollectibleIds.containsAll(allCollectibleIds)) return;
 
         character.setVictoryAchieved(true);
         if (character.getNetWorth().compareTo(character.getPersonalBestNetWorth()) > 0) {

@@ -33,4 +33,11 @@ public class PlayerRealEstateRepository {
         }
         return em.merge(entity);
     }
+
+    public void delete(Long id) {
+        PlayerRealEstate entity = em.find(PlayerRealEstate.class, id);
+        if (entity != null) {
+            em.remove(entity);
+        }
+    }
 }

@@ -45,4 +45,9 @@ public class PlayerRepository {
             .getSingleResult();
         return count > 0;
     }
+
+    public java.util.List<Player> findAll() {
+        return em.createQuery("SELECT p FROM Player p ORDER BY p.id", Player.class)
+            .getResultList();
+    }
 }

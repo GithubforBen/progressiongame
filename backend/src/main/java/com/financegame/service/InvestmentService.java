@@ -11,6 +11,7 @@ import com.financegame.entity.GameCharacter;
 import com.financegame.entity.Investment;
 import com.financegame.entity.Stock;
 import com.financegame.repository.InvestmentRepository;
+import com.financegame.repository.PlayerDelistedStockRepository;
 import com.financegame.repository.StockPriceHistoryRepository;
 import com.financegame.repository.StockRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -29,6 +30,7 @@ public class InvestmentService {
     private final InvestmentRepository investmentRepository;
     private final StockRepository stockRepository;
     private final StockPriceHistoryRepository historyRepository;
+    private final PlayerDelistedStockRepository delistedStockRepository;
     private final CharacterService characterService;
     private final GameContextFactory gameContextFactory;
     private final ApplicationEventPublisher eventPublisher;
@@ -36,12 +38,14 @@ public class InvestmentService {
     public InvestmentService(InvestmentRepository investmentRepository,
                               StockRepository stockRepository,
                               StockPriceHistoryRepository historyRepository,
+                              PlayerDelistedStockRepository delistedStockRepository,
                               CharacterService characterService,
                               GameContextFactory gameContextFactory,
                               ApplicationEventPublisher eventPublisher) {
         this.investmentRepository = investmentRepository;
         this.stockRepository = stockRepository;
         this.historyRepository = historyRepository;
+        this.delistedStockRepository = delistedStockRepository;
         this.characterService = characterService;
         this.gameContextFactory = gameContextFactory;
         this.eventPublisher = eventPublisher;
@@ -71,6 +75,12 @@ public class InvestmentService {
         BigDecimal totalCost = price
             .multiply(quantity)
             .setScale(2, RoundingMode.HALF_UP);
+
+        // Delisting guard — reject buy if stock is currently delisted for this player
+        if (delistedStockRepository.isDelisted(playerId, stock.getId())) {
+            throw new ResponseStatusException(HttpStatus.GONE,
+                stock.getTicker() + " ist derzeit vom Markt genommen und kann nicht gekauft werden.");
+        }
 
         // Cert-based access check
         if (stock.getRequiredCert() != null) {

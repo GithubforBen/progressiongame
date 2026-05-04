@@ -1,6 +1,9 @@
 -- Remove fixed NUMERIC precision so monetary columns have no upper bound.
 -- PostgreSQL NUMERIC without precision/scale stores values of arbitrary size.
 
+-- Drop leaderboard view before altering net_worth (view depends on that column)
+DROP VIEW IF EXISTS leaderboard;
+
 -- characters
 ALTER TABLE characters
     ALTER COLUMN cash            TYPE NUMERIC USING cash,
@@ -34,8 +37,8 @@ ALTER TABLE collectibles
 ALTER TABLE monthly_expenses
     ALTER COLUMN amount TYPE NUMERIC USING amount;
 
--- event_log
-ALTER TABLE event_log
+-- events_log
+ALTER TABLE events_log
     ALTER COLUMN amount_effect TYPE NUMERIC USING amount_effect;
 
 -- monthly_snapshots
@@ -51,8 +54,8 @@ ALTER TABLE real_estate_catalog
     ALTER COLUMN monthly_rent   TYPE NUMERIC USING monthly_rent,
     ALTER COLUMN rent_savings   TYPE NUMERIC USING rent_savings;
 
--- real_estate (owned)
-ALTER TABLE real_estate
+-- player_real_estate (owned properties)
+ALTER TABLE player_real_estate
     ALTER COLUMN purchase_price TYPE NUMERIC USING purchase_price;
 
 -- player_loans
@@ -82,3 +85,15 @@ ALTER TABLE needs_items
 -- personal_best_net_worth (already larger, unify with rest)
 ALTER TABLE characters
     ALTER COLUMN personal_best_net_worth TYPE NUMERIC USING personal_best_net_worth;
+
+-- Recreate leaderboard view (dropped above to allow net_worth column alter)
+CREATE VIEW leaderboard AS
+SELECT
+    p.id         AS player_id,
+    p.username,
+    c.net_worth,
+    c.current_turn,
+    p.created_at
+FROM players p
+JOIN characters c ON c.player_id = p.id
+ORDER BY c.net_worth DESC;

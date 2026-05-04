@@ -50,4 +50,12 @@ public class StockPriceHistoryRepository {
         if (h.getId() == null) { em.persist(h); return h; }
         return em.merge(h);
     }
+
+    public void deleteByStockIdAndPlayerId(Long stockId, Long playerId) {
+        em.createQuery(
+                "DELETE FROM StockPriceHistory h WHERE h.stockId = :sid AND h.playerId = :pid")
+            .setParameter("sid", stockId)
+            .setParameter("pid", playerId)
+            .executeUpdate();
+    }
 }

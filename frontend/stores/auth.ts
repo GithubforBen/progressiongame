@@ -8,12 +8,14 @@ interface User {
 interface AuthState {
   user: User | null
   token: string | null
+  isAdmin: boolean
 }
 
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     user: null,
     token: null,
+    isAdmin: false,
   }),
 
   getters: {
@@ -28,6 +30,7 @@ export const useAuthStore = defineStore('auth', {
         body: { username, password },
       })
       this._persist(data.token, data.user)
+      await this._fetchAdminStatus()
     },
 
     async register(username: string, password: string) {
@@ -37,11 +40,13 @@ export const useAuthStore = defineStore('auth', {
         body: { username, password },
       })
       this._persist(data.token, data.user)
+      await this._fetchAdminStatus()
     },
 
     logout() {
       this.user = null
       this.token = null
+      this.isAdmin = false
       if (import.meta.client) {
         sessionStorage.removeItem('token')
         sessionStorage.removeItem('user')
@@ -50,7 +55,7 @@ export const useAuthStore = defineStore('auth', {
       navigateTo('/login')
     },
 
-    restoreSession() {
+    async restoreSession() {
       if (import.meta.client) {
         const token = sessionStorage.getItem('token')
         const userRaw = sessionStorage.getItem('user')
@@ -65,7 +70,21 @@ export const useAuthStore = defineStore('auth', {
               }
             } catch {}
           }
+          await this._fetchAdminStatus()
         }
+      }
+    },
+
+    async _fetchAdminStatus() {
+      if (!this.token) return
+      try {
+        const config = useRuntimeConfig()
+        const data = await $fetch<{ isAdmin: boolean }>(`${config.public.apiBase}/api/admin/me`, {
+          headers: { Authorization: `Bearer ${this.token}` },
+        })
+        this.isAdmin = data.isAdmin
+      } catch {
+        this.isAdmin = false
       }
     },
 

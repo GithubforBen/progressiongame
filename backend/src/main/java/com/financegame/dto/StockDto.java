@@ -16,16 +16,16 @@ public record StockDto(
     BigDecimal priceChangePct,   // vs. last turn, null if no history
     List<PricePointDto> history,
     String requiredCert,
-    boolean locked
+    boolean locked,
+    boolean delisted
 ) {
     public record PricePointDto(BigDecimal price, int turn) {}
 
-    public static StockDto from(Stock stock, List<StockPriceHistory> history, List<String> completedStages) {
+    public static StockDto from(Stock stock, List<StockPriceHistory> history, List<String> completedStages, boolean delisted) {
         List<PricePointDto> points = history.stream()
             .map(h -> new PricePointDto(h.getPrice(), h.getTurn()))
             .toList();
 
-        // Derive the player's current price from their personal history; fall back to seed price
         BigDecimal currentPrice = history.isEmpty()
             ? stock.getCurrentPrice()
             : history.get(history.size() - 1).getPrice();
@@ -54,7 +54,8 @@ public record StockDto(
             changePct,
             points,
             req,
-            locked
+            locked,
+            delisted
         );
     }
 }
