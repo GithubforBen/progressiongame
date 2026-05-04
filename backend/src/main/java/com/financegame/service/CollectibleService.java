@@ -59,11 +59,13 @@ public class CollectibleService {
             .map(ActiveEvent::getCollectibleId)
             .collect(Collectors.toSet());
 
+        boolean inGermany = currentCountry == null;
         return collectibleRepository.findAll().stream().map(c -> {
             boolean alreadyOwned = owned.contains(c.getId());
             boolean onSale = onSaleIds.contains(c.getId());
-            // Can buy if: in the right country OR on sale (event ships it to you)
-            boolean canBuy = !alreadyOwned && (c.getCountryRequired().equals(currentCountry) || onSale);
+            boolean countryMatch = "Deutschland".equals(c.getCountryRequired()) ? inGermany
+                : "Internet".equals(c.getCountryRequired()) || c.getCountryRequired().equals(currentCountry);
+            boolean canBuy = !alreadyOwned && (countryMatch || onSale);
             return CollectibleDto.from(c, canBuy, alreadyOwned, onSale);
         }).toList();
     }
@@ -134,7 +136,10 @@ public class CollectibleService {
         boolean onSale = saleEvents.stream()
             .anyMatch(e -> "COLLECTIBLE_SALE".equals(e.getType()) && collectibleId.equals(e.getCollectibleId()));
 
-        boolean canBuy = c.getCountryRequired().equals(currentCountry) || onSale;
+        boolean inGermany = currentCountry == null;
+        boolean countryMatch = "Deutschland".equals(c.getCountryRequired()) ? inGermany
+            : "Internet".equals(c.getCountryRequired()) || c.getCountryRequired().equals(currentCountry);
+        boolean canBuy = countryMatch || onSale;
         if (!canBuy) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "Du musst in " + c.getCountryRequired() + " sein um dieses Sammlerstück zu kaufen");

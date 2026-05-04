@@ -154,16 +154,20 @@
               <p class="text-gray-500 text-xs">{{ item.collectionName }}</p>
               <p v-if="item.description" class="text-gray-500 text-xs mt-0.5 line-clamp-2">{{ item.description }}</p>
               <!-- Country requirement -->
-              <p v-if="item.countryRequired && item.countryRequired !== 'Deutschland'" class="text-xs mt-1 flex items-center gap-1">
+              <p v-if="item.countryRequired && item.countryRequired !== 'Deutschland' && item.countryRequired !== 'Internet'" class="text-xs mt-1 flex items-center gap-1">
                 <span>{{ countryEmoji(item.countryRequired) }}</span>
                 <span :class="item.canBuy || item.alreadyOwned ? 'text-gray-400' : 'text-yellow-500'">
                   {{ item.countryRequired }}
                 </span>
               </p>
+              <p v-else-if="item.countryRequired === 'Internet'" class="text-xs mt-1 flex items-center gap-1">
+                <span>🌐</span>
+                <span class="text-gray-400">Überall verfügbar</span>
+              </p>
               <p class="text-xs mt-1.5">
                 <span v-if="item.alreadyOwned" class="text-green-400">✓ Besessen</span>
                 <span v-else-if="item.canBuy" class="text-yellow-400 font-medium">{{ formatCurrency(item.shopPrice ?? item.effectivePrice) }}</span>
-                <span v-else-if="item.countryRequired && item.countryRequired !== 'Deutschland'" class="text-gray-600">Reise nach {{ item.countryRequired }}</span>
+                <span v-else-if="item.countryRequired && item.countryRequired !== 'Deutschland' && item.countryRequired !== 'Internet'" class="text-gray-600">Reise nach {{ item.countryRequired }}</span>
                 <span v-else class="text-gray-600">Ausbildung erforderlich</span>
               </p>
             </div>
@@ -176,7 +180,7 @@
           >
             {{ buyingId === item.id ? 'Kaufe...' : 'Kaufen' }}
           </button>
-          <p v-else-if="!item.alreadyOwned && item.countryRequired && item.countryRequired !== 'Deutschland'" class="text-xs text-center text-gray-600 mt-2">
+          <p v-else-if="!item.alreadyOwned && item.countryRequired && item.countryRequired !== 'Deutschland' && item.countryRequired !== 'Internet'" class="text-xs text-center text-gray-600 mt-2">
             🔒 Reise nach {{ item.countryRequired }}
           </p>
           <p v-else-if="!item.alreadyOwned && !item.canBuy" class="text-xs text-center text-gray-600 mt-2">
@@ -453,6 +457,12 @@ function countryEmoji(name: string): string {
   const map: Record<string, string> = {
     Japan: '🇯🇵', Italien: '🇮🇹', USA: '🇺🇸', Schweiz: '🇨🇭', UK: '🇬🇧', China: '🇨🇳',
     Deutschland: '🇩🇪', Frankreich: '🇫🇷', Spanien: '🇪🇸', Australien: '🇦🇺',
+    Russland: '🇷🇺', Brasilien: '🇧🇷', Kanada: '🇨🇦', Indien: '🇮🇳', Südafrika: '🇿🇦',
+    Ägypten: '🇪🇬', Argentinien: '🇦🇷', Belgien: '🇧🇪', Dänemark: '🇩🇰',
+    Griechenland: '🇬🇷', Guatemala: '🇬🇹', Guyana: '🇬🇾', Mauritius: '🇲🇺',
+    Mexiko: '🇲🇽', Niederlande: '🇳🇱', Österreich: '🇦🇹', Pakistan: '🇵🇰',
+    Peru: '🇵🇪', Tibet: '🏔️', Tschechien: '🇨🇿', Türkei: '🇹🇷',
+    Internet: '🌐',
   }
   return map[name] ?? '🌍'
 }

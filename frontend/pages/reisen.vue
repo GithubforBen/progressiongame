@@ -307,25 +307,46 @@ const MAP_W = 960
 const MAP_H = 440
 
 // ISO 3166-1 numeric IDs for the 15 game countries
-const GAME_ISO_SET = new Set([392, 380, 840, 756, 826, 156, 276, 250, 724, 36, 643, 76, 124, 356, 710])
+const GAME_ISO_SET = new Set([
+  392, 380, 840, 756, 826, 156, 276, 250, 724,  36, 643,  76, 124, 356, 710, // original 15
+  818,  32,  56, 208, 300, 320, 328, 480, 484, 528,  40, 586, 604, 203, 792, // new additions
+])
 
 // Geographic centroids [lng, lat] for country pin placement
 const GAME_COUNTRY_CENTROIDS: Record<string, [number, number]> = {
-  Japan:       [138.0, 36.2],
-  Italien:     [12.6,  42.5],
-  USA:         [-100.0, 40.0],
-  Schweiz:     [8.2,  46.8],
-  UK:          [-1.5,  54.0],
-  China:       [104.0, 35.0],
-  Deutschland: [10.5,  51.2],
-  Frankreich:  [2.3,  46.5],
-  Spanien:     [-3.7,  40.4],
-  Australien:  [134.0, -25.0],
-  Russland:    [60.0,  60.0],
-  Brasilien:   [-52.0, -10.0],
-  Kanada:      [-95.0, 57.0],
-  Indien:      [78.9,  20.6],
-  Südafrika:   [25.0, -29.0],
+  // Original 15
+  Japan:        [138.0,  36.2],
+  Italien:      [ 12.6,  42.5],
+  USA:          [-100.0, 40.0],
+  Schweiz:      [  8.2,  46.8],
+  UK:           [ -1.5,  54.0],
+  China:        [104.0,  35.0],
+  Deutschland:  [ 10.5,  51.2],
+  Frankreich:   [  2.3,  46.5],
+  Spanien:      [ -3.7,  40.4],
+  Australien:   [134.0, -25.0],
+  Russland:     [ 60.0,  60.0],
+  Brasilien:    [-52.0, -10.0],
+  Kanada:       [-95.0,  57.0],
+  Indien:       [ 78.9,  20.6],
+  Südafrika:    [ 25.0, -29.0],
+  // New countries (V23)
+  Ägypten:      [ 30.8,  26.8],
+  Argentinien:  [-65.0, -35.0],
+  Belgien:      [  4.7,  50.5],
+  Dänemark:     [  9.5,  56.0],
+  Griechenland: [ 22.0,  39.0],
+  Guatemala:    [-90.5,  15.5],
+  Guyana:       [-58.9,   4.9],
+  Mauritius:    [ 57.6, -20.3],
+  Mexiko:       [-102.5, 23.6],
+  Niederlande:  [  5.3,  52.1],
+  Österreich:   [ 14.5,  47.5],
+  Pakistan:     [ 69.3,  30.3],
+  Peru:         [-75.0, -10.0],
+  Tibet:        [ 91.1,  29.6],
+  Tschechien:   [ 15.5,  49.8],
+  Türkei:       [ 35.2,  39.0],
 }
 
 const projection = geoNaturalEarth1()
@@ -421,11 +442,13 @@ function rarityClass(rarity: string): string {
 const travelRouteFrom = computed(() => {
   if (!status.value?.traveling) return null
   const home = status.value.currentCountry ?? 'Deutschland'
-  return COUNTRY_COORDS[home] ?? null
+  const pt = coords(home)
+  return pt.x === MAP_W / 2 && pt.y === MAP_H / 2 ? null : pt
 })
 const travelRouteTo = computed(() => {
   if (!status.value?.traveling || !status.value.destinationCountry) return null
-  return COUNTRY_COORDS[status.value.destinationCountry] ?? null
+  const pt = coords(status.value.destinationCountry)
+  return pt.x === MAP_W / 2 && pt.y === MAP_H / 2 ? null : pt
 })
 
 function eventsForCountry(countryName: string): ActiveEvent[] {
@@ -493,6 +516,12 @@ function countryEmoji(name: string): string {
   const map: Record<string, string> = {
     Japan: '🇯🇵', Italien: '🇮🇹', USA: '🇺🇸', Schweiz: '🇨🇭', UK: '🇬🇧', China: '🇨🇳',
     Deutschland: '🇩🇪', Frankreich: '🇫🇷', Spanien: '🇪🇸', Australien: '🇦🇺',
+    Russland: '🇷🇺', Brasilien: '🇧🇷', Kanada: '🇨🇦', Indien: '🇮🇳', Südafrika: '🇿🇦',
+    Ägypten: '🇪🇬', Argentinien: '🇦🇷', Belgien: '🇧🇪', Dänemark: '🇩🇰',
+    Griechenland: '🇬🇷', Guatemala: '🇬🇹', Guyana: '🇬🇾', Mauritius: '🇲🇺',
+    Mexiko: '🇲🇽', Niederlande: '🇳🇱', Österreich: '🇦🇹', Pakistan: '🇵🇰',
+    Peru: '🇵🇪', Tibet: '🏔️', Tschechien: '🇨🇿', Türkei: '🇹🇷',
+    Internet: '🌐',
   }
   return map[name] ?? '🌍'
 }

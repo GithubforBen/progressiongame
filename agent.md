@@ -140,8 +140,9 @@ backend/src/main/resources/db/migration/V{N+1}__short_description.sql
 | V20 | Needs cooldown — `cooldown_turns` on `needs_items`; new `player_needs_usage` table |
 | V21 | Remove precision limits — all monetary `NUMERIC(p,s)` columns changed to unconstrained `NUMERIC` |
 | V22 | Stock delisting — adds `initial_price` to `stocks`; creates `player_delisted_stocks` table |
+| V23 | Add countries — inserts 24 missing countries into `countries` table; Deutschland/Internet handled as special cases in `CollectibleService` |
 
-**Next migration is V23.**
+**Next migration is V24.**
 
 ### If you need to apply a migration manually (emergency only)
 
@@ -792,7 +793,8 @@ changelog/
 ├── 2026-05-04_stock-delisting-ou-model.md         ← V22, OU price model, per-player bankruptcy
 ├── 2026-05-04_texas-holdem-max-bet.md             ← Texas Hold'em raise capped at 15× initial bet
 ├── 2026-05-04_victory-collectibles.md             ← all collectibles required for victory
-└── 2026-05-04_admin-player-details.md             ← admin detail view: collectibles, social, travel, investments, education
+├── 2026-05-04_admin-player-details.md             ← admin detail view: collectibles, social, travel, investments, education
+└── 2026-05-04_world-map-countries.md              ← V23, 24 new countries, Deutschland/Internet special-casing, map fixes
 ```
 
 **Rule for agents: every session that produces a deployable change gets a new changelog file.**  

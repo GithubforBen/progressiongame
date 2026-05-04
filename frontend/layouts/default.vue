@@ -98,7 +98,7 @@
 
     <ToastContainer />
 
-    <div class="fixed bottom-2 right-3 text-surface-600 text-xs font-mono select-none pointer-events-none">v14</div>
+    <div class="fixed bottom-2 right-3 text-surface-600 text-xs font-mono select-none pointer-events-none">v15</div>
 
     <MonthlyBalanceSheet
       v-if="gameStore.lastTurnResult"
