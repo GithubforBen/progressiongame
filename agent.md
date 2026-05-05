@@ -557,10 +557,16 @@ Add to `application.yml` → `GameConfig` inner class → inject `GameConfig` in
 1. Create class in `domain/event/`, implement `RandomGameEvent`, annotate `@Component`.
 2. Roll probability in `tryApply()`, mutate character, append message. Done.
 
-### 5.7 New collection bonus type
+### 5.7 New effect type or effect source
 
-1. Create class in `domain/effect/collection/`, implement `CollectionBonusApplier`, annotate `@Component`.
-2. Override one of: `modifyIncome`, `modifyExpenses`, `applyStats`. Done.
+**New effect type** (new multiplier/discount/stat-tick):
+1. Add entry to `EffectType` enum (`domain/effect/EffectType.java`).
+2. Map the value in the relevant contributor (e.g. add to `SocialEffectContributor.TYPE_MAP`).
+3. Add the consumer call-site in the service that applies it.
+
+**New effect source** (new contributor — e.g. a new item category):
+1. Create `@Component class MyContributor implements EffectContributor` in `domain/effect/`.
+2. Return `List<EffectContribution>` from `getContributions(Long playerId)`. Done — auto-discovered.
 
 ### 5.8 New domain event
 
@@ -643,6 +649,28 @@ API: `GET /api/needs/items`, `POST /api/needs/purchase`
 
 SCHUFA breakdown endpoint: `GET /api/loans/schufa-breakdown` — returns factors (base, loans, education, gambling).
 
+### Central Effects System (no migration)
+
+All player multipliers, discounts, and stat-ticks flow through `PlayerEffectsService.getEffects(Long playerId)` which returns a `PlayerEffects` snapshot aggregating every active `EffectContributor`.
+
+**Contributors:** `SocialEffectContributor` (21 boost types from `persons.yaml`), `CollectionEffectContributor` (completed collections), `LifestyleEffectContributor` (owned lifestyle items).
+
+**Consumers and applied effect types:**
+
+| Consumer | Applied type | Cap |
+|---|---|---|
+| `LoanService` | `LOAN_INTEREST_REDUCTION` | min rate 0.5% |
+| `RealEstateService` | `PROPERTY_PRICE_DISCOUNT` | max 50% |
+| `TravelService` | `TRAVEL_COST_REDUCTION`, `TRAVEL_DURATION_REDUCTION` | max 80% cost, min 1 month |
+| `CollectibleService` | `COLLECTIBLE_PRICE_DISCOUNT` | max 50% |
+| `StockService` | `STOCK_VOLATILITY_REDUCTION` | max 50% |
+| `TurnService` | `SALARY_MULTIPLIER`, `EXPENSE_REDUCTION`, stat-ticks, `JOB_ACCEPTANCE_BOOST`, `COLLECTIBLE_DROP_RATE_BOOST`, `TAX_DETECTION_REDUCTION` | various |
+
+**REST endpoint:** `GET /api/effects` → `EffectSummaryDto` with groups and per-source breakdowns.
+**Frontend:** `/effekte` page — visible in sidebar under "Privatleben".
+
+**Key files:** `domain/effect/EffectType.java`, `domain/effect/PlayerEffects.java`, `domain/effect/EffectContributor.java`, `service/PlayerEffectsService.java`, `controller/EffectsController.java`, `dto/EffectSummaryDto.java`.
+
 ### Stock Delisting & Mean-Reversion (V22)
 
 Price simulation replaced pure random walk with Ornstein-Uhlenbeck mean-reversion in log-space. Each turn: `logReturn = θ·ln(P_initial/P_current) + Uniform(-σ,σ)`. When computed price falls below `max(0.01, initialPrice×10%)`, the stock is **delisted per player**: all investments wiped, event logged, trading blocked (HTTP 410). After ≥6 months, 20% chance/turn to relist at seed price.
@@ -703,7 +731,7 @@ game/
     │   │   ├── GameContext.java
     │   │   ├── GameContextFactory.java
     │   │   ├── condition/            ← Condition interface + 10 implementations
-    │   │   ├── effect/collection/    ← CollectionBonusApplier interface + 5 @Components
+    │   │   ├── effect/               ← EffectType enum, PlayerEffects, EffectContributor interface + 3 @Components
     │   │   ├── event/                ← RandomGameEvent interface + 6 @Components
     │   │   ├── events/               ← DomainEvent interface + 17 Records
     │   │   └── social/               ← PersonDef, GroupDef, BoostDef, GiftRequirement
@@ -712,6 +740,7 @@ game/
     │   │   └── TurnResultDto.java    ← taxEvasionCaught, taxEvasionCaughtAmount
     │   ├── service/
     │   │   ├── TurnService.java      ← monthly turn orchestrator
+    │   │   ├── PlayerEffectsService.java ← central aggregator for all effects/multipliers
     │   │   ├── TaxService.java       ← progressive tax (data-driven via GameConfig)
     │   │   ├── SocialService.java    ← actions + network + boosts
     │   │   ├── PersonService.java    ← YAML loader for persons.yaml
@@ -735,6 +764,7 @@ game/
     │       ├── TaxEvasionController.java ← /api/tax-evasion/*
     │       ├── LoanController.java       ← /api/loans/schufa-breakdown
     │       ├── NeedsController.java      ← /api/needs/*
+    │       ├── EffectsController.java    ← /api/effects
     │       └── [all other controllers]
     └── resources/
         ├── application.yml               ← game: section with all balance values
@@ -759,6 +789,7 @@ frontend/
 │   └── MonthlyBalanceSheet.vue   ← caught-section, gate on "Weiter"
 └── pages/
     ├── beziehungen.vue           ← SVG node graph (pan/zoom) for social system
+    ├── effekte.vue               ← active effects overview (GET /api/effects)
     ├── steuerhinterziehung.vue
     ├── karriere.vue              ← pan/zoom job tree
     ├── ausbildung.vue            ← pan/zoom education tree (reference implementation)
