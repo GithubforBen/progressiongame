@@ -2,6 +2,7 @@ package com.financegame.service;
 
 import com.financegame.domain.GameContext;
 import com.financegame.domain.condition.HasCertCondition;
+import com.financegame.domain.effect.EffectType;
 import com.financegame.domain.events.PropertyModeChangedEvent;
 import com.financegame.domain.events.PropertyPurchasedEvent;
 import com.financegame.dto.ChangeModeRequest;
@@ -33,17 +34,20 @@ public class RealEstateService {
     private final CharacterService characterService;
     private final EducationProgressRepository educationProgressRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final PlayerEffectsService playerEffectsService;
 
     public RealEstateService(RealEstateCatalogRepository catalogRepository,
                               PlayerRealEstateRepository playerRealEstateRepository,
                               CharacterService characterService,
                               EducationProgressRepository educationProgressRepository,
-                              ApplicationEventPublisher eventPublisher) {
+                              ApplicationEventPublisher eventPublisher,
+                              PlayerEffectsService playerEffectsService) {
         this.catalogRepository = catalogRepository;
         this.playerRealEstateRepository = playerRealEstateRepository;
         this.characterService = characterService;
         this.educationProgressRepository = educationProgressRepository;
         this.eventPublisher = eventPublisher;
+        this.playerEffectsService = playerEffectsService;
     }
 
     @Transactional(readOnly = true)
@@ -86,20 +90,25 @@ public class RealEstateService {
         }
 
         GameCharacter character = characterService.findOrThrow(playerId);
-        characterService.deductCash(playerId, catalog.getPurchasePrice(), "Immobilienkauf: " + catalog.getName());
+        double discount = playerEffectsService.getEffects(playerId).get(EffectType.PROPERTY_PRICE_DISCOUNT);
+        java.math.BigDecimal finalPrice = discount > 0
+            ? catalog.getPurchasePrice().multiply(java.math.BigDecimal.valueOf(1.0 - Math.min(0.5, discount)))
+                .setScale(2, java.math.RoundingMode.HALF_UP)
+            : catalog.getPurchasePrice();
+        characterService.deductCash(playerId, finalPrice, "Immobilienkauf: " + catalog.getName());
 
         PlayerRealEstate pre = new PlayerRealEstate();
         pre.setPlayerId(playerId);
         pre.setCatalog(catalog);
         pre.setMode("RENTED_OUT");
         pre.setPurchasedAtTurn(character.getCurrentTurn());
-        pre.setPurchasePrice(catalog.getPurchasePrice());
+        pre.setPurchasePrice(finalPrice);
         playerRealEstateRepository.save(pre);
 
         characterService.recalculateNetWorth(playerId);
 
         eventPublisher.publishEvent(
-            new PropertyPurchasedEvent(playerId, catalog.getId(), catalog.getName(), catalog.getPurchasePrice()));
+            new PropertyPurchasedEvent(playerId, catalog.getId(), catalog.getName(), finalPrice));
 
         return PlayerRealEstateDto.from(pre);
     }

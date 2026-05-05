@@ -1,7 +1,8 @@
 package com.financegame.service;
 
 import com.financegame.config.GameConfig;
-import com.financegame.domain.effect.collection.CollectionBonusApplier;
+import com.financegame.domain.effect.EffectType;
+import com.financegame.domain.effect.PlayerEffects;
 import com.financegame.domain.events.*;
 import com.financegame.dto.CharacterDto;
 import com.financegame.dto.TurnResultDto;
@@ -18,9 +19,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,10 +41,9 @@ public class TurnService {
     private final RelationshipService relationshipService;
     private final PlayerRealEstateRepository playerRealEstateRepository;
     private final PlayerLoanRepository playerLoanRepository;
-    private final CollectionService collectionService;
     private final ApplicationEventPublisher eventPublisher;
     private final SocialService socialService;
-    private final Map<String, CollectionBonusApplier> bonusApplierMap;
+    private final PlayerEffectsService playerEffectsService;
     private final GameConfig gameConfig;
     private final TaxService taxService;
     private final LifestyleService lifestyleService;
@@ -69,9 +67,8 @@ public class TurnService {
         RelationshipService relationshipService,
         PlayerRealEstateRepository playerRealEstateRepository,
         PlayerLoanRepository playerLoanRepository,
-        CollectionService collectionService,
         ApplicationEventPublisher eventPublisher,
-        List<CollectionBonusApplier> bonusAppliers,
+        PlayerEffectsService playerEffectsService,
         GameConfig gameConfig,
         TaxService taxService,
         SocialService socialService,
@@ -93,10 +90,8 @@ public class TurnService {
         this.relationshipService = relationshipService;
         this.playerRealEstateRepository = playerRealEstateRepository;
         this.playerLoanRepository = playerLoanRepository;
-        this.collectionService = collectionService;
         this.eventPublisher = eventPublisher;
-        this.bonusApplierMap = bonusAppliers.stream()
-            .collect(Collectors.toMap(CollectionBonusApplier::getBonusType, Function.identity()));
+        this.playerEffectsService = playerEffectsService;
         this.gameConfig = gameConfig;
         this.taxService = taxService;
         this.socialService = socialService;
@@ -118,6 +113,9 @@ public class TurnService {
         List<TurnResultDto.LineItem> incomeBreakdown = new ArrayList<>();
         List<TurnResultDto.LineItem> expenseBreakdown = new ArrayList<>();
         List<TurnResultDto.StatChange> stressBreakdown = new ArrayList<>();
+
+        // Load all active effects once — used throughout this turn
+        PlayerEffects fx = playerEffectsService.getEffects(playerId);
 
         // --- Pre-check: Finanzamt audit for players abusing the multi-job stress bug ---
         {
@@ -158,21 +156,27 @@ public class TurnService {
         }
 
         // --- 1. Resolve job applications from last month ---
-        resolveApplications(playerId, currentTurn, events);
+        resolveApplications(playerId, currentTurn, events, fx);
 
         // --- 2. Calculate salary income ---
         BigDecimal grossIncome = inJail ? BigDecimal.ZERO
             : calculateSalaries(playerId, currentTurn, incomeBreakdown, events);
         if (inJail) events.add("Kein Gehalt — du befindest dich in Haft.");
 
-        // --- 2a. Collection bonuses: income phase (SALARY_MULTIPLIER, MONTHLY_INCOME_BONUS) ---
-        List<CollectionService.ActiveBonus> collectionBonuses =
-            collectionService.getActiveCollectionBonuses(playerId);
-        for (CollectionService.ActiveBonus bonus : collectionBonuses) {
-            CollectionBonusApplier applier = bonusApplierMap.get(bonus.bonusType());
-            if (applier != null) {
-                grossIncome = applier.modifyIncome(grossIncome, bonus.bonusValue(), incomeBreakdown);
-            }
+        // --- 2a. Effects: income phase (SALARY_MULTIPLIER, MONTHLY_INCOME_BONUS, SALARY_BONUS) ---
+        double salaryMultiplier = fx.get(EffectType.SALARY_MULTIPLIER);
+        if (salaryMultiplier != 0.0) {
+            BigDecimal bonus = grossIncome.multiply(BigDecimal.valueOf(salaryMultiplier))
+                .setScale(2, RoundingMode.HALF_UP);
+            grossIncome = grossIncome.add(bonus);
+            incomeBreakdown.add(new TurnResultDto.LineItem(
+                "Gehalts-Multiplikator (+" + Math.round(salaryMultiplier * 100) + "%)", bonus));
+        }
+        double flatIncomeBonus = fx.get(EffectType.MONTHLY_INCOME_BONUS) + fx.get(EffectType.SALARY_BONUS);
+        if (flatIncomeBonus != 0.0) {
+            BigDecimal bonusAmt = BigDecimal.valueOf(flatIncomeBonus).setScale(2, RoundingMode.HALF_UP);
+            grossIncome = grossIncome.add(bonusAmt);
+            incomeBreakdown.add(new TurnResultDto.LineItem("Einkommens-Bonus", bonusAmt));
         }
 
         // --- 2b. Rental income from RENTED_OUT properties ---
@@ -194,12 +198,12 @@ public class TurnService {
                 character.setCumulativeEvadedTaxes(character.getCumulativeEvadedTaxes().add(evaded));
                 boolean hasRechtsschutz = monthlyExpenseRepository.findActiveByPlayerId(playerId)
                     .stream().anyMatch(e -> "RECHTSSCHUTZ".equals(e.getCategory()));
-                boolean hasJet = lifestyleService.getOwnedCatalogItems(playerId)
-                    .stream().anyMatch(c -> c.isTaxEvasionBoost());
                 double baseChance = detectionChance(evasionLevel);
                 double finalChance = baseChance;
                 if (hasRechtsschutz) finalChance *= 0.70;
-                if (hasJet) finalChance *= 0.85;
+                // TAX_DETECTION_REDUCTION from central effects (lifestyle + social)
+                double taxDetectionReduction = fx.get(EffectType.TAX_DETECTION_REDUCTION);
+                if (taxDetectionReduction > 0) finalChance *= (1.0 - Math.min(0.9, taxDetectionReduction));
                 if (random.nextDouble() < finalChance) {
                     taxEvasionCaught = true;
                     taxEvasionCaughtAmount = character.getCumulativeEvadedTaxes();
@@ -217,12 +221,12 @@ public class TurnService {
         // --- 4. Monthly expenses ---
         BigDecimal totalExpenses = deductExpenses(playerId, expenseBreakdown);
 
-        // --- 4a. Collection bonuses: expense phase (EXPENSE_REDUCTION) ---
-        for (CollectionService.ActiveBonus bonus : collectionBonuses) {
-            CollectionBonusApplier applier = bonusApplierMap.get(bonus.bonusType());
-            if (applier != null) {
-                totalExpenses = applier.modifyExpenses(totalExpenses, bonus.bonusValue());
-            }
+        // --- 4a. Effects: expense phase (EXPENSE_REDUCTION) ---
+        double expenseReduction = fx.get(EffectType.EXPENSE_REDUCTION);
+        if (expenseReduction > 0) {
+            totalExpenses = totalExpenses.multiply(
+                BigDecimal.valueOf(1.0 - Math.min(0.9, expenseReduction))
+            ).setScale(2, RoundingMode.HALF_UP);
         }
 
         totalExpenses = totalExpenses.add(taxPaid);
@@ -266,37 +270,30 @@ public class TurnService {
             stressBreakdown.add(new TurnResultDto.StatChange("Zufallsereignis", stressEventDelta));
         }
 
-        // --- 6. Needs decay (hunger/energy/happiness) + Lifestyle/Krankenkasse ---
-        applyNeedsDecay(character, playerId, stressBreakdown);
+        // --- 6. Needs decay (hunger/energy/happiness) + Krankenkasse ---
+        applyNeedsDecay(character, playerId, stressBreakdown, fx);
 
-        // --- 6b. Advance social relationships + apply stat boosts ---
+        // --- 6b. Advance social relationships ---
         socialService.advanceSocials(playerId);
-        int stressPreSocial = character.getStress();
-        for (SocialService.ActiveBoostDto boost : socialService.getActiveBoosts(playerId)) {
-            switch (boost.type()) {
-                case "HAPPINESS_PER_TURN" -> character.setHappiness(clamp(character.getHappiness() + (int) boost.totalValue()));
-                case "STRESS_REDUCTION_PER_TURN" -> character.setStress(clamp(character.getStress() - (int) boost.totalValue()));
-                case "ENERGY_BONUS_PER_TURN" -> character.setEnergy(clamp(character.getEnergy() + (int) boost.totalValue()));
-                case "SCHUFA_BONUS_MONTHLY" -> character.setSchufaScore(character.getSchufaScore() + (int) boost.totalValue());
-                default -> {} // other boost types applied elsewhere
-            }
-        }
-        int stressSocialDelta = character.getStress() - stressPreSocial;
-        if (stressSocialDelta != 0) {
-            stressBreakdown.add(new TurnResultDto.StatChange("Beziehungs-Boosts", stressSocialDelta));
-        }
 
-        // --- 6c. Collection bonuses: stat phase (HAPPINESS_BONUS, SCHUFA_BONUS) ---
-        int stressPreCollection = character.getStress();
-        for (CollectionService.ActiveBonus bonus : collectionBonuses) {
-            CollectionBonusApplier applier = bonusApplierMap.get(bonus.bonusType());
-            if (applier != null) {
-                applier.applyStats(character, bonus.bonusValue());
-            }
-        }
-        int stressCollectionDelta = character.getStress() - stressPreCollection;
-        if (stressCollectionDelta != 0) {
-            stressBreakdown.add(new TurnResultDto.StatChange("Sammlungs-Boni", stressCollectionDelta));
+        // --- 6c. Apply all stat-tick effects from central effects service ---
+        // (covers social boosts, collection stat bonuses, lifestyle stress reductions)
+        int stressPreStats = character.getStress();
+        double happinessTick = fx.get(EffectType.HAPPINESS_PER_TURN);
+        if (happinessTick != 0) character.setHappiness(clamp(character.getHappiness() + (int) happinessTick));
+
+        double stressReduction = fx.get(EffectType.STRESS_REDUCTION_PER_TURN);
+        if (stressReduction != 0) character.setStress(clamp(character.getStress() - (int) stressReduction));
+
+        double energyTick = fx.get(EffectType.ENERGY_BONUS_PER_TURN);
+        if (energyTick != 0) character.setEnergy(clamp(character.getEnergy() + (int) energyTick));
+
+        double schufaTick = fx.get(EffectType.SCHUFA_BONUS_MONTHLY);
+        if (schufaTick != 0) character.setSchufaScore(character.getSchufaScore() + (int) schufaTick);
+
+        int stressStatsDelta = character.getStress() - stressPreStats;
+        if (stressStatsDelta != 0) {
+            stressBreakdown.add(new TurnResultDto.StatChange("Effekte (Beziehungen/Sammlungen/Lifestyle)", stressStatsDelta));
         }
 
         // --- 6d. Critical needs events: Burnout & Depression ---
@@ -315,7 +312,7 @@ public class TurnService {
 
         // --- 8d. Expire old events, generate new ones ---
         activeEventRepository.deleteExpiredForPlayer(playerId, currentTurn);
-        generateRandomEvent(playerId, currentTurn, events);
+        generateRandomEvent(playerId, currentTurn, events, fx);
 
         // --- 8e. Schufa passive regeneration toward 500 ---
         int schufa = character.getSchufaScore();
@@ -381,12 +378,12 @@ public class TurnService {
     // Private helpers
     // -------------------------------------------------------------------------
 
-    private void resolveApplications(Long playerId, int currentTurn, List<String> events) {
+    private void resolveApplications(Long playerId, int currentTurn, List<String> events, PlayerEffects fx) {
         List<JobApplication> pending = jobApplicationRepository.findPendingByPlayerId(playerId);
         for (JobApplication app : pending) {
             if (app.getAppliedAtTurn() >= currentTurn) continue;
 
-            boolean accepted = evaluateApplication(playerId, app);
+            boolean accepted = evaluateApplication(playerId, app, fx);
             app.setStatus(accepted ? "ACCEPTED" : "REJECTED");
             app.setResolvedAtTurn(currentTurn);
             jobApplicationRepository.save(app);
@@ -409,7 +406,7 @@ public class TurnService {
         }
     }
 
-    private boolean evaluateApplication(Long playerId, JobApplication app) {
+    private boolean evaluateApplication(Long playerId, JobApplication app, PlayerEffects fx) {
         Job job = app.getJob();
 
         boolean meetsEducation = meetsEducationRequirement(playerId,
@@ -432,6 +429,8 @@ public class TurnService {
         } else {
             probability = 0.05;
         }
+
+        probability = Math.min(0.98, probability + fx.get(EffectType.JOB_ACCEPTANCE_BOOST));
 
         return random.nextDouble() < probability;
     }
@@ -492,12 +491,13 @@ public class TurnService {
     }
 
     private void applyNeedsDecay(GameCharacter character, Long playerId,
-                                 List<TurnResultDto.StatChange> stressBreakdown) {
+                                 List<TurnResultDto.StatChange> stressBreakdown, PlayerEffects fx) {
         List<MonthlyExpense> activeExpenses = monthlyExpenseRepository.findActiveByPlayerId(playerId);
         boolean hasFoodExpense = activeExpenses.stream().anyMatch(e -> "ESSEN".equals(e.getCategory()));
 
         GameConfig.NeedsConfig needs = gameConfig.getNeeds();
-        int hungerDecay = hasFoodExpense ? needs.getHungerDecayWithFood() : needs.getHungerDecayBase();
+        int baseHungerDecay = hasFoodExpense ? needs.getHungerDecayWithFood() : needs.getHungerDecayBase();
+        int hungerDecay = Math.max(1, (int) (baseHungerDecay - fx.get(EffectType.HUNGER_DECAY_REDUCTION)));
         character.setHunger(clamp(character.getHunger() - hungerDecay));
         character.setEnergy(clamp(character.getEnergy() - needs.getEnergyDecay()));
         character.setHappiness(clamp(character.getHappiness() - needs.getHappinessDecay()));
@@ -515,18 +515,7 @@ public class TurnService {
                         "Krankenversicherung (" + kv.getAmount() + " €/Monat)", -reduction));
                 }
             });
-
-        // Lifestyle item stress reduction (logged per item)
-        lifestyleService.getOwnedCatalogItems(playerId).forEach(item -> {
-            if (item.getStressReductionMonth() > 0) {
-                int before = character.getStress();
-                character.setStress(clamp(character.getStress() - item.getStressReductionMonth()));
-                int actual = character.getStress() - before;
-                if (actual != 0) {
-                    stressBreakdown.add(new TurnResultDto.StatChange(item.getName(), actual));
-                }
-            }
-        });
+        // Note: lifestyle stress reduction is now applied via the central effects stat-tick phase (6c)
     }
 
     private void applyNeedsCriticalEvents(GameCharacter character, Long playerId, List<String> events) {
@@ -683,8 +672,9 @@ public class TurnService {
         });
     }
 
-    private void generateRandomEvent(Long playerId, int currentTurn, List<String> events) {
-        if (random.nextDouble() > 0.20) return;
+    private void generateRandomEvent(Long playerId, int currentTurn, List<String> events, PlayerEffects fx) {
+        double threshold = Math.min(0.80, 0.20 + fx.get(EffectType.COLLECTIBLE_DROP_RATE_BOOST));
+        if (random.nextDouble() > threshold) return;
         List<Collectible> all = collectibleRepository.findAll();
         if (all.isEmpty()) return;
         Collectible c = all.get(random.nextInt(all.size()));

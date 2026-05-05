@@ -3,6 +3,7 @@ package com.financegame.service;
 import com.financegame.config.GameConfig;
 import com.financegame.domain.GameContext;
 import com.financegame.domain.condition.MinSchufaCondition;
+import com.financegame.domain.effect.EffectType;
 import com.financegame.domain.events.LoanPaidOffEvent;
 import com.financegame.domain.events.LoanTakenEvent;
 import com.financegame.dto.LoanCapacityDto;
@@ -44,19 +45,22 @@ public class LoanService {
     private final EducationProgressRepository educationProgressRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final GameConfig gameConfig;
+    private final PlayerEffectsService playerEffectsService;
 
     public LoanService(PlayerLoanRepository loanRepository,
                        PlayerJobRepository playerJobRepository,
                        CharacterService characterService,
                        EducationProgressRepository educationProgressRepository,
                        ApplicationEventPublisher eventPublisher,
-                       GameConfig gameConfig) {
+                       GameConfig gameConfig,
+                       PlayerEffectsService playerEffectsService) {
         this.loanRepository = loanRepository;
         this.playerJobRepository = playerJobRepository;
         this.characterService = characterService;
         this.educationProgressRepository = educationProgressRepository;
         this.eventPublisher = eventPublisher;
         this.gameConfig = gameConfig;
+        this.playerEffectsService = playerEffectsService;
     }
 
     @Transactional(readOnly = true)
@@ -129,7 +133,7 @@ public class LoanService {
     public LoanCapacityDto getCapacity(Long playerId, int termMonths) {
         int clampedTerm = Math.max(6, Math.min(360, termMonths));
         GameCharacter character = characterService.findOrThrow(playerId);
-        double annualRate = interestRateForScore(character.getSchufaScore());
+        double annualRate = effectiveInterestRate(character.getSchufaScore(), playerId);
         return calcCapacity(playerId, character, clampedTerm, annualRate);
     }
 
@@ -153,7 +157,7 @@ public class LoanService {
                 "Laufzeit muss zwischen 6 und 360 Monaten liegen");
         }
 
-        double annualRate = interestRateForScore(score);
+        double annualRate = effectiveInterestRate(score, playerId);
 
         // Income-based capacity check
         LoanCapacityDto capacity = calcCapacity(playerId, character, req.termMonths(), annualRate);
@@ -225,6 +229,13 @@ public class LoanService {
             .mapToDouble(GameConfig.LoanConfig.InterestTier::getRate)
             .findFirst()
             .orElse(12.0) / 100.0;
+    }
+
+    private double effectiveInterestRate(int score, Long playerId) {
+        double baseRate = interestRateForScore(score);
+        double reduction = playerEffectsService.getEffects(playerId).get(EffectType.LOAN_INTEREST_REDUCTION);
+        // reduction is a fraction (e.g. 0.02 = 2 percentage points off the annual rate)
+        return Math.max(0.005, baseRate - reduction);
     }
 
     String schufaLabel(int score) {

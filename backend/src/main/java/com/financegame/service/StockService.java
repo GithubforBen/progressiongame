@@ -1,6 +1,7 @@
 package com.financegame.service;
 
 import com.financegame.config.GameConfig;
+import com.financegame.domain.effect.EffectType;
 import com.financegame.dto.StockDto;
 import com.financegame.entity.EventLog;
 import com.financegame.entity.Investment;
@@ -34,6 +35,7 @@ public class StockService {
     private final PlayerDelistedStockRepository delistedStockRepository;
     private final EventLogRepository eventLogRepository;
     private final GameConfig gameConfig;
+    private final PlayerEffectsService playerEffectsService;
     private final Random random = new Random();
 
     public StockService(StockRepository stockRepository,
@@ -42,7 +44,8 @@ public class StockService {
                         EducationProgressRepository educationProgressRepository,
                         PlayerDelistedStockRepository delistedStockRepository,
                         EventLogRepository eventLogRepository,
-                        GameConfig gameConfig) {
+                        GameConfig gameConfig,
+                        PlayerEffectsService playerEffectsService) {
         this.stockRepository = stockRepository;
         this.historyRepository = historyRepository;
         this.investmentRepository = investmentRepository;
@@ -50,6 +53,7 @@ public class StockService {
         this.delistedStockRepository = delistedStockRepository;
         this.eventLogRepository = eventLogRepository;
         this.gameConfig = gameConfig;
+        this.playerEffectsService = playerEffectsService;
     }
 
     @Transactional(readOnly = true)
@@ -103,6 +107,7 @@ public class StockService {
         }
 
         // Step 2: Simulate price for each active (non-delisted) stock
+        double volatilityReduction = playerEffectsService.getEffects(playerId).get(EffectType.STOCK_VOLATILITY_REDUCTION);
         for (Stock stock : stocks) {
             if (delistedIds.contains(stock.getId())) continue;
             if (historyRepository.existsByStockIdAndPlayerIdAndTurn(stock.getId(), playerId, currentTurn)) continue;
@@ -111,7 +116,7 @@ public class StockService {
                 .findLatestPriceByStockIdAndPlayerId(stock.getId(), playerId)
                 .orElse(stock.getInitialPrice());
 
-            BigDecimal newPrice = applyPriceMovement(currentPrice, stock.getInitialPrice(), stock.getType());
+            BigDecimal newPrice = applyPriceMovement(currentPrice, stock.getInitialPrice(), stock.getType(), volatilityReduction);
 
             if (newPrice == null) {
                 delistStock(stock, playerId, currentTurn);
@@ -134,9 +139,10 @@ public class StockService {
      * — the 0.01 floor removes the exploit where a penny stock is protected by
      *   the minimum storable price and asymmetrically drifts upward.
      */
-    private BigDecimal applyPriceMovement(BigDecimal currentPrice, BigDecimal initialPrice, String type) {
+    private BigDecimal applyPriceMovement(BigDecimal currentPrice, BigDecimal initialPrice, String type, double volatilityReduction) {
         double theta = gameConfig.getStockReversionSpeed().getOrDefault(type, 0.08);
-        double sigma = gameConfig.getStockVolatility().getOrDefault(type, 0.15);
+        double sigma = gameConfig.getStockVolatility().getOrDefault(type, 0.15)
+            * (1.0 - Math.min(0.5, volatilityReduction));
 
         double logRatio = Math.log(initialPrice.doubleValue() / currentPrice.doubleValue());
         double drift = theta * logRatio;

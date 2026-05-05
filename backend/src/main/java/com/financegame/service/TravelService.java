@@ -3,6 +3,8 @@ package com.financegame.service;
 import com.financegame.domain.GameContext;
 import com.financegame.domain.condition.NotInJailCondition;
 import com.financegame.domain.condition.NotTravelingCondition;
+import com.financegame.domain.effect.EffectType;
+import com.financegame.domain.effect.PlayerEffects;
 import com.financegame.domain.events.TravelDepartedEvent;
 import com.financegame.dto.CountryDto;
 import com.financegame.dto.PlayerTravelStatusDto;
@@ -28,15 +30,18 @@ public class TravelService {
     private final PlayerTravelRepository playerTravelRepository;
     private final CharacterService characterService;
     private final ApplicationEventPublisher eventPublisher;
+    private final PlayerEffectsService playerEffectsService;
 
     public TravelService(CountryRepository countryRepository,
                          PlayerTravelRepository playerTravelRepository,
                          CharacterService characterService,
-                         ApplicationEventPublisher eventPublisher) {
+                         ApplicationEventPublisher eventPublisher,
+                         PlayerEffectsService playerEffectsService) {
         this.countryRepository = countryRepository;
         this.playerTravelRepository = playerTravelRepository;
         this.characterService = characterService;
         this.eventPublisher = eventPublisher;
+        this.playerEffectsService = playerEffectsService;
     }
 
     @Transactional(readOnly = true)
@@ -84,10 +89,18 @@ public class TravelService {
                     + character.getExileMonthsRemaining() + " Monate verbleiben)");
         }
 
-        characterService.deductCash(playerId, country.getTravelCost(), "Flug nach " + countryName);
+        PlayerEffects fx = playerEffectsService.getEffects(playerId);
+        double costReduction = fx.get(EffectType.TRAVEL_COST_REDUCTION);
+        java.math.BigDecimal finalCost = costReduction > 0
+            ? country.getTravelCost().multiply(java.math.BigDecimal.valueOf(1.0 - Math.min(0.8, costReduction)))
+                .setScale(2, java.math.RoundingMode.HALF_UP)
+            : country.getTravelCost();
+        characterService.deductCash(playerId, finalCost, "Flug nach " + countryName);
 
+        int durationReduction = (int) fx.get(EffectType.TRAVEL_DURATION_REDUCTION);
+        int travelMonths = Math.max(1, country.getTravelMonths() - durationReduction);
         travel.setDestinationCountry(countryName);
-        travel.setArriveAtTurn(character.getCurrentTurn() + country.getTravelMonths());
+        travel.setArriveAtTurn(character.getCurrentTurn() + travelMonths);
         travel.setCurrentCountry(null);
         playerTravelRepository.save(travel);
 

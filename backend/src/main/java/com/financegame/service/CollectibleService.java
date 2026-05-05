@@ -1,5 +1,6 @@
 package com.financegame.service;
 
+import com.financegame.domain.effect.EffectType;
 import com.financegame.domain.events.CollectiblePurchasedEvent;
 import com.financegame.dto.ActiveEventDto;
 import com.financegame.dto.CollectibleDto;
@@ -29,19 +30,22 @@ public class CollectibleService {
     private final PlayerTravelRepository playerTravelRepository;
     private final CharacterService characterService;
     private final ApplicationEventPublisher eventPublisher;
+    private final PlayerEffectsService playerEffectsService;
 
     public CollectibleService(CollectibleRepository collectibleRepository,
                                PlayerCollectibleRepository playerCollectibleRepository,
                                ActiveEventRepository activeEventRepository,
                                PlayerTravelRepository playerTravelRepository,
                                CharacterService characterService,
-                               ApplicationEventPublisher eventPublisher) {
+                               ApplicationEventPublisher eventPublisher,
+                               PlayerEffectsService playerEffectsService) {
         this.collectibleRepository = collectibleRepository;
         this.playerCollectibleRepository = playerCollectibleRepository;
         this.activeEventRepository = activeEventRepository;
         this.playerTravelRepository = playerTravelRepository;
         this.characterService = characterService;
         this.eventPublisher = eventPublisher;
+        this.playerEffectsService = playerEffectsService;
     }
 
     @Transactional(readOnly = true)
@@ -149,6 +153,11 @@ public class CollectibleService {
             ? c.getBaseValue().multiply(java.math.BigDecimal.valueOf(0.70))
                 .setScale(2, java.math.RoundingMode.HALF_UP)
             : c.getBaseValue();
+        double collectibleDiscount = playerEffectsService.getEffects(playerId).get(EffectType.COLLECTIBLE_PRICE_DISCOUNT);
+        if (collectibleDiscount > 0 && !onSale) {
+            price = price.multiply(java.math.BigDecimal.valueOf(1.0 - Math.min(0.5, collectibleDiscount)))
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+        }
 
         characterService.deductCash(playerId, price, "Sammlerstück: " + c.getName());
 

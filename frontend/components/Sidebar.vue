@@ -124,6 +124,7 @@ const ICONS: Record<string, string> = {
   Crown:           '<path d="M11.562 3.266a1 1 0 0 1 .876 0L22 8l-4 13H6L2 8z"/><path d="M12 12v9"/><path d="M12 3v3"/><path d="m9 16.998-.9-3"/><path d="m15 17 .9-3"/>',
   Settings:        '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   ShieldAlert:     '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/>',
+  Sparkles:        '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>',
 }
 
 const NAV_GROUPS = [
@@ -157,6 +158,7 @@ const NAV_GROUPS = [
       { path: '/lebensstil',   label: 'Lebensstil',  icon: 'Crown' },
       { path: '/reisen',       label: 'Reisen',       icon: 'Plane' },
       { path: '/beziehungen',  label: 'Beziehungen', icon: 'Users' },
+      { path: '/effekte',      label: 'Effekte',      icon: 'Sparkles' },
       { path: '/sammlungen',   label: 'Sammlungen',  icon: 'Star' },
       { path: '/immobilien',   label: 'Immobilien',  icon: 'Building2' },
     ],

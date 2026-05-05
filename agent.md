@@ -479,6 +479,25 @@ The admin is a **normally registered player** whose username matches the `ADMIN_
 - Changing `ADMIN_USERNAME` in `.env` requires a backend container restart to take effect.
 - The admin account must be registered first via the normal `/api/auth/register` endpoint.
 
+### 4.13 PlayerEffectsService — Centralized Effect Aggregation
+
+All multipliers, discounts, and stat-ticks that affect a player's gameplay flow through a single service: `PlayerEffectsService.getEffects(Long playerId)`.
+
+**Adding a new effect source:** create a `@Component` class in `domain/effect/` implementing `EffectContributor` (returns `List<EffectContribution>`). Spring auto-discovers it — no other code changes needed.
+
+**Adding a new effect type:** add entry to `EffectType` enum, add value in the source YAML/data, implement the contributor mapping, add the consumer call-site.
+
+**Active contributors:**
+- `SocialEffectContributor` — maps all `persons.yaml` boost types to EffectType (21 types)
+- `CollectionEffectContributor` — maps DB `bonus_type` from completed collections
+- `LifestyleEffectContributor` — maps `stressReductionMonth` and `taxEvasionBoost` from owned lifestyle items
+
+**Consumers:** TurnService (loads snapshot once at `endTurn()` start), LoanService, RealEstateService, TravelService, CollectibleService, StockService.
+
+**REST endpoint:** `GET /api/effects` → `EffectSummaryDto` — grouped by type with source breakdowns, displayed at `/effekte`.
+
+**Effect stacking:** additive across all sources. Caps enforced per consumer (e.g. max 50% property discount, max 80% travel cost reduction, max 90% detection reduction).
+
 ### 4.12 Cloudflare Tunnel Compatibility
 
 - `application.yml`: `forward-headers-strategy: framework`
@@ -656,14 +675,7 @@ These are known issues. Fix them in a future session.
 
 4. **`loadDefaults()` in `EducationService`** does not include STEUERHINTERZIEHUNG certs — if `education.yaml` fails to load, these certs are missing from the fallback.
 
-5. **Social boost types beyond stat-boosts** are calculated in `SocialService.getActiveBoosts()` but not yet wired into:
-   - `LoanService` — `LOAN_INTEREST_REDUCTION`
-   - `RealEstateService` — `PROPERTY_PRICE_DISCOUNT`
-   - `TravelService` — `TRAVEL_COST_REDUCTION`
-   - `CollectibleService` — `COLLECTIBLE_PRICE_DISCOUNT`
-   - `TaxEvasionService` — `TAX_DETECTION_REDUCTION`
-   
-   Pattern: `socialService.getBoostValueForPlayer(playerId, "LOAN_INTEREST_REDUCTION")` and subtract from the rate.
+5. ~~Social boost types not wired into consumers~~ — **Resolved.** All 21 social boost types are now wired through `PlayerEffectsService`. See §4.13.
 
 6. **`totalJailMonthsServed`** field exists in DB and entity but is never incremented in `TurnService`. Fix: in the jail-tick block where `jailMonthsRemaining` is decremented, also increment `totalJailMonthsServed`. Until fixed, `MinJailMonthsServedCondition` always returns false.
 
@@ -794,7 +806,8 @@ changelog/
 ├── 2026-05-04_texas-holdem-max-bet.md             ← Texas Hold'em raise capped at 15× initial bet
 ├── 2026-05-04_victory-collectibles.md             ← all collectibles required for victory
 ├── 2026-05-04_admin-player-details.md             ← admin detail view: collectibles, social, travel, investments, education
-└── 2026-05-04_world-map-countries.md              ← V23, 24 new countries, Deutschland/Internet special-casing, map fixes
+├── 2026-05-04_world-map-countries.md              ← V23, 24 new countries, Deutschland/Internet special-casing, map fixes
+└── 2026-05-05_central-effects-service.md          ← PlayerEffectsService, EffectContributor pattern, all 21 boost types wired, /effekte page
 ```
 
 **Rule for agents: every session that produces a deployable change gets a new changelog file.**  

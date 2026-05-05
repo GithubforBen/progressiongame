@@ -98,7 +98,7 @@
 
     <ToastContainer />
 
-    <div class="fixed bottom-2 right-3 text-surface-600 text-xs font-mono select-none pointer-events-none">v15</div>
+    <div class="fixed bottom-2 right-3 text-surface-600 text-xs font-mono select-none pointer-events-none">v16</div>
 
     <MonthlyBalanceSheet
       v-if="gameStore.lastTurnResult"
@@ -145,6 +145,7 @@ const PAGE_LABELS: Record<string, string> = {
   '/kredite':             'Kredite',
   '/gluecksspiel':        'Glücksspiel',
   '/beziehungen':         'Beziehungen',
+  '/effekte':             'Aktive Effekte',
   '/steuerhinterziehung': 'Steuern',
   '/rangliste':           'Rangliste',
   '/einstellungen':       'Einstellungen',
